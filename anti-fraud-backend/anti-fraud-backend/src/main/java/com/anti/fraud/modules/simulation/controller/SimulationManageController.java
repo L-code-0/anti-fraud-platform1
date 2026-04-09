@@ -22,7 +22,7 @@ public class SimulationManageController {
 
     @Operation(summary = "分页获取场景列表", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/scenes")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Page<SceneVO>> getSceneList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -33,7 +33,7 @@ public class SimulationManageController {
 
     @Operation(summary = "创建场景", security = @SecurityRequirement(name = "Bearer"))
     @PostMapping("/scenes")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> createScene(@RequestBody SceneCreateDTO createDTO) {
         simulationManageService.createScene(createDTO);
         return Result.successMsg("创建成功");
@@ -41,7 +41,7 @@ public class SimulationManageController {
 
     @Operation(summary = "更新场景", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/scenes/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> updateScene(@PathVariable Long id, @RequestBody SceneCreateDTO createDTO) {
         simulationManageService.updateScene(id, createDTO);
         return Result.successMsg("更新成功");
@@ -49,7 +49,7 @@ public class SimulationManageController {
 
     @Operation(summary = "删除场景", security = @SecurityRequirement(name = "Bearer"))
     @DeleteMapping("/scenes/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> deleteScene(@PathVariable Long id) {
         simulationManageService.deleteScene(id);
         return Result.successMsg("删除成功");
@@ -57,7 +57,7 @@ public class SimulationManageController {
 
     @Operation(summary = "上架/下架场景", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/scenes/{id}/status")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> updateSceneStatus(@PathVariable Long id, @RequestParam Integer status) {
         simulationManageService.updateSceneStatus(id, status);
         return Result.successMsg("操作成功");
@@ -65,7 +65,7 @@ public class SimulationManageController {
 
     @Operation(summary = "设置推荐", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/scenes/{id}/recommend")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> setRecommend(@PathVariable Long id, @RequestParam Boolean isRecommend) {
         simulationManageService.setRecommend(id, isRecommend);
         return Result.successMsg("设置成功");

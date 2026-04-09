@@ -26,7 +26,7 @@ public class TestManageController {
 
     @Operation(summary = "分页获取题目列表", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/questions")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Page<QuestionVO>> getQuestionList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -37,7 +37,7 @@ public class TestManageController {
 
     @Operation(summary = "创建题目", security = @SecurityRequirement(name = "Bearer"))
     @PostMapping("/questions")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> createQuestion(@RequestBody QuestionCreateDTO createDTO) {
         testManageService.createQuestion(createDTO);
         return Result.successMsg("创建成功");
@@ -45,7 +45,7 @@ public class TestManageController {
 
     @Operation(summary = "更新题目", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/questions/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> updateQuestion(@PathVariable Long id, @RequestBody QuestionCreateDTO createDTO) {
         testManageService.updateQuestion(id, createDTO);
         return Result.successMsg("更新成功");
@@ -53,7 +53,7 @@ public class TestManageController {
 
     @Operation(summary = "删除题目", security = @SecurityRequirement(name = "Bearer"))
     @DeleteMapping("/questions/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> deleteQuestion(@PathVariable Long id) {
         testManageService.deleteQuestion(id);
         return Result.successMsg("删除成功");
@@ -63,7 +63,7 @@ public class TestManageController {
 
     @Operation(summary = "分页获取试卷列表", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/papers")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Page<PaperVO>> getPaperList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -72,7 +72,7 @@ public class TestManageController {
 
     @Operation(summary = "创建试卷", security = @SecurityRequirement(name = "Bearer"))
     @PostMapping("/papers")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> createPaper(@RequestBody PaperCreateDTO createDTO) {
         testManageService.createPaper(createDTO);
         return Result.successMsg("创建成功");
@@ -80,7 +80,7 @@ public class TestManageController {
 
     @Operation(summary = "更新试卷", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/papers/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> updatePaper(@PathVariable Long id, @RequestBody PaperCreateDTO createDTO) {
         testManageService.updatePaper(id, createDTO);
         return Result.successMsg("更新成功");
@@ -88,7 +88,7 @@ public class TestManageController {
 
     @Operation(summary = "删除试卷", security = @SecurityRequirement(name = "Bearer"))
     @DeleteMapping("/papers/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> deletePaper(@PathVariable Long id) {
         testManageService.deletePaper(id);
         return Result.successMsg("删除成功");

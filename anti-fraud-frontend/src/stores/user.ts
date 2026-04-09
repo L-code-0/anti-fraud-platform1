@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { get, post } from '@/utils/request'
 import { SecureStorage, setCsrfToken } from '@/utils/security'
+import { ADMIN, EXPERT, SUPER_ADMIN, TEACHER, STUDENT } from '@/constants/roleConstants'
 
 interface User {
   id: number
@@ -48,10 +49,10 @@ export const useUserStore = defineStore('user', {
   
   getters: {
     isLoggedIn: (state) => !!state.token,
-    isAdmin: (state) => state.userInfo.roleId >= 3,
-    isExpert: (state) => state.userInfo.roleId === 4 || state.userInfo.roleId === 5,
-    isTeacher: (state) => state.userInfo.roleId === 2,
-    isStudent: (state) => state.userInfo.roleId === 1
+    isAdmin: (state) => state.userInfo.roleId >= ADMIN,
+    isExpert: (state) => state.userInfo.roleId === EXPERT || state.userInfo.roleId === SUPER_ADMIN,
+    isTeacher: (state) => state.userInfo.roleId === TEACHER,
+    isStudent: (state) => state.userInfo.roleId === STUDENT
   },
   
   actions: {
@@ -131,4 +132,6 @@ export const useUserStore = defineStore('user', {
     }
   }
 })
+
+
 

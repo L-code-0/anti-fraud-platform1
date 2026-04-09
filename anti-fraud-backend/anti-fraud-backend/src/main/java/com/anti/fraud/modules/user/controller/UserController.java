@@ -1,5 +1,6 @@
 package com.anti.fraud.modules.user.controller;
 
+import com.anti.fraud.common.enums.UserRole;
 import com.anti.fraud.common.result.Result;
 import com.anti.fraud.common.utils.SecurityUtils;
 import com.anti.fraud.modules.user.service.UserService;
@@ -47,7 +48,7 @@ public class UserController {
 
     @Operation(summary = "获取用户列表", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/list")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Page<UserVO>> getUserList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -58,7 +59,7 @@ public class UserController {
 
     @Operation(summary = "禁用/启用用户", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/{userId}/status")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> updateUserStatus(
             @PathVariable Long userId,
             @RequestParam Integer status) {

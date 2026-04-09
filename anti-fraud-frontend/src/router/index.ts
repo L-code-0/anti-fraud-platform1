@@ -1,6 +1,7 @@
 import * as VueRouter from 'vue-router'
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ADMIN, EXPERT, SUPER_ADMIN, TEACHER } from '@/constants/roleConstants'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -355,9 +356,8 @@ router.beforeEach((to: RouteLocationNormalized, _from: RouteLocationNormalized, 
   // 需要管理员权限但权限不足
   if (to.meta.requiresAdmin) {
     const roleId = (userInfo as any).roleId || (userInfo as any).role
-    // 角色ID: 1-学生, 2-教师, 3-管理员, 4-专家, 5-系统管理员
     // 管理员及以上才能访问后台
-    if (!roleId || roleId < 3) {
+    if (!roleId || roleId < ADMIN) {
       ElMessage.error('权限不足，无法访问管理后台')
       next('/')
       return
@@ -367,9 +367,8 @@ router.beforeEach((to: RouteLocationNormalized, _from: RouteLocationNormalized, 
   // 需要专家权限但权限不足
   if (to.meta.requiresExpert) {
     const roleId = (userInfo as any).roleId || (userInfo as any).role
-    // 角色ID: 1-学生, 2-教师, 3-管理员, 4-专家, 5-系统管理员
     // 只有专家和系统管理员能访问专家中心
-    if (roleId !== 4 && roleId !== 5) {
+    if (roleId !== EXPERT && roleId !== SUPER_ADMIN) {
       ElMessage.error('权限不足，无法访问专家中心')
       next('/')
       return
@@ -379,9 +378,8 @@ router.beforeEach((to: RouteLocationNormalized, _from: RouteLocationNormalized, 
   // 需要教师权限但权限不足
   if (to.meta.requiresTeacher) {
     const roleId = (userInfo as any).roleId || (userInfo as any).role
-    // 角色ID: 1-学生, 2-教师, 3-管理员, 4-专家, 5-系统管理员
     // 教师、管理员、专家和系统管理员可访问
-    if (!roleId || roleId < 2) {
+    if (!roleId || roleId < TEACHER) {
       ElMessage.error('权限不足，无法访问班级管理')
       next('/')
       return
@@ -397,5 +395,8 @@ router.afterEach(() => {
 })
 
 export default router
+
+
+
 
 

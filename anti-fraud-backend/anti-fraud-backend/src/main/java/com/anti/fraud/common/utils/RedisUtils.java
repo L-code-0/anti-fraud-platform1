@@ -1,6 +1,6 @@
 package com.anti.fraud.common.utils;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -8,10 +8,10 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@RequiredArgsConstructor
 public class RedisUtils {
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public void set(String key, Object value) {
         redisTemplate.opsForValue().set(key, value);
@@ -49,3 +49,4 @@ public class RedisUtils {
         return redisTemplate.opsForValue().increment(key, delta);
     }
 }
+

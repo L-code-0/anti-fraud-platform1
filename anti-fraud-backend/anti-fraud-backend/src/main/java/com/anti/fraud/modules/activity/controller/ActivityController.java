@@ -40,7 +40,7 @@ public class ActivityController {
 
     @Operation(summary = "创建活动", security = @SecurityRequirement(name = "Bearer"))
     @PostMapping
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> createActivity(@RequestBody ActivityCreateDTO createDTO) {
         activityService.createActivity(createDTO);
         return Result.successMsg("创建成功");
@@ -48,7 +48,7 @@ public class ActivityController {
 
     @Operation(summary = "更新活动", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> updateActivity(@PathVariable Long id, @RequestBody ActivityCreateDTO createDTO) {
         activityService.updateActivity(id, createDTO);
         return Result.successMsg("更新成功");
@@ -56,7 +56,7 @@ public class ActivityController {
 
     @Operation(summary = "删除活动", security = @SecurityRequirement(name = "Bearer"))
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Void> deleteActivity(@PathVariable Long id) {
         activityService.deleteActivity(id);
         return Result.successMsg("删除成功");
@@ -90,3 +90,4 @@ public class ActivityController {
         return Result.success(activityService.getOngoingActivities());
     }
 }
+

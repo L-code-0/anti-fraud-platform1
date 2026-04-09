@@ -15,4 +15,10 @@ public class LoginDTO {
     @Schema(description = "密码", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "密码不能为空")
     private String password;
+
+    @Schema(description = "验证码Key（从获取验证码接口获得）")
+    private String captchaKey;
+
+    @Schema(description = "验证码答案")
+    private String captchaCode;
 }

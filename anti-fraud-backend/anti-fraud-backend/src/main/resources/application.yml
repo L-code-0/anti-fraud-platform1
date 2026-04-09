@@ -8,15 +8,15 @@ spring:
     active: dev
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/anti_fraud?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:anti_fraud}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: MyRedis123
-      database: 0
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:MyRedis123}
+      database: ${REDIS_DATABASE:0}
       timeout: 10000ms
   servlet:
     multipart:
@@ -39,11 +39,18 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
+# JWT 配置 - 生产环境必须通过环境变量覆盖
 jwt:
-  secret: anti-fraud-platform-secret-key-2024-must-be-at-least-256-bits-long-enough
-  expiration: 86400000
+  secret: ${JWT_SECRET:dev-only-secret-key-2024-not-for-production-use-min-32-chars}
+  expiration: ${JWT_EXPIRATION:86400000}
   header: Authorization
   prefix: Bearer
+
+# CORS 配置 - 生产环境必须显式配置允许的域名
+cors:
+  allowed-patterns: ${CORS_ALLOWED_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  max-age: 3600
 
 knife4j:
   enable: true
@@ -52,7 +59,7 @@ knife4j:
 
 logging:
   level:
-    com.anti.fraud: debug
+    com.anti.fraud: ${LOG_LEVEL:debug}
 
 management:
   endpoints:

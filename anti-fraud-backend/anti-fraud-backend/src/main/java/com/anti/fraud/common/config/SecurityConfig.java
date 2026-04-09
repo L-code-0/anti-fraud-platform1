@@ -4,6 +4,7 @@ import com.anti.fraud.security.filter.JwtAuthenticationFilter;
 import com.anti.fraud.security.handler.AccessDeniedHandlerImpl;
 import com.anti.fraud.security.handler.AuthenticationEntryPointImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -20,16 +21,19 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
+    private final CorsProperties corsProperties;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -49,7 +53,6 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/login",
                                 "/auth/register",
-                                "/auth/gen-password",
                                 "/auth/captcha",
                                 "/doc.html",
                                 "/webjars/**",
@@ -65,14 +68,25 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // 使用配置化的域名列表
+        List<String> allowedOrigins = corsProperties.getAllowedOrigins();
+        if (allowedOrigins.isEmpty()) {
+            log.warn("【安全警告】CORS 未配置允许的域名，生产环境必须显式配置！");
+            configuration.setAllowedOriginPatterns(Arrays.asList());
+        } else {
+            log.info("CORS 允许的源: {}", allowedOrigins);
+            configuration.setAllowedOriginPatterns(allowedOrigins);
+        }
+
+        configuration.setAllowedMethods(corsProperties.getAllowedMethodsList());
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
+        configuration.setAllowCredentials(corsProperties.getAllowCredentials());
+        configuration.setMaxAge(corsProperties.getMaxAge());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }
+

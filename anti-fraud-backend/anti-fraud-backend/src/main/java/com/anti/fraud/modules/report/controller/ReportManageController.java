@@ -26,7 +26,7 @@ public class ReportManageController {
 
     @Operation(summary = "分页获取举报列表", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/list")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Page<ReportVO>> getReportList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -37,14 +37,14 @@ public class ReportManageController {
 
     @Operation(summary = "获取举报详情", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<ReportVO> getReportDetail(@PathVariable Long id) {
         return Result.success(reportManageService.getReportDetail(id));
     }
 
     @Operation(summary = "处理举报", security = @SecurityRequirement(name = "Bearer"))
     @PostMapping("/{id}/handle")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<String> handleReport(@PathVariable Long id, @RequestBody ReportHandleDTO handleDTO) {
         reportManageService.handleReport(id, handleDTO);
         return Result.successMsg("处理成功");
@@ -54,7 +54,7 @@ public class ReportManageController {
 
     @Operation(summary = "分页获取预警列表", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/warnings")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<Page<WarningVO>> getWarningList(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -65,7 +65,7 @@ public class ReportManageController {
 
     @Operation(summary = "创建预警", security = @SecurityRequirement(name = "Bearer"))
     @PostMapping("/warnings")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<String> createWarning(@RequestBody WarningCreateDTO createDTO) {
         reportManageService.createWarning(createDTO);
         return Result.successMsg("创建成功");
@@ -73,7 +73,7 @@ public class ReportManageController {
 
     @Operation(summary = "更新预警", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/warnings/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('4') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.EXPERT + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<String> updateWarning(@PathVariable Long id, @RequestBody WarningCreateDTO createDTO) {
         reportManageService.updateWarning(id, createDTO);
         return Result.successMsg("更新成功");
@@ -81,7 +81,7 @@ public class ReportManageController {
 
     @Operation(summary = "删除预警", security = @SecurityRequirement(name = "Bearer"))
     @DeleteMapping("/warnings/{id}")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<String> deleteWarning(@PathVariable Long id) {
         reportManageService.deleteWarning(id);
         return Result.successMsg("删除成功");
@@ -89,7 +89,7 @@ public class ReportManageController {
 
     @Operation(summary = "发布预警", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/warnings/{id}/publish")
-    @PreAuthorize("hasRole('3') or hasRole('5')")
+    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
     public Result<String> publishWarning(@PathVariable Long id) {
         reportManageService.publishWarning(id);
         return Result.successMsg("发布成功");
