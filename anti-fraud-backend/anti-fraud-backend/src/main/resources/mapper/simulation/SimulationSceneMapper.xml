@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.simulation.mapper.SimulationSceneMapper">
+
+    <resultMap id="SceneResultMap" type="com.anti.fraud.modules.simulation.entity.SimulationScene">
+        <id column="id" property="id"/>
+        <result column="scene_name" property="sceneName"/>
+        <result column="scene_type" property="sceneType"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="background" property="background"/>
+        <result column="script_config" property="scriptConfig"/>
+        <result column="difficulty" property="difficulty"/>
+        <result column="cover_image" property="coverImage"/>
+        <result column="play_count" property="playCount"/>
+        <result column="avg_score" property="avgScore"/>
+        <result column="is_recommend" property="isRecommend"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 统计场景总数 -->
+    <select id="countAll" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM simulation_scene WHERE deleted = 0
+    </select>
+
+    <!-- 统计启用场景数量 -->
+    <select id="countActive" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM simulation_scene WHERE status = 1 AND deleted = 0
+    </select>
+
+    <!-- 更新场景统计数据 -->
+    <update id="updateStatistics">
+        UPDATE simulation_scene
+        SET play_count = (
+            SELECT COUNT(*) FROM simulation_record WHERE scene_id = #{sceneId} AND is_completed = 1
+        ),
+        avg_score = (
+            SELECT IFNULL(AVG(score), 0) FROM simulation_record WHERE scene_id = #{sceneId} AND is_completed = 1
+        )
+        WHERE id = #{sceneId}
+    </update>
+
+    <!-- 获取热门场景 -->
+    <select id="selectHotScenes" resultMap="SceneResultMap">
+        SELECT * FROM simulation_scene
+        WHERE status = 1 AND deleted = 0
+        ORDER BY play_count DESC, avg_score DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 根据类型获取场景 -->
+    <select id="selectByType" resultMap="SceneResultMap">
+        SELECT * FROM simulation_scene
+        WHERE status = 1 AND deleted = 0
+        <if test="sceneType != null and sceneType != ''">
+            AND scene_type = #{sceneType}
+        </if>
+        ORDER BY is_recommend DESC, difficulty ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.warning.mapper.WarningAlertMapper">
+
+    <select id="selectWarningPage" resultType="java.util.Map">
+        SELECT 
+            wa.id,
+            wa.risk_level as riskLevel,
+            wa.warning_type as warningType,
+            wa.content,
+            wa.risk_score as riskScore,
+            wa.status,
+            wa.process_result as processResult,
+            wa.related_user_name as relatedUserName,
+            wa.create_time as createTime,
+            wa.processed_at as processedAt
+        FROM warning_alert wa
+        WHERE wa.deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (wa.content LIKE CONCAT('%', #{keyword}, '%') 
+                 OR wa.related_user_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="riskLevel != null and riskLevel > 0">
+            AND wa.risk_level = #{riskLevel}
+        </if>
+        <if test="warningType != null and warningType > 0">
+            AND wa.warning_type = #{warningType}
+        </if>
+        <if test="status != null">
+            AND wa.status = #{status}
+        </if>
+        ORDER BY wa.risk_level ASC, wa.create_time DESC
+    </select>
+
+    <select id="selectWarningDetail" resultType="java.util.Map">
+        SELECT 
+            wa.*,
+            u.username as processorName
+        FROM warning_alert wa
+        LEFT JOIN user_info u ON wa.processed_by = u.id
+        WHERE wa.id = #{id} AND wa.deleted = 0
+    </select>
+
+</mapper>

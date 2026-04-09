@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.works.mapper.WorksMapper">
+
+    <resultMap id="WorksResultMap" type="com.anti.fraud.modules.works.entity.Works">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="works_type" property="worksType"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="activity_name" property="activityName"/>
+        <result column="author_id" property="authorId"/>
+        <result column="author_name" property="authorName"/>
+        <result column="author_phone" property="authorPhone"/>
+        <result column="department" property="department"/>
+        <result column="content" property="content"/>
+        <result column="file_url" property="fileUrl"/>
+        <result column="cover_image" property="coverImage"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status"/>
+        <result column="audit_remark" property="auditRemark"/>
+        <result column="auditor_id" property="auditorId"/>
+        <result column="auditor_name" property="auditorName"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="is_excellent" property="isExcellent"/>
+        <result column="rank" property="rank"/>
+        <result column="points" property="points"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 根据活动ID统计作品数量 -->
+    <select id="countByActivityId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM works
+        WHERE activity_id = #{activityId} AND deleted = 0
+    </select>
+
+    <!-- 根据作者ID统计作品数量 -->
+    <select id="countByAuthorId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM works
+        WHERE author_id = #{authorId} AND deleted = 0
+    </select>
+
+    <!-- 获取优秀作品列表 -->
+    <select id="selectExcellentWorks" resultMap="WorksResultMap">
+        SELECT * FROM works
+        WHERE status = 1 AND is_excellent = 1 AND deleted = 0
+        ORDER BY rank ASC, create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取热门作品列表（按浏览量） -->
+    <select id="selectHotWorks" resultMap="WorksResultMap">
+        SELECT * FROM works
+        WHERE status = 1 AND deleted = 0
+        ORDER BY view_count DESC, create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 管理员查询作品列表（含待审核） -->
+    <select id="selectAdminWorksList" resultMap="WorksResultMap">
+        SELECT * FROM works
+        WHERE deleted = 0
+        <if test="worksType != null and worksType != ''">
+            AND works_type = #{worksType}
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="activityId != null">
+            AND activity_id = #{activityId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (title LIKE CONCAT('%', #{keyword}, '%')
+                 OR author_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

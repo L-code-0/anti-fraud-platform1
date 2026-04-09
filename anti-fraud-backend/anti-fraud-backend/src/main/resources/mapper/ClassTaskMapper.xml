@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.task.mapper.ClassTaskMapper">
+
+    <select id="selectTaskPage" resultType="java.util.Map">
+        SELECT 
+            ct.id,
+            ct.task_name as taskName,
+            ct.task_type as taskType,
+            CASE ct.task_type
+                WHEN 'VIDEO' THEN '视频学习'
+                WHEN 'TEST' THEN '在线测试'
+                WHEN 'KNOWLEDGE' THEN '知识学习'
+                ELSE '其他'
+            END as taskTypeName,
+            ct.creator_id as creatorId,
+            ct.creator_name as creatorName,
+            ct.class_id as classId,
+            ct.class_name as className,
+            ct.start_time as startTime,
+            ct.end_time as endTime,
+            ct.total_students as totalStudents,
+            ct.completed_students as completedStudents,
+            ct.status,
+            CASE ct.status
+                WHEN 0 THEN '未开始'
+                WHEN 1 THEN '进行中'
+                WHEN 2 THEN '已结束'
+                ELSE '未知'
+            END as statusName,
+            ct.description,
+            ct.related_id as relatedId,
+            ct.related_name as relatedName,
+            ct.points,
+            ct.create_time as createTime,
+            IFNULL(tc.my_status, 0) as myStatus
+        FROM class_task ct
+        LEFT JOIN task_completion tc ON ct.id = tc.task_id AND tc.student_id = #{studentId} AND tc.deleted = 0
+        WHERE ct.deleted = 0
+        <if test="classId != null">
+            AND ct.class_id = #{classId}
+        </if>
+        <if test="taskType != null and taskType != ''">
+            AND ct.task_type = #{taskType}
+        </if>
+        <if test="status != null">
+            AND ct.status = #{status}
+        </if>
+        ORDER BY ct.status ASC, ct.end_time ASC
+    </select>
+
+</mapper>

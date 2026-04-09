@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.simulation.mapper.SimulationRecordMapper">
+
+    <resultMap id="RecordResultMap" type="com.anti.fraud.modules.simulation.entity.SimulationRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="scene_id" property="sceneId"/>
+        <result column="score" property="score"/>
+        <result column="duration" property="duration"/>
+        <result column="is_completed" property="isCompleted"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 统计用户演练次数 -->
+    <select id="countByUserId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM simulation_record
+        WHERE user_id = #{userId} AND is_completed = 1
+    </select>
+
+    <!-- 统计用户平均得分 -->
+    <select id="avgScoreByUserId" resultType="java.math.BigDecimal">
+        SELECT IFNULL(AVG(score), 0) FROM simulation_record
+        WHERE user_id = #{userId} AND is_completed = 1
+    </select>
+
+    <!-- 统计用户通过次数（得分>=60） -->
+    <select id="countPassedByUserId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM simulation_record
+        WHERE user_id = #{userId} AND is_completed = 1 AND score >= 60
+    </select>
+
+    <!-- 获取用户演练记录 -->
+    <select id="selectByUserId" resultMap="RecordResultMap">
+        SELECT * FROM simulation_record
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 获取场景演练记录 -->
+    <select id="selectBySceneId" resultMap="RecordResultMap">
+        SELECT * FROM simulation_record
+        WHERE scene_id = #{sceneId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 获取用户某场景的最高分记录 -->
+    <select id="selectBestRecord" resultMap="RecordResultMap">
+        SELECT * FROM simulation_record
+        WHERE user_id = #{userId} AND scene_id = #{sceneId} AND is_completed = 1
+        ORDER BY score DESC
+        LIMIT 1
+    </select>
+
+    <!-- 获取排行榜 -->
+    <select id="selectRanking" resultType="java.util.Map">
+        SELECT 
+            sr.user_id as userId,
+            u.real_name as userName,
+            COUNT(*) as totalPlay,
+            AVG(sr.score) as avgScore,
+            SUM(CASE WHEN sr.score >= 60 THEN 1 ELSE 0 END) as passCount
+        FROM simulation_record sr
+        LEFT JOIN user u ON sr.user_id = u.id
+        WHERE sr.is_completed = 1
+        GROUP BY sr.user_id
+        ORDER BY avgScore DESC, totalPlay DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 统计今日演练人数 -->
+    <select id="countTodayPlayers" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT user_id) FROM simulation_record
+        WHERE DATE(create_time) = CURDATE() AND is_completed = 1
+    </select>
+
+    <!-- 统计今日演练次数 -->
+    <select id="countTodayPlays" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM simulation_record
+        WHERE DATE(create_time) = CURDATE() AND is_completed = 1
+    </select>
+
+</mapper>

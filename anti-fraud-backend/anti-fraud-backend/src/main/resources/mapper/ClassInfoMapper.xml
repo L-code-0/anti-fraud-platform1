@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.classroom.mapper.ClassInfoMapper">
+
+    <select id="selectClassPage" resultType="java.util.Map">
+        SELECT 
+            c.id,
+            c.class_name as className,
+            c.class_code as classCode,
+            c.teacher_name as teacherName,
+            c.description,
+            c.student_count as studentCount,
+            c.learning_progress as learningProgress,
+            c.average_score as averageScore,
+            c.status,
+            c.create_time as createTime
+        FROM class_info c
+        WHERE c.deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (c.class_name LIKE CONCAT('%', #{keyword}, '%') 
+                 OR c.teacher_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="teacherId != null">
+            AND c.teacher_id = #{teacherId}
+        </if>
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="selectClassDetail" resultType="java.util.Map">
+        SELECT 
+            c.*,
+            (SELECT COUNT(*) FROM class_student cs WHERE cs.class_id = c.id AND cs.deleted = 0) as actual_student_count
+        FROM class_info c
+        WHERE c.id = #{id} AND c.deleted = 0
+    </select>
+
+</mapper>

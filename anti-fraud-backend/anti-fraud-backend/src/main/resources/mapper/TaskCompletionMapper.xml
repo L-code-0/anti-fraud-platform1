@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.task.mapper.TaskCompletionMapper">
+
+    <select id="selectCompletionPage" resultType="java.util.Map">
+        SELECT 
+            tc.id,
+            tc.task_id as taskId,
+            tc.student_id as studentId,
+            tc.student_name as studentName,
+            u.student_no as studentNo,
+            tc.status,
+            tc.score,
+            tc.complete_time as completeTime,
+            tc.create_time as createTime
+        FROM task_completion tc
+        LEFT JOIN user_info u ON tc.student_id = u.id
+        WHERE tc.deleted = 0 AND tc.task_id = #{taskId}
+        ORDER BY tc.status DESC, tc.complete_time DESC
+    </select>
+
+</mapper>

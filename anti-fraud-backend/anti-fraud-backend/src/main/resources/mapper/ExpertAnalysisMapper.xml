@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.expert.mapper.ExpertAnalysisMapper">
+
+    <select id="selectAnalysisPage" resultType="java.util.Map">
+        SELECT 
+            ea.id,
+            ea.title,
+            ea.type,
+            ea.summary,
+            ea.expert_name as expertName,
+            ea.view_count as viewCount,
+            ea.thumb_count as thumbCount,
+            ea.create_time as createTime
+        FROM expert_analysis ea
+        WHERE ea.deleted = 0 AND ea.status = 1
+        <if test="expertId != null">
+            AND ea.expert_id = #{expertId}
+        </if>
+        <if test="type != null">
+            AND ea.type = #{type}
+        </if>
+        ORDER BY ea.create_time DESC
+    </select>
+
+</mapper>
