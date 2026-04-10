@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.analysis.mapper.LearningWeaknessMapper">
+
+    <!-- 查询用户的薄弱点列表，按正确率升序排列 -->
+    <select id="selectWeaknessesByUserId" resultType="com.anti.fraud.modules.analysis.entity.LearningWeakness">
+        SELECT 
+            id,
+            user_id as userId,
+            category,
+            category_name as categoryName,
+            total_questions as totalQuestions,
+            wrong_questions as wrongQuestions,
+            correct_rate as correctRate,
+            weakness_level as weaknessLevel,
+            update_time as updateTime
+        FROM learning_weakness
+        WHERE user_id = #{userId}
+          AND correct_rate &lt; #{threshold}
+        ORDER BY correct_rate ASC
+    </select>
+
+    <!-- 批量插入薄弱点数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO learning_weakness 
+            (user_id, category, category_name, total_questions, wrong_questions, correct_rate, weakness_level, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.category}, #{item.categoryName}, 
+             #{item.totalQuestions}, #{item.wrongQuestions}, #{item.correctRate}, 
+             #{item.weaknessLevel}, #{item.updateTime})
+        </foreach>
+    </insert>
+
+    <!-- 更新薄弱点数据 -->
+    <update id="updateWeakness">
+        UPDATE learning_weakness
+        SET total_questions = #{totalQuestions},
+            wrong_questions = #{wrongQuestions},
+            correct_rate = #{correctRate},
+            weakness_level = #{weaknessLevel},
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取用户的分类掌握情况 -->
+    <select id="selectCategoryMastery" resultType="java.util.Map">
+        SELECT 
+            category as category,
+            category_name as categoryName,
+            total_questions as totalQuestions,
+            wrong_questions as wrongQuestions,
+            correct_rate as correctRate,
+            CASE 
+                WHEN correct_rate >= 0.9 THEN '精通'
+                WHEN correct_rate >= 0.7 THEN '熟练'
+                WHEN correct_rate >= 0.5 THEN '一般'
+                ELSE '薄弱'
+            END as masteryLevel
+        FROM learning_weakness
+        WHERE user_id = #{userId}
+        ORDER BY correct_rate DESC
+    </select>
+
+    <!-- 删除用户的薄弱点记录 -->
+    <delete id="deleteByUserId">
+        DELETE FROM learning_weakness WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

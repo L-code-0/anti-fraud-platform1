@@ -5,7 +5,7 @@ import java.io.Serializable;
 
 /**
  * 统一响应结果封装类
- *
+ * 
  * 使用规范：
  * - success()           : 无返回值的成功响应
  * - success(T data)     : 仅返回数据的成功响应
@@ -14,13 +14,13 @@ import java.io.Serializable;
  * - fail()              : 默认失败响应
  * - fail(String message) : 返回错误消息的失败响应
  * - fail(Integer code, String message) : 返回指定错误码和消息的失败响应
- *
+ * 
  * @param <T> 数据类型
  */
 @Data
 public class Result<T> implements Serializable {
     private static final long serialVersionUID = 1L;
-
+    
     /** 响应码：200成功，其他为错误 */
     private Integer code;
     /** 响应消息 */
@@ -42,7 +42,7 @@ public class Result<T> implements Serializable {
     }
 
     // ==================== 成功响应 ====================
-
+    
     /**
      * 无返回值的成功响应
      * @param <T> 泛型类型

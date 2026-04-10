@@ -1,547 +1,834 @@
 <template>
   <div class="simulation-page">
-    <!-- 页面标题 -->
+    <!-- 页面头部 -->
     <div class="page-header">
+      <div class="header-bg">
+        <div class="bg-gradient"></div>
+      </div>
       <div class="header-content">
-        <h1>
-          <el-icon><VideoPlay /></el-icon>
-          演练模拟
-        </h1>
-        <p>通过真实场景模拟，提升反诈实战能力</p>
-        <div class="header-stats">
-          <div class="stat-item">
-            <el-icon><VideoCamera /></el-icon>
-            <span>{{ sceneList.length }} 个场景</span>
+        <h1>情景演练中心</h1>
+        <p>模拟真实诈骗场景，实战提升防骗能力</p>
+      </div>
+    </div>
+
+    <div class="page-container">
+      <!-- 演练类型 -->
+      <div class="simulation-types">
+        <div class="type-card" v-for="type in types" :key="type.id">
+          <div class="type-icon" :style="{ background: type.gradient }">
+            <el-icon><component :is="type.icon" /></el-icon>
           </div>
-          <div class="stat-item">
-            <el-icon><UserFilled /></el-icon>
-            <span>{{ totalPlayCount }} 次参与</span>
+          <div class="type-info">
+            <h3>{{ type.title }}</h3>
+            <p>{{ type.desc }}</p>
           </div>
-          <div class="stat-item">
-            <el-icon><Trophy /></el-icon>
-            <span>{{ avgSceneScore }} 分平均成绩</span>
+          <div class="type-stats">
+            <span>{{ type.count }}个场景</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 热门场景 -->
+      <div class="scenes-section">
+        <div class="section-header">
+          <h2>热门演练场景</h2>
+          <span class="scene-count">共{{ scenes.length }}个场景</span>
+        </div>
+
+        <div class="scenes-grid">
+          <div
+            class="scene-card"
+            v-for="scene in scenes"
+            :key="scene.id"
+            @click="startSimulation(scene)"
+          >
+            <div class="scene-image">
+              <img :src="scene.cover" :alt="scene.title" />
+              <div class="scene-overlay">
+                <el-button type="primary" size="large">
+                  <el-icon><VideoPlay /></el-icon>
+                  开始演练
+                </el-button>
+              </div>
+              <div class="scene-difficulty" :class="'level-' + scene.level">
+                {{ scene.levelName }}
+              </div>
+            </div>
+            <div class="scene-content">
+              <h3>{{ scene.title }}</h3>
+              <p>{{ scene.desc }}</p>
+              <div class="scene-meta">
+                <div class="meta-left">
+                  <span><el-icon><User /></el-icon> {{ scene.tried }}人演练</span>
+                  <span><el-icon><Star /></el-icon> {{ scene.rating }}</span>
+                </div>
+                <span class="scene-duration">
+                  <el-icon><Clock /></el-icon> {{ scene.duration }}分钟
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 演练流程 -->
+      <div class="process-section">
+        <div class="section-header">
+          <h2>演练流程</h2>
+          <p>了解完整的演练过程</p>
+        </div>
+
+        <div class="process-timeline">
+          <div class="process-step" v-for="(step, index) in processSteps" :key="step.title">
+            <div class="step-number">{{ index + 1 }}</div>
+            <div class="step-content">
+              <h4>{{ step.title }}</h4>
+              <p>{{ step.desc }}</p>
+            </div>
+            <div class="step-arrow" v-if="index < processSteps.length - 1">
+              <el-icon><ArrowRight /></el-icon>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 筛选栏 -->
-    <el-card class="filter-card" shadow="hover">
-      <div class="filter-bar">
-        <el-select v-model="selectedType" placeholder="场景类型" clearable class="filter-item">
-          <el-option label="全部" value="" />
-          <el-option label="电信诈骗" value="电信诈骗" />
-          <el-option label="网络诈骗" value="网络诈骗" />
-          <el-option label="金融诈骗" value="金融诈骗" />
-          <el-option label="校园诈骗" value="校园诈骗" />
-        </el-select>
-        
-        <el-select v-model="selectedDifficulty" placeholder="难度等级" clearable class="filter-item">
-          <el-option label="全部" value="" />
-          <el-option label="简单" value="1" />
-          <el-option label="普通" value="2" />
-          <el-option label="困难" value="3" />
-        </el-select>
-        
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索场景名称..."
-          prefix-icon="Search"
-          clearable
-          class="filter-item search-input"
-          @keyup.enter="handleSearch"
-          @clear="handleSearch"
-        />
-      </div>
-    </el-card>
+    <!-- 演练对话框 -->
+    <el-dialog
+      v-model="showSimulation"
+      :title="currentScene?.title"
+      width="700px"
+      :close-on-click-modal="false"
+      class="simulation-dialog"
+    >
+      <div class="simulation-content" v-if="currentScene">
+        <div class="simulation-chat">
+          <div class="chat-header">
+            <div class="chat-avatar">
+              <img :src="currentScene.avatar" alt="诈骗者" />
+            </div>
+            <div class="chat-info">
+              <span class="chat-name">{{ currentScene.scammerName }}</span>
+              <span class="chat-status">
+                <span class="status-dot"></span> 在线
+              </span>
+            </div>
+          </div>
 
-    <!-- 场景列表 -->
-    <el-card class="scene-list-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <h3>模拟场景</h3>
-          <span class="count-tag">{{ filteredScenes.length }} 个场景</span>
+          <div class="chat-messages" ref="chatMessagesRef">
+            <div
+              class="message"
+              :class="msg.type"
+              v-for="(msg, index) in currentMessages"
+              :key="index"
+            >
+              <div class="message-content">{{ msg.content }}</div>
+            </div>
+          </div>
+
+          <div class="chat-input">
+            <el-input
+              v-model="userInput"
+              placeholder="输入你的回复..."
+              @keyup.enter="sendMessage"
+            >
+              <template #append>
+                <el-button @click="sendMessage" :disabled="!userInput.trim()">
+                  <el-icon><Promotion /></el-icon>
+                </el-button>
+              </template>
+            </el-input>
+          </div>
         </div>
-      </template>
 
-      <div class="scene-grid">
-        <el-card
-          v-for="scene in filteredScenes"
-          :key="scene.id"
-          class="scene-card"
-          shadow="hover"
-          @click="handleSceneClick(scene.id)"
-        >
-          <div class="scene-cover">
-            <LazyImage 
-              :src="scene.coverImage || defaultCover" 
-              class="cover" 
-              width="100%" 
-              height="200px"
-            />
-            <div class="cover-overlay">
-              <el-button type="primary" size="small" class="play-button">
-                <el-icon><VideoPlay /></el-icon>
-                开始演练
-              </el-button>
+        <div class="simulation-sidebar">
+          <h4>选择策略</h4>
+          <div class="strategy-list">
+            <div
+              class="strategy-item"
+              v-for="strategy in strategies"
+              :key="strategy.id"
+              :class="{ active: selectedStrategy === strategy.id }"
+              @click="selectStrategy(strategy.id)"
+            >
+              <el-icon><component :is="strategy.icon" /></el-icon>
+              <span>{{ strategy.name }}</span>
             </div>
           </div>
-          <div class="scene-info">
-            <div class="scene-header">
-              <h4>{{ scene.sceneName }}</h4>
-              <el-tag :type="getDifficultyType(scene.difficulty)" size="small">
-                {{ getDifficultyText(scene.difficulty) }}
-              </el-tag>
-            </div>
-            <div class="scene-meta">
-              <span class="scene-type">{{ scene.sceneType }}</span>
-              <span class="scene-duration">{{ scene.duration || 10 }}分钟</span>
-            </div>
-            <div class="scene-stats">
-              <div class="stat-item">
-                <el-icon><User /></el-icon>
-                <span>{{ scene.playCount }}人参与</span>
-              </div>
-              <div class="stat-item">
-                <el-icon><TrendCharts /></el-icon>
-                <span>{{ scene.avgScore }}分</span>
-              </div>
-              <div class="stat-item">
-                <el-icon><Star /></el-icon>
-                <span>{{ scene.rating || 4.5 }}分</span>
-              </div>
-            </div>
+
+          <div class="tips-section">
+            <h5>
+              <el-icon><InfoFilled /></el-icon>
+              防骗提示
+            </h5>
+            <p>{{ currentTip }}</p>
           </div>
-        </el-card>
+        </div>
       </div>
-
-      <!-- 空状态 -->
-      <el-empty 
-        v-if="filteredScenes.length === 0" 
-        description="暂无符合条件的场景"
-        :image-size="200"
-      />
-    </el-card>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { get } from '@/utils/request'
-import { 
-  VideoPlay, VideoCamera, UserFilled, Trophy, 
-  Search, User, TrendCharts, Star 
+import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import {
+  VideoPlay, User, Star, Clock, ArrowRight, Promotion,
+  Phone, Message, ShoppingCart, Money, Gift, InfoFilled,
+  CircleCheck, WarnTriangleFilled, Comment
 } from '@element-plus/icons-vue'
-import LazyImage from '@/components/common/LazyImage.vue'
 
-const router = useRouter()
-const defaultCover = 'https://picsum.photos/400/250'
+const types = [
+  { id: 1, icon: 'Phone', title: '电话诈骗', desc: '模拟冒充客服、公检法等电话诈骗', count: 12, gradient: 'var(--gradient-primary)' },
+  { id: 2, icon: 'Message', title: '社交诈骗', desc: '模拟杀猪盘、网络交友等诈骗', count: 8, gradient: 'var(--gradient-success)' },
+  { id: 3, icon: 'ShoppingCart', title: '网购诈骗', desc: '模拟虚假购物、退款诈骗等', count: 10, gradient: 'var(--gradient-warning)' },
+  { id: 4, icon: 'Money', title: '金融诈骗', desc: '模拟投资理财、贷款诈骗等', count: 6, gradient: 'var(--gradient-danger)' }
+]
 
-const sceneList = ref<any[]>([])
-const selectedType = ref('')
-const selectedDifficulty = ref('')
-const searchKeyword = ref('')
+const scenes = ref([
+  {
+    id: 1, title: '冒充客服注销会员诈骗', desc: '学习如何识别假冒客服的诈骗电话',
+    cover: 'https://picsum.photos/seed/scene1/400/250',
+    level: 1, levelName: '入门',
+    duration: 8, tried: 1234, rating: 4.8,
+    scammerName: '电商客服-小王',
+    avatar: 'https://picsum.photos/seed/avatar1/100/100'
+  },
+  {
+    id: 2, title: '杀猪盘诈骗情景模拟', desc: '深度体验杀猪盘的完整诈骗流程',
+    cover: 'https://picsum.photos/seed/scene2/400/250',
+    level: 3, levelName: '进阶',
+    duration: 15, tried: 856, rating: 4.9,
+    scammerName: '知心爱人',
+    avatar: 'https://picsum.photos/seed/avatar2/100/100'
+  },
+  {
+    id: 3, title: '虚假购物诈骗演练', desc: '识别网购中的各种陷阱',
+    cover: 'https://picsum.photos/seed/scene3/400/250',
+    level: 2, levelName: '基础',
+    duration: 10, tried: 967, rating: 4.6,
+    scammerName: '良心卖家',
+    avatar: 'https://picsum.photos/seed/avatar3/100/100'
+  },
+  {
+    id: 4, title: '投资理财诈骗体验', desc: '警惕高回报投资背后的陷阱',
+    cover: 'https://picsum.photos/seed/scene4/400/250',
+    level: 3, levelName: '进阶',
+    duration: 12, tried: 654, rating: 4.7,
+    scammerName: '专业导师',
+    avatar: 'https://picsum.photos/seed/avatar4/100/100'
+  }
+])
 
-// 计算筛选后的场景
-const filteredScenes = computed(() => {
-  return sceneList.value.filter(scene => {
-    const matchesType = !selectedType.value || scene.sceneType === selectedType.value
-    const matchesDifficulty = !selectedDifficulty.value || scene.difficulty === Number(selectedDifficulty.value)
-    const matchesKeyword = !searchKeyword.value || scene.sceneName.includes(searchKeyword.value)
-    return matchesType && matchesDifficulty && matchesKeyword
+const processSteps = [
+  { title: '选择场景', desc: '选择想要演练的诈骗类型' },
+  { title: '开始对话', desc: '模拟与诈骗者对话' },
+  { title: '做出选择', desc: '根据提示做出判断' },
+  { title: '获得反馈', desc: '了解正确应对方式' },
+  { title: '总结学习', desc: '回顾演练要点' }
+]
+
+const strategies = [
+  { id: 1, name: '直接拒绝', icon: 'CircleCheck' },
+  { id: 2, name: '谨慎询问', icon: 'Comment' },
+  { id: 3, name: '保持冷静', icon: 'WarnTriangleFilled' },
+  { id: 4, name: '挂断举报', icon: 'Phone' }
+]
+
+const tips = [
+  '正规客服不会要求转账到指定账户',
+  '不要轻易透露验证码和密码',
+  '遇到紧急情况要先核实身份',
+  '保持冷静，不要被对方催促'
+]
+
+const showSimulation = ref(false)
+const currentScene = ref<any>(null)
+const userInput = ref('')
+const currentMessages = ref<any[]>([])
+const selectedStrategy = ref(1)
+const currentTip = ref(tips[0])
+
+const currentMessagesData: Record<number, any[]> = {
+  1: [
+    { type: 'received', content: '您好，我是XX电商客服，您在我们平台开通了会员，现在可以帮助您注销会员，否则会影响您的征信...' },
+    { type: 'received', content: '请告诉我您的身份证号和银行卡号，我帮您操作...' }
+  ],
+  2: [
+    { type: 'received', content: '嗨，你好呀~最近工作压力大吗？' },
+    { type: 'received', content: '我最近在做一个投资理财项目，收益很不错，要不要一起？' }
+  ]
+}
+
+const startSimulation = (scene: any) => {
+  currentScene.value = scene
+  currentMessages.value = currentMessagesData[scene.id] || [
+    { type: 'received', content: '你好，我是...' }
+  ]
+  showSimulation.value = true
+  currentTip.value = tips[Math.floor(Math.random() * tips.length)]
+}
+
+const sendMessage = () => {
+  if (!userInput.value.trim()) return
+
+  currentMessages.value.push({
+    type: 'sent',
+    content: userInput.value
   })
-})
 
-// 计算总参与次数
-const totalPlayCount = computed(() => {
-  return sceneList.value.reduce((sum, scene) => sum + (scene.playCount || 0), 0)
-})
+  setTimeout(() => {
+    currentMessages.value.push({
+      type: 'received',
+      content: getAutoReply()
+    })
+  }, 1000)
 
-// 计算平均成绩
-const avgSceneScore = computed(() => {
-  if (sceneList.value.length === 0) return 0
-  const total = sceneList.value.reduce((sum, scene) => sum + (scene.avgScore || 0), 0)
-  return Math.round(total / sceneList.value.length)
-})
-
-const getDifficultyText = (level: number) => {
-  const levels: Record<number, string> = {
-    1: '简单',
-    2: '普通',
-    3: '困难'
-  }
-  return levels[level] || '未知'
+  userInput.value = ''
 }
 
-const getDifficultyType = (level: number) => {
-  const types: Record<number, string> = {
-    1: 'success',
-    2: 'warning',
-    3: 'danger'
-  }
-  return types[level] || 'info'
+const getAutoReply = () => {
+  const replies = [
+    '请您配合我们的操作，否则后果自负...',
+    '这个是为了保护您的账户安全...',
+    '请您尽快处理，否则会有更大损失...'
+  ]
+  return replies[Math.floor(Math.random() * replies.length)]
 }
 
-const handleSceneClick = (sceneId: number) => {
-  router.push(`/simulation/${sceneId}`)
+const selectStrategy = (id: number) => {
+  selectedStrategy.value = id
 }
-
-const handleSearch = () => {
-  // 筛选逻辑已在computed中处理
-}
-
-onMounted(async () => {
-  try {
-    const res = await get('/simulation/list')
-    sceneList.value = res.data?.records || []
-  } catch (e) {
-    sceneList.value = [
-      { id: 1, sceneName: '冒充客服退款诈骗', sceneType: '电信诈骗', difficulty: 2, playCount: 1256, avgScore: 78, duration: 15, rating: 4.8 },
-      { id: 2, sceneName: '冒充公检法诈骗', sceneType: '电信诈骗', difficulty: 3, playCount: 892, avgScore: 65, duration: 20, rating: 4.5 },
-      { id: 3, sceneName: '网络兼职刷单诈骗', sceneType: '网络诈骗', difficulty: 1, playCount: 2105, avgScore: 85, duration: 10, rating: 4.9 },
-      { id: 4, sceneName: '校园贷诈骗防范', sceneType: '校园诈骗', difficulty: 2, playCount: 1567, avgScore: 72, duration: 12, rating: 4.6 },
-      { id: 5, sceneName: '虚假投资诈骗', sceneType: '金融诈骗', difficulty: 3, playCount: 789, avgScore: 68, duration: 18, rating: 4.4 },
-      { id: 6, sceneName: '网购诈骗防范', sceneType: '网络诈骗', difficulty: 1, playCount: 1987, avgScore: 82, duration: 8, rating: 4.7 }
-    ]
-  }
-})
 </script>
 
 <style scoped>
 .simulation-page {
-  padding: 0 0 40px;
-  min-height: calc(100vh - 160px);
+  min-height: 100vh;
+  background: var(--bg-secondary);
 }
 
-/* 页面标题 */
 .page-header {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  padding: 60px 24px;
-  margin-bottom: 40px;
-  border-radius: 16px;
-  color: white;
   position: relative;
+  padding: var(--spacing-16) var(--spacing-6);
   overflow: hidden;
-  text-align: center;
 }
 
-.page-header::before {
-  content: '';
+.header-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
+  inset: 0;
+  z-index: 0;
+}
+
+.header-bg .bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
 }
 
 .header-content {
   position: relative;
   z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+  color: white;
 }
 
 .header-content h1 {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 40px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  justify-content: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-4);
 }
 
 .header-content p {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   opacity: 0.9;
-  margin-bottom: 24px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.header-stats {
-  display: flex;
-  justify-content: center;
-  gap: 48px;
-  margin-top: 32px;
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-6) var(--spacing-12);
 }
 
-.stat-item {
+/* 演练类型 */
+.simulation-types {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-4);
+  margin-top: calc(-1 * var(--spacing-10));
+  margin-bottom: var(--spacing-10);
+}
+
+.type-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-5);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
 }
 
-.stat-item:hover {
-  background: rgba(255, 255, 255, 0.15);
+.type-card:hover {
   transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
-.stat-item span {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* 筛选栏 */
-.filter-card {
-  border-radius: 12px;
-  margin-bottom: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.filter-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.filter-bar {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.filter-item {
-  min-width: 150px;
-  flex: 1;
-  max-width: 200px;
-}
-
-.search-input {
-  flex: 2;
-  max-width: 300px;
-}
-
-/* 场景列表卡片 */
-.scene-list-card {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.scene-list-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.card-header {
+.type-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0;
-  margin: -20px -20px 24px;
-  padding: 20px;
-  background: var(--el-color-purple-light-9);
-  border-radius: 12px 12px 0 0;
-}
-
-.card-header h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #5b21b6;
-  margin: 0;
-}
-
-.count-tag {
-  background: var(--el-color-purple);
+  justify-content: center;
+  font-size: 28px;
   color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.2);
+  margin-bottom: var(--spacing-3);
 }
 
-/* 场景网格 */
-.scene-grid {
+.type-info h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.type-info p {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.type-stats span {
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* 场景区域 */
+.scenes-section {
+  margin-bottom: var(--spacing-10);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.section-header h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.scene-count {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.scenes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-6);
 }
 
 .scene-card {
-  border-radius: 12px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: all 0.3s ease;
-  border: 1px solid var(--el-border-color);
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   cursor: pointer;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  transition: all var(--transition-normal);
 }
 
 .scene-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  border-color: var(--el-color-purple-light-5);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
 }
 
-/* 场景封面 */
-.scene-cover {
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px 12px 0 0;
-  height: 200px;
-}
-
-.cover {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.scene-card:hover .cover {
-  transform: scale(1.05);
-}
-
-.cover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 20px;
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-
-.scene-card:hover .cover-overlay {
+.scene-card:hover .scene-overlay {
   opacity: 1;
 }
 
-.play-button {
-  transform: translateY(20px);
-  transition: all 0.3s ease;
+.scene-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
 }
 
-.scene-card:hover .play-button {
-  transform: translateY(0);
+.scene-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
 }
 
-/* 场景信息 */
-.scene-info {
-  padding: 20px;
-  flex: 1;
+.scene-card:hover .scene-image img {
+  transform: scale(1.1);
+}
+
+.scene-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
 }
 
-.scene-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+.scene-difficulty {
+  position: absolute;
+  top: var(--spacing-3);
+  right: var(--spacing-3);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: white;
 }
 
-.scene-header h4 {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--el-text-color-primary);
-  flex: 1;
-  margin-right: 12px;
-  line-height: 1.4;
+.scene-difficulty.level-1 { background: var(--success-color); }
+.scene-difficulty.level-2 { background: var(--info-color); }
+.scene-difficulty.level-3 { background: var(--warning-color); }
+
+.scene-content {
+  padding: var(--spacing-4);
+}
+
+.scene-content h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.scene-content p {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
 }
 
 .scene-meta {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
+  justify-content: space-between;
+  align-items: center;
 }
 
-.scene-type {
-  background: var(--el-color-purple-light-5);
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-weight: 500;
+.meta-left {
+  display: flex;
+  gap: var(--spacing-4);
 }
 
+.meta-left span,
 .scene-duration {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
 }
 
-.scene-stats {
+/* 流程区域 */
+.process-section {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+  box-shadow: var(--shadow-md);
+}
+
+.process-section .section-header {
+  margin-bottom: var(--spacing-8);
+}
+
+.process-section .section-header p {
+  color: var(--text-secondary);
+}
+
+.process-timeline {
   display: flex;
   justify-content: space-between;
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid var(--el-border-color);
+  align-items: flex-start;
 }
 
-.scene-stats .stat-item {
+.process-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  background: var(--gradient-primary);
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: none;
-  padding: 0;
-  border: none;
-  backdrop-filter: none;
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: white;
+  margin-bottom: var(--spacing-3);
+  box-shadow: var(--shadow-primary);
 }
 
-.scene-stats .stat-item:hover {
-  transform: none;
-  background: none;
+.step-content {
+  text-align: center;
+}
+
+.step-content h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.step-content p {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.step-arrow {
+  position: absolute;
+  top: 24px;
+  right: -10%;
+  color: var(--primary-color);
+  font-size: 20px;
+}
+
+/* 演练对话框 */
+.simulation-content {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: var(--spacing-4);
+  height: 500px;
+}
+
+.simulation-chat {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.chat-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.chat-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success-color);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.chat-messages {
+  flex: 1;
+  padding: var(--spacing-4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.message {
+  display: flex;
+  max-width: 80%;
+}
+
+.message.received {
+  align-self: flex-start;
+}
+
+.message.sent {
+  align-self: flex-end;
+}
+
+.message-content {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.message.received .message-content {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.message.sent .message-content {
+  background: var(--gradient-primary);
+  color: white;
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.chat-input {
+  padding: var(--spacing-3);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+}
+
+.simulation-sidebar {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+}
+
+.simulation-sidebar h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-3);
+}
+
+.strategy-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-5);
+}
+
+.strategy-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.strategy-item:hover {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+}
+
+.strategy-item.active {
+  background: var(--primary-bg);
+  color: var(--primary-color);
+  font-weight: var(--font-weight-medium);
+}
+
+.tips-section {
+  background: var(--warning-bg);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+}
+
+.tips-section h5 {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--warning-color);
+  margin-bottom: var(--spacing-2);
+}
+
+.tips-section p {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 /* 响应式 */
+@media (max-width: 1024px) {
+  .simulation-types {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .simulation-content {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .simulation-sidebar {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
-  .header-stats {
-    flex-direction: column;
-    gap: 16px;
+  .page-header {
+    padding: var(--spacing-10) var(--spacing-4);
   }
-  
-  .stat-item {
-    width: 200px;
+
+  .header-content h1 {
+    font-size: var(--font-size-2xl);
   }
-  
-  .scene-grid {
+
+  .simulation-types {
+    grid-template-columns: 1fr;
+    margin-top: 0;
+  }
+
+  .scenes-grid {
     grid-template-columns: 1fr;
   }
-  
-  .filter-bar {
+
+  .process-timeline {
     flex-direction: column;
-    align-items: stretch;
+    gap: var(--spacing-4);
   }
-  
-  .filter-item {
-    max-width: none;
-  }
-  
-  .search-input {
-    max-width: none;
-  }
-  
-  .header-content h1 {
-    font-size: 32px;
-  }
-  
-  .page-header {
-    padding: 40px 16px;
-  }
-  
-  .scene-cover {
-    height: 180px;
+
+  .step-arrow {
+    display: none;
   }
 }
 </style>

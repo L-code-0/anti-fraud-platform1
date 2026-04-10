@@ -221,4 +221,44 @@ public class AnalysisServiceImpl implements AnalysisService {
         names.put("part_time_fraud", "兼职诈骗");
         return names.getOrDefault(category, category);
     }
+
+    @Override
+    @Transactional
+    public void saveLearningReport(Long userId, LearningReportVO report) {
+        // 保存薄弱点数据
+        if (report.getWeaknesses() != null) {
+            for (WeaknessVO weakness : report.getWeaknesses()) {
+                LearningWeakness entity = new LearningWeakness();
+                entity.setUserId(userId);
+                entity.setCategoryName(weakness.getCategoryName());
+                entity.setCorrectRate(weakness.getCorrectRate());
+                entity.setWeaknessLevel(weakness.getWeaknessLevel());
+                entity.setUpdateTime(LocalDateTime.now());
+                weaknessMapper.insert(entity);
+            }
+        }
+        
+        // 保存分类掌握情况
+        if (report.getCategoryMastery() != null) {
+            for (CategoryMasteryVO mastery : report.getCategoryMastery()) {
+                LearningWeakness entity = weaknessMapper.selectOne(
+                        new LambdaQueryWrapper<LearningWeakness>()
+                                .eq(LearningWeakness::getUserId, userId)
+                                .eq(LearningWeakness::getCategoryName, mastery.getCategoryName())
+                );
+                if (entity != null) {
+                    entity.setTotalQuestions(mastery.getTotalQuestions());
+                    entity.setCorrectRate(mastery.getCorrectRate());
+                    entity.setWeaknessLevel(calculateWeaknessLevel(mastery.getCorrectRate()));
+                    entity.setUpdateTime(LocalDateTime.now());
+                    weaknessMapper.updateById(entity);
+                }
+            }
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> getCategoryMastery(Long userId) {
+        return weaknessMapper.selectCategoryMastery(userId);
+    }
 }

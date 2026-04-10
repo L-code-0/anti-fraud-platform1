@@ -1,334 +1,686 @@
 <template>
   <div class="report-page">
-    <el-row :gutter="20">
-      <!-- 预警列表 -->
-      <el-col :span="16">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>预警信息</span>
-            </div>
-          </template>
-          
-          <div
-            v-for="warning in warningList"
-            :key="warning.id"
-            class="warning-item"
-            @click="showWarningDetail(warning)"
-          >
-            <div class="warning-level" :class="`level-${warning.warningLevel}`">
-              {{ getLevelText(warning.warningLevel) }}
-            </div>
-            <div class="warning-content">
-              <h4>{{ warning.title }}</h4>
-              <p>{{ warning.content }}</p>
-              <div class="warning-meta">
-                <span>{{ warning.fraudType }}</span>
-                <span>{{ warning.publishTime }}</span>
-                <span><el-icon><View /></el-icon> {{ warning.viewCount }}</span>
-              </div>
-            </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-bg">
+        <div class="bg-gradient"></div>
+      </div>
+      <div class="header-content">
+        <h1>举报预警中心</h1>
+        <p>发现诈骗线索，及时举报；获取最新预警信息</p>
+      </div>
+    </div>
+
+    <div class="page-container">
+      <!-- 快捷入口 -->
+      <div class="quick-actions">
+        <div class="action-card primary" @click="showReportDialog = true">
+          <div class="action-icon">
+            <el-icon><Warning /></el-icon>
           </div>
-        </el-card>
-      </el-col>
-      
-      <!-- 快捷举报 -->
-      <el-col :span="8">
-        <el-card class="quick-report">
-          <template #header>
-            <span>快捷举报</span>
-          </template>
-          
-          <el-form label-position="top">
-            <el-form-item label="举报类型">
-              <el-select v-model="reportForm.reportType" placeholder="请选择">
-                <el-option :value="1" label="可疑电话" />
-                <el-option :value="2" label="可疑短信" />
-                <el-option :value="3" label="可疑链接" />
-                <el-option :value="4" label="其他" />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="诈骗类型">
-              <el-select v-model="reportForm.fraudType" placeholder="请选择">
-                <el-option value="电信诈骗" />
-                <el-option value="网络诈骗" />
-                <el-option value="校园贷诈骗" />
-                <el-option value="兼职诈骗" />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="简要描述">
-              <el-input
-                v-model="reportForm.description"
-                type="textarea"
-                :rows="4"
-                placeholder="请简要描述诈骗情况..."
-              />
-            </el-form-item>
-            
-            <el-form-item label="可疑号码/链接">
-              <el-input v-model="reportForm.phoneNumber" placeholder="请输入" />
-            </el-form-item>
-            
-            <el-button type="primary" @click="submitReport" :loading="submitting">
-              提交举报
-            </el-button>
-          </el-form>
-        </el-card>
-        
-        <el-card class="my-reports">
-          <template #header>
-            <span>我的举报</span>
-          </template>
-          
-          <div
-            v-for="item in myReports"
-            :key="item.id"
-            class="report-item"
-          >
-            <div class="report-status">
-              <el-tag :type="getStatusType(item.status)">
-                {{ getStatusText(item.status) }}
-              </el-tag>
-            </div>
-            <div class="report-content">
-              <h5>{{ item.title }}</h5>
-              <p>{{ item.reportNo }}</p>
-            </div>
+          <div class="action-info">
+            <h3>立即举报</h3>
+            <p>发现诈骗信息，立即举报</p>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
-    
-    <!-- 预警详情弹窗 -->
-    <el-dialog v-model="showDetail" :title="currentWarning?.title" width="600px">
-      <div class="warning-detail">
-        <el-tag :type="getLevelType(currentWarning?.warningLevel)">
-          {{ getLevelText(currentWarning?.warningLevel) }}
-        </el-tag>
-        <div class="detail-content">{{ currentWarning?.content }}</div>
-        <div class="prevention-tips">
-          <h4>防范要点</h4>
-          <p>{{ currentWarning?.preventionTips }}</p>
+          <el-button type="primary" size="large">
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
+        </div>
+
+        <div class="action-card success" @click="router.push('/warning')">
+          <div class="action-icon">
+            <el-icon><Bell /></el-icon>
+          </div>
+          <div class="action-info">
+            <h3>预警订阅</h3>
+            <p>订阅感兴趣的类型推送</p>
+          </div>
+          <el-button type="success" size="large">
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
         </div>
       </div>
+
+      <!-- 最新预警 -->
+      <div class="warnings-section">
+        <div class="section-header">
+          <h2>最新预警</h2>
+          <el-button text @click="router.push('/warning')">
+            查看全部
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
+        </div>
+
+        <div class="warnings-list">
+          <div class="warning-item" v-for="warning in warnings" :key="warning.id">
+            <div class="warning-icon" :class="'type-' + warning.type">
+              <el-icon><component :is="warning.icon" /></el-icon>
+            </div>
+            <div class="warning-content">
+              <div class="warning-header">
+                <span class="warning-type">{{ warning.typeName }}</span>
+                <span class="warning-time">{{ warning.time }}</span>
+              </div>
+              <h4>{{ warning.title }}</h4>
+              <p>{{ warning.desc }}</p>
+              <div class="warning-tags">
+                <span class="tag" v-for="tag in warning.tags" :key="tag">{{ tag }}</span>
+              </div>
+            </div>
+            <div class="warning-actions">
+              <el-button type="primary" text>
+                <el-icon><View /></el-icon>
+                查看详情
+              </el-button>
+              <el-button type="danger" text @click="reportFraud(warning)">
+                <el-icon><WarnTriangleFilled /></el-icon>
+                我遇到类似情况
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 举报历史 -->
+      <div class="history-section">
+        <div class="section-header">
+          <h2>我的举报记录</h2>
+          <el-button type="primary" @click="showReportDialog = true">
+            <el-icon><Plus /></el-icon>
+            新增举报
+          </el-button>
+        </div>
+
+        <div class="history-table">
+          <el-table :data="reportHistory" stripe style="width: 100%">
+            <el-table-column prop="id" label="举报编号" width="120" />
+            <el-table-column prop="type" label="诈骗类型" width="120">
+              <template #default="{ row }">
+                <span class="type-badge" :class="'type-' + row.typeId">
+                  {{ row.type }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="content" label="举报内容" min-width="200" />
+            <el-table-column prop="status" label="处理状态" width="100">
+              <template #default="{ row }">
+                <span class="status-badge" :class="'status-' + row.statusId">
+                  {{ row.status }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="time" label="举报时间" width="120" />
+            <el-table-column label="操作" width="100" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" text size="small">
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+
+      <!-- 举报统计 -->
+      <div class="stats-section">
+        <div class="stat-card" v-for="stat in stats" :key="stat.label">
+          <div class="stat-icon" :style="{ background: stat.gradient }">
+            <el-icon><component :is="stat.icon" /></el-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 举报对话框 -->
+    <el-dialog
+      v-model="showReportDialog"
+      title="提交举报"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="reportForm" label-position="top" class="report-form">
+        <el-form-item label="诈骗类型" required>
+          <el-select v-model="reportForm.type" placeholder="请选择诈骗类型" class="w-full">
+            <el-option label="电话诈骗" value="phone" />
+            <el-option label="网络诈骗" value="online" />
+            <el-option label="短信诈骗" value="sms" />
+            <el-option label="社交诈骗" value="social" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="诈骗方式" required>
+          <el-select v-model="reportForm.method" placeholder="请选择诈骗方式" class="w-full">
+            <el-option label="冒充客服" value="fake-service" />
+            <el-option label="冒充公检法" value="fake-police" />
+            <el-option label="杀猪盘" value="pig-butchering" />
+            <el-option label="刷单诈骗" value="刷单" />
+            <el-option label="贷款诈骗" value="loan" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="发生时间" required>
+          <el-date-picker
+            v-model="reportForm.time"
+            type="datetime"
+            placeholder="请选择发生时间"
+            class="w-full"
+          />
+        </el-form-item>
+
+        <el-form-item label="诈骗金额（可选）">
+          <el-input v-model="reportForm.amount" placeholder="请输入损失金额">
+            <template #append>元</template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item label="详细描述" required>
+          <el-input
+            v-model="reportForm.description"
+            type="textarea"
+            :rows="4"
+            placeholder="请详细描述诈骗过程，包括对方说的话、要求做的事等"
+          />
+        </el-form-item>
+
+        <el-form-item label="上传证据（可选）">
+          <el-upload
+            action="#"
+            list-type="picture-card"
+            :auto-upload="false"
+            :limit="3"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+          <div class="upload-tip">支持 JPG、PNG 格式，最多上传3张图片</div>
+        </el-form-item>
+
+        <el-form-item>
+          <el-checkbox v-model="reportForm.agreeTerms">
+            我确认以上信息真实有效，愿意配合相关部门调查
+          </el-checkbox>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showReportDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitReport">
+          <el-icon><Upload /></el-icon>
+          提交举报
+        </el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { get, post } from '@/utils/request'
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import {
+  Warning, Bell, ArrowRight, View, Plus, Upload,
+  Phone, Monitor, Message, WarnTriangleFilled
+} from '@element-plus/icons-vue'
 
-const warningList = ref<any[]>([])
-const myReports = ref<any[]>([])
-const showDetail = ref(false)
-const currentWarning = ref<any>(null)
-const submitting = ref(false)
+const router = useRouter()
+const showReportDialog = ref(false)
 
 const reportForm = reactive({
-  reportType: 1,
-  fraudType: '',
+  type: '',
+  method: '',
+  time: '',
+  amount: '',
   description: '',
-  phoneNumber: ''
+  agreeTerms: false
 })
 
-const getLevelText = (level: number) => {
-  const levels: Record<number, string> = {
-    1: '蓝色预警',
-    2: '黄色预警',
-    3: '橙色预警',
-    4: '红色预警'
+const warnings = ref([
+  {
+    id: 1,
+    type: 'phone',
+    typeName: '电话诈骗',
+    icon: 'Phone',
+    title: '警惕冒充客服注销账户诈骗',
+    desc: '近期有不法分子冒充电商客服，以注销账户需要转账验证为由实施诈骗，请提高警惕',
+    time: '2小时前',
+    tags: ['高发', '电话诈骗']
+  },
+  {
+    id: 2,
+    type: 'online',
+    typeName: '网络诈骗',
+    icon: 'Monitor',
+    title: '虚假投资理财平台预警',
+    desc: '多个虚假投资理财APP以高回报率为诱饵骗取钱财，请勿轻信',
+    time: '5小时前',
+    tags: ['投资诈骗', 'APP诈骗']
+  },
+  {
+    id: 3,
+    type: 'social',
+    typeName: '社交诈骗',
+    icon: 'Message',
+    title: '杀猪盘诈骗手法升级',
+    desc: '杀猪盘诈骗手法不断升级，请谨慎网络交友',
+    time: '1天前',
+    tags: ['杀猪盘', '情感诈骗']
   }
-  return levels[level] || '预警'
-}
+])
 
-const getLevelType = (level: number) => {
-  const types: Record<number, string> = {
-    1: 'info',
-    2: 'warning',
-    3: 'danger',
-    4: 'danger'
+const reportHistory = ref([
+  {
+    id: 'RPT20240115001',
+    type: '电话诈骗',
+    typeId: 'phone',
+    content: '收到冒充银行客服的电话...',
+    status: '处理中',
+    statusId: 'processing',
+    time: '2024-01-15'
+  },
+  {
+    id: 'RPT20240110002',
+    type: '网络诈骗',
+    typeId: 'online',
+    content: '发现虚假购物网站...',
+    status: '已处理',
+    statusId: 'resolved',
+    time: '2024-01-10'
+  },
+  {
+    id: 'RPT20240105003',
+    type: '短信诈骗',
+    typeId: 'sms',
+    content: '收到假冒银行积分兑换短信...',
+    status: '已处理',
+    statusId: 'resolved',
+    time: '2024-01-05'
   }
-  return types[level] || 'info'
+])
+
+const stats = ref([
+  { icon: 'Document', value: '15', label: '总举报数', gradient: 'var(--gradient-primary)' },
+  { icon: 'CircleCheck', value: '12', label: '已处理', gradient: 'var(--gradient-success)' },
+  { icon: 'Clock', value: '3', label: '处理中', gradient: 'var(--gradient-warning)' },
+  { icon: 'Trophy', value: '500', label: '获得积分', gradient: 'var(--gradient-info)' }
+])
+
+const reportFraud = (warning: any) => {
+  reportForm.type = warning.type
+  reportForm.method = ''
+  showReportDialog.value = true
 }
 
-const getStatusText = (status: number) => {
-  const texts: Record<number, string> = {
-    0: '待处理',
-    1: '处理中',
-    2: '已处理'
-  }
-  return texts[status] || '未知'
-}
-
-const getStatusType = (status: number) => {
-  const types: Record<number, string> = {
-    0: 'info',
-    1: 'warning',
-    2: 'success'
-  }
-  return types[status] || 'info'
-}
-
-const showWarningDetail = (warning: any) => {
-  currentWarning.value = warning
-  showDetail.value = true
-}
-
-const submitReport = async () => {
-  if (!reportForm.description) {
-    ElMessage.warning('请描述诈骗情况')
+const submitReport = () => {
+  if (!reportForm.type || !reportForm.method || !reportForm.description) {
+    ElMessage.warning('请填写必填项')
     return
   }
-  
-  submitting.value = true
-  try {
-    await post('/report/submit', reportForm)
-    ElMessage.success('举报提交成功，感谢您的参与')
-    reportForm.description = ''
-    reportForm.phoneNumber = ''
-    loadMyReports()
-  } catch (e) {}
-  submitting.value = false
-}
 
-const loadWarnings = async () => {
-  try {
-    const res = await get('/report/warnings')
-    warningList.value = res.data || []
-  } catch (e) {
-    warningList.value = [
-      { id: 1, title: '警惕新型"AI换脸"诈骗', content: '近期出现利用AI技术进行视频通话诈骗的新手法...', warningLevel: 4, fraudType: '电信诈骗', viewCount: 2356, publishTime: '2024-01-15' },
-      { id: 2, title: '冒充客服退款诈骗高发', content: '近期冒充电商平台客服退款诈骗案件高发...', warningLevel: 3, fraudType: '电信诈骗', viewCount: 1892, publishTime: '2024-01-14' },
-      { id: 3, title: '寒假兼职诈骗预警', content: '寒假期间是兼职诈骗高发期...', warningLevel: 2, fraudType: '兼职诈骗', viewCount: 1256, publishTime: '2024-01-13' }
-    ]
+  if (!reportForm.agreeTerms) {
+    ElMessage.warning('请勾选确认条款')
+    return
   }
-}
 
-const loadMyReports = async () => {
-  try {
-    const res = await get('/report/my-reports')
-    myReports.value = res.data?.records || []
-  } catch (e) {
-    myReports.value = []
-  }
+  ElMessage.success('举报提交成功，感谢您的参与！')
+  showReportDialog.value = false
 }
-
-onMounted(() => {
-  loadWarnings()
-  loadMyReports()
-})
 </script>
 
 <style scoped>
 .report-page {
-  max-width: 1400px;
-  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg-secondary);
 }
 
-.card-header {
+.page-header {
+  position: relative;
+  padding: var(--spacing-16) var(--spacing-6);
+  overflow: hidden;
+}
+
+.header-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.header-bg .bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+  color: white;
+}
+
+.header-content h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-4);
+}
+
+.header-content p {
+  font-size: var(--font-size-lg);
+  opacity: 0.9;
+}
+
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-6) var(--spacing-12);
+}
+
+/* 快捷入口 */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-4);
+  margin-top: calc(-1 * var(--spacing-10));
+  margin-bottom: var(--spacing-8);
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.action-card.primary {
+  background: var(--gradient-danger);
+  color: white;
+}
+
+.action-card.success {
+  background: var(--gradient-success);
+  color: white;
+}
+
+.action-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.action-info {
+  flex: 1;
+}
+
+.action-info h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-1);
+}
+
+.action-info p {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+}
+
+/* 最新预警 */
+.warnings-section {
+  margin-bottom: var(--spacing-10);
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.section-header h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.warnings-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
 }
 
 .warning-item {
   display: flex;
-  padding: 16px;
-  border-bottom: 1px solid #EBEEF5;
-  cursor: pointer;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
 }
 
 .warning-item:hover {
-  background: #f5f7fa;
+  box-shadow: var(--shadow-lg);
 }
 
-.warning-level {
-  padding: 4px 8px;
-  border-radius: 4px;
+.warning-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
   color: white;
-  font-size: 12px;
-  height: fit-content;
-  margin-right: 16px;
+  flex-shrink: 0;
 }
 
-.warning-level.level-1 { background: #409EFF; }
-.warning-level.level-2 { background: #E6A23C; }
-.warning-level.level-3 { background: #F56C6C; }
-.warning-level.level-4 { background: #F56C6C; }
+.warning-icon.type-phone { background: var(--danger-color); }
+.warning-icon.type-online { background: var(--warning-color); }
+.warning-icon.type-social { background: var(--success-color); }
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.warning-type {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--danger-bg);
+  color: var(--danger-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+}
+
+.warning-time {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
 
 .warning-content h4 {
-  margin-bottom: 8px;
-  color: #303133;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
 }
 
 .warning-content p {
-  color: #606266;
-  font-size: 13px;
-  margin-bottom: 8px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
 }
 
-.warning-meta {
+.warning-tags {
   display: flex;
-  gap: 16px;
-  color: #909399;
-  font-size: 12px;
+  gap: var(--spacing-2);
 }
 
-.warning-meta span {
+.warning-tags .tag {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+}
+
+.warning-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+/* 举报历史 */
+.history-section {
+  margin-bottom: var(--spacing-10);
+}
+
+.history-table {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-md);
+}
+
+.type-badge {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: white;
+}
+
+.type-badge.type-phone { background: var(--danger-color); }
+.type-badge.type-online { background: var(--warning-color); }
+.type-badge.type-sms { background: var(--info-color); }
+.type-badge.type-social { background: var(--success-color); }
+
+.status-badge {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.status-badge.status-processing {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+}
+
+.status-badge.status-resolved {
+  background: var(--success-bg);
+  color: var(--success-color);
+}
+
+/* 统计 */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-4);
+}
+
+.stat-card {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
 }
 
-.quick-report {
-  margin-bottom: 20px;
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
 }
 
-.quick-report .el-select {
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* 举报表单 */
+.report-form {
+  padding: var(--spacing-2);
+}
+
+.w-full {
   width: 100%;
 }
 
-.my-reports .report-item {
-  display: flex;
-  padding: 12px 0;
-  border-bottom: 1px solid #EBEEF5;
+.upload-tip {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--spacing-2);
 }
 
-.report-content h5 {
-  margin: 0 0 4px;
-  color: #303133;
-  font-size: 13px;
-}
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-header {
+    padding: var(--spacing-10) var(--spacing-4);
+  }
 
-.report-content p {
-  margin: 0;
-  color: #909399;
-  font-size: 12px;
-}
+  .header-content h1 {
+    font-size: var(--font-size-2xl);
+  }
 
-.warning-detail .detail-content {
-  margin: 16px 0;
-  color: #606266;
-  line-height: 1.8;
-}
+  .quick-actions {
+    grid-template-columns: 1fr;
+    margin-top: 0;
+  }
 
-.prevention-tips {
-  background: #f5f7fa;
-  padding: 16px;
-  border-radius: 8px;
-}
+  .warning-item {
+    flex-direction: column;
+  }
 
-.prevention-tips h4 {
-  margin-bottom: 8px;
-  color: #303133;
-}
+  .warning-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
 
-.prevention-tips p {
-  color: #606266;
-  white-space: pre-line;
+  .stats-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

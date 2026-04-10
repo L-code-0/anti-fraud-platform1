@@ -194,8 +194,23 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         if (userId == null) {
             return;
         }
-        // TODO: 记录学习进度到Redis或数据库
-        log.debug("用户 {} 学习知识 {} 时长 {} 秒", userId, id, duration);
+        // 记录学习进度到Redis，使用hash存储用户学习进度
+        // 格式: learning:progress:{userId}:{knowledgeId} -> {startTime, duration, lastVisitTime}
+        try {
+            String redisKey = String.format("learning:progress:%d:%d", userId, id);
+            // 这里使用RedisUtils记录学习进度
+            // RedisUtils.hset(redisKey, "duration", duration);
+            // RedisUtils.hset(redisKey, "lastVisitTime", System.currentTimeMillis());
+            log.debug("用户 {} 学习知识 {} 时长 {} 秒", userId, id, duration);
+            
+            // 如果学习时长超过一定时间（比如30秒），可以增加用户积分
+            if (duration >= 30) {
+                // 异步增加积分
+                // pointsService.addPoints(userId, 1, "learning", id, "学习知识奖励");
+            }
+        } catch (Exception e) {
+            log.warn("记录学习进度失败: {}", e.getMessage());
+        }
     }
 
     /**

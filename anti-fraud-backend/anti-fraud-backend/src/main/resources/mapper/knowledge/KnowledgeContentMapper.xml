@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.knowledge.mapper.KnowledgeContentMapper">
+
+    <!-- 知识列表查询 - 使用LEFT JOIN避免N+1查询 -->
+    <select id="selectKnowledgePage" resultType="java.util.Map">
+        SELECT 
+            kc.id,
+            kc.title,
+            kc.summary,
+            kc.content_type as contentType,
+            kc.cover_image as coverImage,
+            kc.category_id as categoryId,
+            kc.category_name as categoryName,
+            kc.view_count as viewCount,
+            kc.collect_count as collectCount,
+            kc.like_count as likeCount,
+            kc.share_count as shareCount,
+            kc.author_name as authorName,
+            kc.is_top as isTop,
+            kc.publish_time as publishTime,
+            kc.status,
+            kc.audit_status as auditStatus,
+            CASE kc.content_type
+                WHEN 'ARTICLE' THEN '文章'
+                WHEN 'VIDEO' THEN '视频'
+                WHEN 'CASE_STUDY' THEN '案例'
+                WHEN 'FAQ' THEN '问答'
+                ELSE '其他'
+            END as contentTypeName,
+            CASE kc.status
+                WHEN 0 THEN '草稿'
+                WHEN 1 THEN '已发布'
+                WHEN 2 THEN '已下架'
+                ELSE '未知'
+            END as statusName,
+            CASE kc.audit_status
+                WHEN 0 THEN '待审核'
+                WHEN 1 THEN '已通过'
+                WHEN 2 THEN '未通过'
+                ELSE '未知'
+            END as auditStatusName,
+            CASE 
+                WHEN kc.is_top = 1 THEN '是'
+                ELSE '否'
+            END as isTopName
+        FROM knowledge_content kc
+        WHERE kc.deleted = 0
+        <if test="categoryId != null">
+            AND kc.category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (kc.title LIKE CONCAT('%', #{keyword}, '%') OR kc.summary LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="contentType != null and contentType != ''">
+            AND kc.content_type = #{contentType}
+        </if>
+        <if test="status != null">
+            AND kc.status = #{status}
+        </if>
+        <if test="auditStatus != null">
+            AND kc.audit_status = #{auditStatus}
+        </if>
+        ORDER BY kc.is_top DESC, kc.publish_time DESC
+    </select>
+
+    <!-- 热门知识列表 - 关联分类表 -->
+    <select id="selectHotKnowledge" resultType="java.util.Map">
+        SELECT 
+            kc.id,
+            kc.title,
+            kc.summary,
+            kc.content_type as contentType,
+            kc.cover_image as coverImage,
+            kc.category_name as categoryName,
+            kc.view_count as viewCount,
+            kc.collect_count as collectCount,
+            kc.like_count as likeCount,
+            cat.icon as categoryIcon,
+            cat.color as categoryColor
+        FROM knowledge_content kc
+        LEFT JOIN knowledge_category cat ON kc.category_id = cat.id AND cat.deleted = 0
+        WHERE kc.deleted = 0 AND kc.status = 1 AND kc.audit_status = 1
+        ORDER BY kc.view_count DESC, kc.collect_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 推荐知识列表 - 关联用户收藏状态 -->
+    <select id="selectRecommendedKnowledge" resultType="java.util.Map">
+        SELECT 
+            kc.id,
+            kc.title,
+            kc.summary,
+            kc.content_type as contentType,
+            kc.cover_image as coverImage,
+            kc.category_name as categoryName,
+            kc.view_count as viewCount,
+            kc.author_name as authorName,
+            kc.publish_time as publishTime,
+            CASE WHEN fc.id IS NOT NULL THEN 1 ELSE 0 END as isCollected
+        FROM knowledge_content kc
+        LEFT JOIN favorites_collection fc ON kc.id = fc.resource_id AND fc.resource_type = 'KNOWLEDGE' AND fc.user_id = #{userId} AND fc.deleted = 0
+        WHERE kc.deleted = 0 AND kc.status = 1 AND kc.audit_status = 1
+        ORDER BY kc.publish_time DESC, kc.view_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 知识详情 - 关联分类信息 -->
+    <select id="selectKnowledgeDetail" resultType="java.util.Map">
+        SELECT 
+            kc.id,
+            kc.title,
+            kc.summary,
+            kc.content,
+            kc.content_type as contentType,
+            kc.cover_image as coverImage,
+            kc.category_id as categoryId,
+            kc.category_name as categoryName,
+            kc.view_count as viewCount,
+            kc.collect_count as collectCount,
+            kc.like_count as likeCount,
+            kc.share_count as shareCount,
+            kc.author_name as authorName,
+            kc.author_id as authorId,
+            kc.is_top as isTop,
+            kc.publish_time as publishTime,
+            kc.keywords,
+            kc.tags,
+            cat.icon as categoryIcon,
+            cat.color as categoryColor,
+            CASE WHEN fc.id IS NOT NULL THEN 1 ELSE 0 END as isCollected,
+            CASE WHEN fl.id IS NOT NULL THEN 1 ELSE 0 END as isLiked
+        FROM knowledge_content kc
+        LEFT JOIN knowledge_category cat ON kc.category_id = cat.id AND cat.deleted = 0
+        LEFT JOIN favorites_collection fc ON kc.id = fc.resource_id AND fc.resource_type = 'KNOWLEDGE' AND fc.user_id = #{userId} AND fc.deleted = 0
+        LEFT JOIN favorites_like fl ON kc.id = fl.resource_id AND fl.resource_type = 'KNOWLEDGE' AND fl.user_id = #{userId} AND fl.deleted = 0
+        WHERE kc.id = #{id} AND kc.deleted = 0
+    </select>
+
+    <!-- 更新浏览量 -->
+    <update id="incrementViewCount">
+        UPDATE knowledge_content 
+        SET view_count = view_count + 1 
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 批量更新分类的知识数量 -->
+    <update id="updateCategoryKnowledgeCount">
+        UPDATE knowledge_category cat
+        SET knowledge_count = (
+            SELECT COUNT(*) FROM knowledge_content 
+            WHERE category_id = cat.id AND deleted = 0 AND status = 1 AND audit_status = 1
+        )
+        WHERE cat.deleted = 0
+    </update>
+
+</mapper>

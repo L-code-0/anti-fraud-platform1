@@ -8,10 +8,10 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 
-// 引入全局样式
-import './styles/variables.css'
-import './styles/global.css'
-import './styles/animations.css'
+// 引入全局样式 - 设计系统 V3.0
+import './styles/design-system.css'  // 新设计系统变量
+import './styles/components.css'      // 通用组件样式
+import './styles/animations.css'      // 动画样式
 
 const app = createApp(App)
 

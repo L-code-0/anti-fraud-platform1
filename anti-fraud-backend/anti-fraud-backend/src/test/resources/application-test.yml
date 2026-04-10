@@ -1,0 +1,33 @@
+# 测试配置文件
+spring:
+  application:
+    name: anti-fraud-backend-test
+  
+  # 数据源配置（测试环境）
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  
+  # Redis配置（测试环境使用嵌入式Redis）
+  redis:
+    host: localhost
+    port: 6379
+
+# JWT配置
+jwt:
+  secret: test_secret_key_for_unit_testing_only
+  expiration: 86400000
+
+# 日志配置
+logging:
+  level:
+    root: WARN
+    com.anti.fraud: INFO

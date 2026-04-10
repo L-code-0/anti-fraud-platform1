@@ -1,435 +1,490 @@
 <template>
   <div class="leaderboard-page">
-    <!-- 头部 -->
-    <div class="header">
-      <h1>排行榜</h1>
-      <div class="header-tabs">
-        <el-radio-group v-model="activeType" @change="handleTypeChange">
-          <el-radio-button value="points">
-            <el-icon><Star /></el-icon> 积分榜
-          </el-radio-button>
-          <el-radio-button value="learning">
-            <el-icon><Reading /></el-icon> 学习榜
-          </el-radio-button>
-          <el-radio-button value="test">
-            <el-icon><Document /></el-icon> 考试榜
-          </el-radio-button>
-          <el-radio-button value="simulation">
-            <el-icon><Monitor /></el-icon> 演练榜
-          </el-radio-button>
-        </el-radio-group>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-bg">
+        <div class="bg-gradient"></div>
+      </div>
+      <div class="header-content">
+        <h1>排行榜</h1>
+        <p>看看谁是防诈达人，向优秀学习</p>
       </div>
     </div>
 
-    <!-- 我的排名 -->
-    <div class="my-rank-card" v-if="myRank > 0">
-      <div class="my-rank-info">
-        <el-avatar :size="50" class="my-avatar">
-          {{ userStore.userInfo?.realName?.charAt(0) || '我' }}
-        </el-avatar>
-        <div class="my-info">
-          <span class="my-name">{{ userStore.userInfo?.realName || '我' }}</span>
-          <span class="my-level">Lv.{{ userStore.userInfo?.level || 1 }}</span>
+    <div class="page-container">
+      <!-- 筛选和视图 -->
+      <div class="toolbar">
+        <div class="type-tabs">
+          <button
+            v-for="tab in typeTabs"
+            :key="tab.id"
+            class="tab-btn"
+            :class="{ active: activeType === tab.id }"
+            @click="activeType = tab.id"
+          >
+            <el-icon><component :is="tab.icon" /></el-icon>
+            {{ tab.name }}
+          </button>
         </div>
-        <div class="my-rank-detail">
-          <span class="rank-label">我的排名</span>
-          <span class="rank-value">第 {{ myRank }} 名</span>
-          <span class="rank-total">/ {{ totalUsers }}人</span>
-        </div>
-      </div>
-      <div class="my-rank-progress">
-        <el-progress 
-          :percentage="Math.round((1 - myRank / totalUsers) * 100)" 
-          :stroke-width="8"
-          :show-text="false"
-        />
-        <span class="progress-label">超过 {{ Math.round((1 - myRank / totalUsers) * 100) }}% 的用户</span>
-      </div>
-    </div>
 
-    <!-- 顶部三名 -->
-    <div class="top-three-container" v-if="!loading && achievementStore.leaderboard.length > 0">
+        <div class="time-filter">
+          <el-select v-model="timeRange" placeholder="时间范围">
+            <el-option label="本周" value="week" />
+            <el-option label="本月" value="month" />
+            <el-option label="本季度" value="quarter" />
+            <el-option label="全部" value="all" />
+          </el-select>
+        </div>
+      </div>
+
+      <!-- TOP3展示 -->
       <div class="top-three">
-        <div 
-          v-for="(entry, index) in topThree" 
-          :key="entry.userId"
-          class="top-item"
-          :class="`rank-${index + 1}`"
-        >
-          <div class="rank-badge">
-            <span v-if="index === 0" class="medal">🥇</span>
-            <span v-else-if="index === 1" class="medal">🥈</span>
-            <span v-else class="medal">🥉</span>
+        <div class="rank-card second" v-if="topThree[1]">
+          <div class="rank-avatar">
+            <img :src="topThree[1].avatar" :alt="topThree[1].name" />
           </div>
-          <div class="avatar-wrapper">
-            <el-avatar :size="80" :src="entry.userAvatar" class="user-avatar">
-              {{ entry.userName.charAt(0) }}
-            </el-avatar>
-            <div v-if="index === 0" class="crown">👑</div>
+          <div class="rank-crown">
+            <el-icon><Trophy /></el-icon>
           </div>
-          <div class="user-info">
-            <span class="user-name">{{ entry.userName }}</span>
-            <span class="user-institution">{{ entry.institution }}</span>
+          <div class="rank-badge">2</div>
+          <h4>{{ topThree[1].name }}</h4>
+          <p>{{ topThree[1].school }}</p>
+          <div class="rank-score">{{ topThree[1].score }}分</div>
+        </div>
+
+        <div class="rank-card first" v-if="topThree[0]">
+          <div class="rank-avatar">
+            <img :src="topThree[0].avatar" :alt="topThree[0].name" />
+            <div class="avatar-glow"></div>
           </div>
-          <div class="user-stats">
-            <span class="level-badge">Lv.{{ entry.level }}</span>
-            <span class="score">{{ formatScore(entry.points, activeType) }}</span>
+          <div class="rank-crown crown-gold">
+            <el-icon><Trophy /></el-icon>
+          </div>
+          <div class="rank-badge">1</div>
+          <h4>{{ topThree[0].name }}</h4>
+          <p>{{ topThree[0].school }}</p>
+          <div class="rank-score">{{ topThree[0].score }}分</div>
+        </div>
+
+        <div class="rank-card third" v-if="topThree[2]">
+          <div class="rank-avatar">
+            <img :src="topThree[2].avatar" :alt="topThree[2].name" />
+          </div>
+          <div class="rank-crown crown-bronze">
+            <el-icon><Trophy /></el-icon>
+          </div>
+          <div class="rank-badge">3</div>
+          <h4>{{ topThree[2].name }}</h4>
+          <p>{{ topThree[2].school }}</p>
+          <div class="rank-score">{{ topThree[2].score }}分</div>
+        </div>
+      </div>
+
+      <!-- 完整排行 -->
+      <div class="leaderboard-list">
+        <div class="list-header">
+          <span class="col-rank">排名</span>
+          <span class="col-user">用户</span>
+          <span class="col-school">学校</span>
+          <span class="col-score">积分</span>
+          <span class="col-tests">测试数</span>
+          <span class="col-rate">通过率</span>
+        </div>
+
+        <div class="list-body">
+          <div
+            class="list-item"
+            v-for="(user, index) in leaderboard"
+            :key="user.id"
+            :class="{ highlight: user.isCurrentUser }"
+          >
+            <div class="col-rank">
+              <span class="rank-num">{{ user.rank }}</span>
+            </div>
+            <div class="col-user">
+              <div class="user-avatar">
+                <img :src="user.avatar" :alt="user.name" />
+                <span v-if="user.rank <= 3" class="rank-indicator" :class="'rank-' + user.rank">
+                  <el-icon><Trophy /></el-icon>
+                </span>
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ user.name }}</span>
+                <span class="user-level">Lv.{{ user.level }}</span>
+              </div>
+            </div>
+            <div class="col-school">{{ user.school }}</div>
+            <div class="col-score">
+              <span class="score-value">{{ user.score }}</span>
+              <span class="score-unit">分</span>
+            </div>
+            <div class="col-tests">{{ user.tests }}次</div>
+            <div class="col-rate">
+              <el-progress
+                :percentage="user.passRate"
+                :stroke-width="6"
+                :show-text="false"
+              />
+              <span class="rate-value">{{ user.passRate }}%</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 排行榜列表 -->
-    <div class="leaderboard-list" v-loading="loading">
-      <template v-if="!loading">
-        <div 
-          v-for="(entry, index) in restEntries" 
-          :key="entry.userId"
-          class="list-item"
-          :class="{ 'is-current-user': entry.isCurrentUser }"
-        >
-          <div class="rank">
-            <span v-if="entry.rank <= 10" class="rank-top">{{ entry.rank }}</span>
-            <span v-else class="rank-number">{{ entry.rank }}</span>
-          </div>
-          <el-avatar :size="44" :src="entry.userAvatar" class="user-avatar">
-            {{ entry.userName.charAt(0) }}
-          </el-avatar>
-          <div class="user-info">
-            <span class="user-name">
-              {{ entry.userName }}
-              <el-tag v-if="entry.isCurrentUser" size="small" type="primary">我</el-tag>
-            </span>
-            <span class="user-institution">{{ entry.institution }}</span>
-          </div>
-          <div class="user-level">
-            <el-tag size="small" type="warning">Lv.{{ entry.level }}</el-tag>
-          </div>
-          <div class="user-score">
-            <span class="score-value">{{ formatScore(entry.points, activeType) }}</span>
-            <span class="score-label">{{ getScoreLabel(activeType) }}</span>
-          </div>
-          <div class="user-badge" v-if="entry.rank <= 3">
-            <span class="badge-icon">🎖️</span>
-          </div>
-        </div>
-      </template>
-      
-      <el-skeleton v-else :rows="10" animated />
-    </div>
-
-    <!-- 分页 -->
-    <div class="pagination-wrapper" v-if="total > pageSize">
-      <el-pagination
-        v-model:current-page="currentPage"
-        :page-size="pageSize"
-        :total="total"
-        layout="prev, pager, next"
-      />
+      <!-- 分页 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="20"
+          :total="total"
+          :background="true"
+          layout="prev, pager, next"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Star, Reading, Document, Monitor } from '@element-plus/icons-vue'
-import { useAchievementStore } from '@/stores/achievement'
-import { useUserStore } from '@/stores/user'
-import type { LeaderboardType } from '@/types'
+import { ref } from 'vue'
+import { Trophy } from '@element-plus/icons-vue'
 
-const achievementStore = useAchievementStore()
-const userStore = useUserStore()
-
-const activeType = ref<LeaderboardType>('points')
+const activeType = ref('score')
+const timeRange = ref('week')
 const currentPage = ref(1)
-const pageSize = ref(20)
-const myRank = ref(0)
-const totalUsers = ref(100)
+const total = ref(100)
 
-const loading = computed(() => achievementStore.loading)
-const total = computed(() => achievementStore.leaderboard.length)
-const topThree = computed(() => achievementStore.leaderboard.slice(0, 3))
-const restEntries = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return achievementStore.leaderboard.slice(start, end).map((entry, index) => ({
-    ...entry,
-    rank: start + index + 1,
-    isCurrentUser: entry.userId === userStore.userInfo?.id
-  }))
-})
+const typeTabs = [
+  { id: 'score', name: '积分排行', icon: 'Trophy' },
+  { id: 'tests', name: '测试排行', icon: 'EditPen' },
+  { id: 'streak', name: '连续学习', icon: 'Timer' },
+  { id: 'reports', name: '举报排行', icon: 'WarnTriangleFilled' }
+]
 
-function getScoreLabel(type: LeaderboardType): string {
-  const labels = {
-    points: '积分',
-    learning: '学习时长',
-    test: '平均分',
-    simulation: '演练得分'
+const topThree = ref([
+  {
+    id: 1,
+    name: '张明',
+    avatar: 'https://picsum.photos/seed/user1/200/200',
+    school: '计算机学院',
+    score: 9850,
+    tests: 156,
+    passRate: 98
+  },
+  {
+    id: 2,
+    name: '李小红',
+    avatar: 'https://picsum.photos/seed/user2/200/200',
+    school: '信息工程学院',
+    score: 9620,
+    tests: 148,
+    passRate: 96
+  },
+  {
+    id: 3,
+    name: '王强',
+    avatar: 'https://picsum.photos/seed/user3/200/200',
+    school: '软件学院',
+    score: 9400,
+    tests: 142,
+    passRate: 95
   }
-  return labels[type]
-}
+])
 
-function formatScore(score: number, type: LeaderboardType): string {
-  if (type === 'points') {
-    return score.toLocaleString()
-  }
-  if (type === 'learning') {
-    const hours = Math.floor(score / 60)
-    const mins = score % 60
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
-  }
-  return score.toString()
-}
+const leaderboard = ref([
+  { id: 4, rank: 4, name: '赵敏', avatar: 'https://picsum.photos/seed/user4/200/200', school: '网络空间安全学院', score: 9200, level: 12, tests: 138, passRate: 94, isCurrentUser: false },
+  { id: 5, rank: 5, name: '刘洋', avatar: 'https://picsum.photos/seed/user5/200/200', school: '数学学院', score: 9050, level: 11, tests: 135, passRate: 93, isCurrentUser: false },
+  { id: 6, rank: 6, name: '陈静', avatar: 'https://picsum.photos/seed/user6/200/200', school: '物理学院', score: 8900, level: 11, tests: 130, passRate: 92, isCurrentUser: false },
+  { id: 7, rank: 7, name: '周杰', avatar: 'https://picsum.photos/seed/user7/200/200', school: '外语学院', score: 8750, level: 10, tests: 128, passRate: 91, isCurrentUser: true },
+  { id: 8, rank: 8, name: '吴琳', avatar: 'https://picsum.photos/seed/user8/200/200', school: '经济管理学院', score: 8600, level: 10, tests: 125, passRate: 90, isCurrentUser: false },
+  { id: 9, rank: 9, name: '郑浩', avatar: 'https://picsum.photos/seed/user9/200/200', school: '计算机学院', score: 8450, level: 10, tests: 122, passRate: 89, isCurrentUser: false },
+  { id: 10, rank: 10, name: '孙丽', avatar: 'https://picsum.photos/seed/user10/200/200', school: '软件学院', score: 8300, level: 9, tests: 120, passRate: 88, isCurrentUser: false }
+])
 
-async function handleTypeChange(type: LeaderboardType) {
-  await achievementStore.fetchLeaderboard(type)
-  await fetchMyRank(type)
+const handlePageChange = (page: number) => {
+  currentPage.value = page
 }
-
-async function fetchMyRank(type: LeaderboardType) {
-  const result = await achievementStore.getUserRank(type)
-  if (result) {
-    myRank.value = result.rank
-    totalUsers.value = result.total
-  }
-}
-
-onMounted(async () => {
-  await achievementStore.fetchLeaderboard('points')
-  await fetchMyRank('points')
-})
 </script>
 
 <style scoped>
 .leaderboard-page {
-  max-width: 1000px;
+  min-height: 100vh;
+  background: var(--bg-secondary);
+}
+
+.page-header {
+  position: relative;
+  padding: var(--spacing-16) var(--spacing-6);
+  overflow: hidden;
+}
+
+.header-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.header-bg .bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 24px;
-}
-
-.header {
-  margin-bottom: 24px;
-}
-
-.header h1 {
-  margin: 0 0 20px;
-  font-size: 28px;
   text-align: center;
-}
-
-.header-tabs {
-  display: flex;
-  justify-content: center;
-}
-
-/* 我的排名 */
-.my-rank-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
   color: white;
 }
 
-.my-rank-info {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
+.header-content h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-4);
 }
 
-.my-avatar {
-  border: 3px solid rgba(255, 255, 255, 0.5);
-}
-
-.my-info {
-  margin-left: 16px;
-  display: flex;
-  flex-direction: column;
-}
-
-.my-name {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.my-level {
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.my-rank-detail {
-  margin-left: auto;
-  text-align: right;
-}
-
-.rank-label {
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.rank-value {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 4px;
-}
-
-.rank-total {
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.my-rank-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.my-rank-progress :deep(.el-progress-bar__outer) {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.progress-label {
-  font-size: 14px;
+.header-content p {
+  font-size: var(--font-size-lg);
   opacity: 0.9;
-  white-space: nowrap;
 }
 
-/* 顶部三名 */
-.top-three-container {
-  margin-bottom: 24px;
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-6) var(--spacing-12);
 }
 
+/* 工具栏 */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-8);
+}
+
+.type-tabs {
+  display: flex;
+  gap: var(--spacing-2);
+  background: var(--bg-primary);
+  padding: var(--spacing-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--primary-color);
+}
+
+.tab-btn.active {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: var(--shadow-primary);
+}
+
+.time-filter :deep(.el-select) {
+  width: 140px;
+}
+
+/* TOP3 */
 .top-three {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 16px;
-  padding: 32px 24px;
-  background: linear-gradient(180deg, #f5f7fa 0%, white 100%);
-  border-radius: 16px;
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-10);
+  padding: var(--spacing-8) 0;
 }
 
-.top-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 24px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s, box-shadow 0.3s;
+.rank-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-normal);
   position: relative;
+  width: 200px;
 }
 
-.top-item:hover {
+.rank-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-xl);
 }
 
-.top-item.rank-1 {
-  transform: scale(1.15);
-  z-index: 2;
-  order: 2;
-  background: linear-gradient(180deg, #fff9e6 0%, white 100%);
-  border: 2px solid #ffd700;
+.rank-card.first {
+  background: linear-gradient(180deg, #fef3c7 0%, #ffffff 100%);
+  border: 2px solid #fbbf24;
+  padding-top: var(--spacing-8);
 }
 
-.top-item.rank-1:hover {
-  transform: scale(1.2) translateY(-8px);
+.rank-card.second {
+  background: linear-gradient(180deg, #f3f4f6 0%, #ffffff 100%);
+  border: 2px solid #9ca3af;
 }
 
-.top-item.rank-2 {
-  order: 1;
+.rank-card.third {
+  background: linear-gradient(180deg, #fed7aa 0%, #ffffff 100%);
+  border: 2px solid #f97316;
 }
 
-.top-item.rank-3 {
-  order: 3;
-}
-
-.rank-badge {
-  margin-bottom: 8px;
-}
-
-.medal {
-  font-size: 36px;
-}
-
-.avatar-wrapper {
+.rank-avatar {
   position: relative;
-  margin-bottom: 12px;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--spacing-3);
+  border-radius: 50%;
+  overflow: visible;
 }
 
-.crown {
+.rank-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: var(--shadow-md);
+}
+
+.rank-card.first .rank-avatar img {
+  width: 96px;
+  height: 96px;
+  border: 4px solid #fbbf24;
+}
+
+.avatar-glow {
+  position: absolute;
+  inset: -8px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.2); opacity: 0.2; }
+}
+
+.rank-crown {
   position: absolute;
   top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 28px;
-}
-
-.top-item .user-avatar {
-  border: 4px solid #f0f0f0;
-}
-
-.top-item.rank-1 .user-avatar {
-  border-color: #ffd700;
-}
-
-.user-info {
-  text-align: center;
-  margin-bottom: 8px;
-}
-
-.user-name {
+  width: 40px;
+  height: 40px;
+  background: #9ca3af;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.user-institution {
-  font-size: 12px;
-  color: #999;
-}
-
-.user-stats {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.level-badge {
-  font-size: 12px;
-  padding: 2px 8px;
-  background: #fff3e0;
-  color: #ff9800;
-  border-radius: 10px;
-}
-
-.score {
+  color: white;
   font-size: 20px;
-  font-weight: 700;
-  color: #409eff;
+}
+
+.rank-crown.crown-gold {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.rank-crown.crown-bronze {
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.rank-badge {
+  position: absolute;
+  top: var(--spacing-3);
+  right: var(--spacing-3);
+  width: 28px;
+  height: 28px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: white;
+}
+
+.rank-card.first .rank-badge {
+  background: #fbbf24;
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-base);
+}
+
+.rank-card h4 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.rank-card p {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.rank-score {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* 排行榜列表 */
 .leaderboard-list {
-  background: white;
-  border-radius: 16px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: var(--spacing-6);
+}
+
+.list-header {
+  display: grid;
+  grid-template-columns: 80px 200px 1fr 100px 100px 150px;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--bg-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.list-body {
+  padding: 0 var(--spacing-4);
 }
 
 .list-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 80px 200px 1fr 100px 100px 150px;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-2);
+  border-bottom: 1px solid var(--border-secondary);
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.2s;
+  transition: background var(--transition-fast);
 }
 
 .list-item:last-child {
@@ -437,119 +492,202 @@ onMounted(async () => {
 }
 
 .list-item:hover {
-  background-color: #f5f7fa;
+  background: var(--bg-hover);
 }
 
-.list-item.is-current-user {
-  background-color: #ecf5ff;
+.list-item.highlight {
+  background: var(--primary-bg);
 }
 
-.rank {
-  width: 40px;
-  text-align: center;
-}
-
-.rank-top {
-  display: inline-flex;
+.col-rank .rank-num {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
-  font-weight: 700;
-  color: white;
-  background: linear-gradient(135deg, #ff9800, #ff5722);
+  width: 32px;
+  height: 32px;
+  background: var(--bg-secondary);
   border-radius: 50%;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
 }
 
-.list-item:nth-child(1) .rank-top { background: linear-gradient(135deg, #ffd700, #ff9800); }
-.list-item:nth-child(2) .rank-top { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); }
-.list-item:nth-child(3) .rank-top { background: linear-gradient(135deg, #cd7f32, #b8860b); }
-
-.rank-number {
-  font-size: 16px;
-  font-weight: 600;
-  color: #999;
+.col-user {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
 }
 
-.list-item .user-avatar {
-  margin: 0 16px;
+.user-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: visible;
 }
 
-.list-item .user-info {
-  flex: 1;
-  min-width: 0;
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.list-item .user-info .user-name {
-  justify-content: flex-start;
+.rank-indicator {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
 }
 
-.list-item .user-info .user-institution {
-  font-size: 12px;
-  color: #999;
+.rank-indicator.rank-1 { background: #fbbf24; }
+.rank-indicator.rank-2 { background: #9ca3af; }
+.rank-indicator.rank-3 { background: #f97316; }
+
+.user-info {
+  display: flex;
+  flex-direction: column;
 }
 
-.list-item .user-level {
-  margin-right: 16px;
+.user-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
 }
 
-.list-item .user-score {
-  text-align: right;
-  min-width: 80px;
+.user-level {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.col-school {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.col-score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-1);
 }
 
 .score-value {
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: #409eff;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary-color);
 }
 
-.score-label {
-  font-size: 12px;
-  color: #999;
+.score-unit {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
 }
 
-.user-badge {
-  margin-left: 12px;
+.col-tests {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
-.badge-icon {
-  font-size: 20px;
+.col-rate {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
 }
 
+.rate-value {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  min-width: 36px;
+}
+
+.col-rate :deep(.el-progress-bar__outer) {
+  border-radius: var(--radius-full);
+}
+
+.col-rate :deep(.el-progress-bar__inner) {
+  border-radius: var(--radius-full);
+}
+
+/* 分页 */
 .pagination-wrapper {
-  margin-top: 24px;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+}
+
+.pagination-wrapper :deep(.el-pagination) {
+  background: var(--bg-primary);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .list-header {
+    display: none;
+  }
+
+  .list-item {
+    grid-template-columns: 60px 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--spacing-2);
+    padding: var(--spacing-4);
+  }
+
+  .col-school,
+  .col-tests,
+  .col-rate {
+    grid-column: 2;
+    font-size: var(--font-size-xs);
+  }
+
+  .col-score {
+    position: absolute;
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+  }
+
+  .list-item {
+    position: relative;
+  }
 }
 
 @media (max-width: 768px) {
-  .leaderboard-page {
-    padding: 16px;
+  .page-header {
+    padding: var(--spacing-10) var(--spacing-4);
   }
-  
+
+  .header-content h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .toolbar {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .type-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
   .top-three {
     flex-direction: column;
     align-items: center;
+    gap: var(--spacing-4);
   }
-  
-  .top-item {
+
+  .rank-card {
     width: 100%;
-    max-width: 300px;
+    max-width: 280px;
   }
-  
-  .top-item.rank-1 {
-    transform: none;
-    order: 1;
-  }
-  
-  .list-item {
-    padding: 12px;
-  }
-  
-  .list-item .user-level {
-    display: none;
+
+  .rank-card.first {
+    order: -1;
   }
 }
 </style>

@@ -1,462 +1,878 @@
 <template>
-  <div class="notification-center">
-    <!-- 头部 -->
-    <div class="header">
-      <h1>消息中心</h1>
-      <div class="header-actions">
-        <el-button 
-          v-if="notificationStore.unreadCount > 0"
-          type="primary"
-          @click="handleMarkAllRead"
-        >
-          全部已读
-        </el-button>
-        <el-button @click="handleOpenSettings">
-          <el-icon><Setting /></el-icon>
-          通知设置
-        </el-button>
+  <div class="notifications-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-bg">
+        <div class="bg-gradient"></div>
+      </div>
+      <div class="header-content">
+        <h1>消息通知</h1>
+        <p>查看系统通知、学习提醒和互动消息</p>
       </div>
     </div>
 
-    <!-- 筛选 -->
-    <div class="filter-bar">
-      <el-radio-group v-model="filterType">
-        <el-radio-button value="all">全部通知</el-radio-button>
-        <el-radio-button value="unread">未读</el-radio-button>
-        <el-radio-button value="system">系统</el-radio-button>
-        <el-radio-button value="warning">预警</el-radio-button>
-        <el-radio-button value="achievement">成就</el-radio-button>
-        <el-radio-button value="test">考试</el-radio-button>
-      </el-radio-group>
-    </div>
-
-    <!-- 通知列表 -->
-    <div class="notification-list" v-loading="loading">
-      <template v-if="filteredNotifications.length > 0">
-        <div 
-          v-for="notification in filteredNotifications" 
-          :key="notification.id"
-          class="notification-item"
-          :class="{ unread: !notification.isRead, [`priority-${notification.priority}`]: true }"
-        >
-          <div class="item-icon" :class="`type-${notification.type}`">
-            <el-icon>
-              <component :is="getNotificationIcon(notification.type)" />
-            </el-icon>
+    <div class="page-container">
+      <!-- 通知统计 -->
+      <div class="stats-row">
+        <div class="stat-card" v-for="stat in notificationStats" :key="stat.label">
+          <div class="stat-icon" :class="'icon-' + stat.type">
+            <el-icon><component :is="stat.icon" /></el-icon>
           </div>
-          <div class="item-content" @click="handleClick(notification)">
-            <div class="item-header">
-              <span class="item-title">{{ notification.title }}</span>
-              <span class="item-tag" :class="`tag-${notification.type}`">
-                {{ getTypeText(notification.type) }}
+          <div class="stat-info">
+            <span class="stat-value">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 通知分类 -->
+      <div class="notifications-layout">
+        <!-- 左侧分类 -->
+        <div class="categories-sidebar">
+          <div
+            class="category-item"
+            :class="{ active: activeCategory === 'all' }"
+            @click="activeCategory = 'all'"
+          >
+            <el-icon><Bell /></el-icon>
+            <span>全部通知</span>
+            <span class="count">{{ notifications.length }}</span>
+          </div>
+          <div
+            class="category-item"
+            :class="{ active: activeCategory === 'system' }"
+            @click="activeCategory = 'system'"
+          >
+            <el-icon><Setting /></el-icon>
+            <span>系统通知</span>
+            <span class="count">{{ systemCount }}</span>
+          </div>
+          <div
+            class="category-item"
+            :class="{ active: activeCategory === 'learning' }"
+            @click="activeCategory = 'learning'"
+          >
+            <el-icon><Reading /></el-icon>
+            <span>学习提醒</span>
+            <span class="count">{{ learningCount }}</span>
+          </div>
+          <div
+            class="category-item"
+            :class="{ active: activeCategory === 'interaction' }"
+            @click="activeCategory = 'interaction'"
+          >
+            <el-icon><ChatDotRound /></el-icon>
+            <span>互动消息</span>
+            <span class="count">{{ interactionCount }}</span>
+          </div>
+          <div
+            class="category-item"
+            :class="{ active: activeCategory === 'activity' }"
+            @click="activeCategory = 'activity'"
+          >
+            <el-icon><Medal /></el-icon>
+            <span>活动通知</span>
+            <span class="count">{{ activityCount }}</span>
+          </div>
+        </div>
+
+        <!-- 右侧通知列表 -->
+        <div class="notifications-list">
+          <div class="list-header">
+            <div class="header-left">
+              <el-checkbox v-model="selectAll" :indeterminate="isIndeterminate" @change="handleSelectAll">
+                全选
+              </el-checkbox>
+              <span class="selected-count" v-if="selectedNotifications.length > 0">
+                已选择 {{ selectedNotifications.length }} 项
               </span>
             </div>
-            <p class="item-text">{{ notification.content }}</p>
-            <div class="item-footer">
-              <span class="item-time">{{ formatTime(notification.createdAt) }}</span>
-              <span v-if="notification.priority === 'urgent'" class="urgent-tag">紧急</span>
+            <div class="header-actions">
+              <el-button
+                text
+                :disabled="selectedNotifications.length === 0"
+                @click="handleMarkAllRead"
+              >
+                <el-icon><Check /></el-icon>
+                全部已读
+              </el-button>
+              <el-button
+                text
+                type="danger"
+                :disabled="selectedNotifications.length === 0"
+                @click="handleBatchDelete"
+              >
+                <el-icon><Delete /></el-icon>
+                删除
+              </el-button>
             </div>
           </div>
-          <div class="item-actions">
-            <el-button 
-              v-if="!notification.isRead" 
-              text 
-              type="primary"
-              @click="handleMarkRead(notification.id)"
+
+          <div class="notifications">
+            <div
+              class="notification-item"
+              v-for="notification in filteredNotifications"
+              :key="notification.id"
+              :class="{
+                unread: !notification.read,
+                selected: selectedNotifications.includes(notification.id)
+              }"
+              @click="handleNotificationClick(notification)"
             >
-              标记已读
-            </el-button>
-            <el-button text @click="handleDelete(notification.id)">
-              <el-icon><Delete /></el-icon>
-            </el-button>
+              <div class="item-checkbox">
+                <el-checkbox
+                  :model-value="selectedNotifications.includes(notification.id)"
+                  @click.stop
+                  @change="handleSelect(notification.id)"
+                />
+              </div>
+              <div class="item-icon" :class="'type-' + notification.type">
+                <el-icon><component :is="notification.icon" /></el-icon>
+              </div>
+              <div class="item-content">
+                <div class="item-header">
+                  <h4>{{ notification.title }}</h4>
+                  <span class="item-time">{{ notification.time }}</span>
+                </div>
+                <p>{{ notification.content }}</p>
+              </div>
+              <div class="item-actions">
+                <el-tooltip content="标为已读" placement="top">
+                  <el-button
+                    text
+                    circle
+                    @click.stop="handleMarkRead(notification)"
+                    v-if="!notification.read"
+                  >
+                    <el-icon><Message /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button
+                    text
+                    circle
+                    type="danger"
+                    @click.stop="handleDelete(notification)"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div class="empty-state" v-if="filteredNotifications.length === 0">
+              <div class="empty-icon">
+                <el-icon><Bell /></el-icon>
+              </div>
+              <h3>暂无通知</h3>
+              <p>您目前没有{{ activeCategory === 'all' ? '' : getCategoryName(activeCategory) }}相关通知</p>
+            </div>
           </div>
         </div>
-      </template>
-      <el-empty v-else description="暂无通知" />
+      </div>
     </div>
 
-    <!-- 分页 -->
-    <div class="pagination-wrapper" v-if="total > pageSize">
-      <el-pagination
-        v-model:current-page="currentPage"
-        :page-size="pageSize"
-        :total="total"
-        layout="prev, pager, next"
-        @current-change="handlePageChange"
-      />
-    </div>
-
-    <!-- 设置对话框 -->
-    <el-dialog v-model="settingsVisible" title="通知设置" width="500px">
-      <div class="settings-form">
-        <div class="setting-group">
-          <h4>通知类型</h4>
-          <el-checkbox v-model="settings.system">系统通知</el-checkbox>
-          <el-checkbox v-model="settings.warning">预警通知</el-checkbox>
-          <el-checkbox v-model="settings.report">举报反馈</el-checkbox>
-          <el-checkbox v-model="settings.test">考试通知</el-checkbox>
-          <el-checkbox v-model="settings.points">积分变动</el-checkbox>
-          <el-checkbox v-model="settings.achievement">成就解锁</el-checkbox>
-          <el-checkbox v-model="settings.social">社交互动</el-checkbox>
-          <el-checkbox v-model="settings.activity">活动通知</el-checkbox>
+    <!-- 通知详情对话框 -->
+    <el-dialog
+      v-model="showDetailDialog"
+      :title="currentNotification?.title"
+      width="500px"
+    >
+      <div class="detail-content" v-if="currentNotification">
+        <div class="detail-header">
+          <div class="detail-icon" :class="'type-' + currentNotification.type">
+            <el-icon><component :is="currentNotification.icon" /></el-icon>
+          </div>
+          <div class="detail-meta">
+            <span class="detail-type">{{ getTypeName(currentNotification.type) }}</span>
+            <span class="detail-time">{{ currentNotification.time }}</span>
+          </div>
         </div>
-        <div class="setting-group">
-          <h4>通知方式</h4>
-          <el-checkbox v-model="settings.emailNotify">邮件通知</el-checkbox>
-          <el-checkbox v-model="settings.pushNotify">推送通知</el-checkbox>
+        <div class="detail-body">
+          <p>{{ currentNotification.content }}</p>
+          <div class="detail-extra" v-if="currentNotification.extra">
+            <div class="extra-item" v-for="(value, key) in currentNotification.extra" :key="key">
+              <span class="extra-label">{{ key }}</span>
+              <span class="extra-value">{{ value }}</span>
+            </div>
+          </div>
         </div>
       </div>
       <template #footer>
-        <el-button @click="settingsVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveSettings">保存</el-button>
+        <el-button @click="showDetailDialog = false">关闭</el-button>
+        <el-button type="primary" v-if="currentNotification?.action" @click="handleNotificationAction">
+          {{ currentNotification.actionText }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Bell, Delete, Setting, User, Warning, Trophy, Star, Present, ChatDotRound } from '@element-plus/icons-vue'
-import { useNotificationStore } from '@/stores/notification'
-import type { Notification, NotificationType, NotificationSettings } from '@/types'
+import {
+  Bell, Setting, Reading, ChatDotRound, Medal, Check, Delete,
+  Message, Star, Trophy, Gift, Warning, Document, VideoPlay
+} from '@element-plus/icons-vue'
 
-const router = useRouter()
-const notificationStore = useNotificationStore()
-
-const filterType = ref('all')
-const currentPage = ref(1)
-const pageSize = ref(20)
-const settingsVisible = ref(false)
-const settings = ref<NotificationSettings>({
-  system: true,
-  warning: true,
-  report: true,
-  test: true,
-  points: true,
-  achievement: true,
-  social: true,
-  activity: true,
-  emailNotify: false,
-  pushNotify: false
+const activeCategory = ref('all')
+const showDetailDialog = ref(false)
+const currentNotification = ref<any>(null)
+const selectedNotifications = ref<number[]>([])
+const selectAll = ref(false)
+const isIndeterminate = computed(() => {
+  return selectedNotifications.value.length > 0 &&
+    selectedNotifications.value.length < filteredNotifications.value.length
 })
 
-const loading = computed(() => notificationStore.loading)
-const total = computed(() => notificationStore.notifications.length)
+const notificationStats = [
+  { type: 'all', icon: 'Bell', value: 24, label: '全部通知' },
+  { type: 'system', icon: 'Setting', value: 5, label: '系统通知' },
+  { type: 'learning', icon: 'Reading', value: 12, label: '学习提醒' },
+  { type: 'interaction', icon: 'ChatDotRound', value: 7, label: '互动消息' }
+]
+
+const notifications = ref([
+  {
+    id: 1,
+    type: 'learning',
+    icon: 'Reading',
+    title: '您有一篇新文章待学习',
+    content: '《揭秘最新AI换脸诈骗手法》已更新，点击开始学习了解更多防骗技巧',
+    time: '10分钟前',
+    read: false,
+    action: '/knowledge/1',
+    actionText: '立即学习',
+    extra: { '预计时长': '15分钟', '可获积分': '+20' }
+  },
+  {
+    id: 2,
+    type: 'system',
+    icon: 'Trophy',
+    title: '恭喜获得"反诈达人"徽章',
+    content: '您已完成所有基础课程学习，获得"反诈达人"荣誉徽章，快去看看吧！',
+    time: '1小时前',
+    read: false,
+    action: '/achievement',
+    actionText: '查看成就'
+  },
+  {
+    id: 3,
+    type: 'activity',
+    icon: 'Medal',
+    title: '反诈知识大赛报名即将截止',
+    content: '2024年度反诈知识大赛报名将于明天截止，赶快报名参加吧！丰厚奖品等着你',
+    time: '2小时前',
+    read: false,
+    action: '/activity/1',
+    actionText: '立即报名'
+  },
+  {
+    id: 4,
+    type: 'learning',
+    icon: 'Document',
+    title: '测试成绩已发布',
+    content: '您参加的《电信诈骗防范测试》已完成，得分85分，已达到优秀水平！',
+    time: '3小时前',
+    read: true,
+    action: '/test/result/1',
+    actionText: '查看详情'
+  },
+  {
+    id: 5,
+    type: 'interaction',
+    icon: 'ChatDotRound',
+    title: '收到新的回复',
+    content: '您的提问"如何识别冒充客服的电话？"收到了3条新回复',
+    time: '5小时前',
+    read: true
+  },
+  {
+    id: 6,
+    type: 'system',
+    icon: 'Gift',
+    title: '每日签到奖励',
+    content: '恭喜您完成今日签到，获得5积分奖励！连续签到7天可获得额外奖励',
+    time: '昨天',
+    read: true
+  },
+  {
+    id: 7,
+    type: 'warning',
+    icon: 'Warning',
+    title: '新型诈骗预警',
+    content: '【紧急预警】近期出现新型"屏幕共享"诈骗手法，请提高警惕！',
+    time: '昨天',
+    read: true,
+    action: '/warning/1',
+    actionText: '查看详情'
+  }
+])
 
 const filteredNotifications = computed(() => {
-  const notifications = notificationStore.notifications
-  let filtered = notifications
-  
-  switch (filterType.value) {
-    case 'unread':
-      filtered = notifications.filter(n => !n.isRead)
-      break
-    case 'system':
-      filtered = notifications.filter(n => n.type === 'system')
-      break
-    case 'warning':
-      filtered = notifications.filter(n => n.type === 'warning')
-      break
-    case 'achievement':
-      filtered = notifications.filter(n => n.type === 'achievement')
-      break
-    case 'test':
-      filtered = notifications.filter(n => n.type === 'test')
-      break
+  if (activeCategory.value === 'all') {
+    return notifications.value
   }
-  
-  return filtered.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value)
+  return notifications.value.filter(n => n.type === activeCategory.value)
 })
 
-function getNotificationIcon(type: NotificationType) {
-  const iconMap: Record<NotificationType, any> = {
-    system: User,
-    warning: Warning,
-    report: ChatDotRound,
-    test: Trophy,
-    points: Star,
-    achievement: Present,
-    social: ChatDotRound,
-    activity: Star
-  }
-  return iconMap[type] || Bell
-}
+const systemCount = computed(() => notifications.value.filter(n => n.type === 'system').length)
+const learningCount = computed(() => notifications.value.filter(n => n.type === 'learning').length)
+const interactionCount = computed(() => notifications.value.filter(n => n.type === 'interaction').length)
+const activityCount = computed(() => notifications.value.filter(n => n.type === 'activity').length)
 
-function getTypeText(type: NotificationType): string {
-  const textMap: Record<NotificationType, string> = {
+const getCategoryName = (category: string) => {
+  const names: Record<string, string> = {
     system: '系统',
-    warning: '预警',
-    report: '举报',
-    test: '考试',
-    points: '积分',
-    achievement: '成就',
-    social: '社交',
+    learning: '学习',
+    interaction: '互动',
     activity: '活动'
   }
-  return textMap[type] || '通知'
+  return names[category] || ''
 }
 
-function formatTime(timeStr: string): string {
-  const time = new Date(timeStr)
-  const now = new Date()
-  const diff = now.getTime() - time.getTime()
-  
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`
-  
-  return time.toLocaleDateString()
-}
-
-function handleClick(notification: Notification) {
-  if (!notification.isRead) {
-    handleMarkRead(notification.id)
+const getTypeName = (type: string) => {
+  const names: Record<string, string> = {
+    system: '系统通知',
+    learning: '学习提醒',
+    interaction: '互动消息',
+    activity: '活动通知',
+    warning: '预警信息'
   }
-  
-  if (notification.relatedId && notification.relatedType) {
-    const routes: Record<string, string> = {
-      knowledge: `/knowledge/${notification.relatedId}`,
-      test: `/test/${notification.relatedId}`,
-      activity: `/activity/${notification.relatedId}`
-    }
-    if (routes[notification.relatedType]) {
-      router.push(routes[notification.relatedType])
-    }
+  return names[type] || '通知'
+}
+
+const handleSelect = (id: number) => {
+  const index = selectedNotifications.value.indexOf(id)
+  if (index === -1) {
+    selectedNotifications.value.push(id)
+  } else {
+    selectedNotifications.value.splice(index, 1)
   }
 }
 
-async function handleMarkRead(id: number) {
-  await notificationStore.markAsRead(id)
+const handleSelectAll = (val: boolean) => {
+  if (val) {
+    selectedNotifications.value = filteredNotifications.value.map(n => n.id)
+  } else {
+    selectedNotifications.value = []
+  }
 }
 
-async function handleMarkAllRead() {
-  await notificationStore.markAllAsRead()
+const handleNotificationClick = (notification: any) => {
+  notification.read = true
+  currentNotification.value = notification
+  showDetailDialog.value = true
+}
+
+const handleMarkRead = (notification: any) => {
+  notification.read = true
+  ElMessage.success('已标记为已读')
+}
+
+const handleMarkAllRead = () => {
+  filteredNotifications.value.forEach(n => {
+    n.read = true
+  })
+  selectedNotifications.value = []
   ElMessage.success('已全部标记为已读')
 }
 
-async function handleDelete(id: number) {
-  await notificationStore.deleteNotification(id)
-  ElMessage.success('已删除')
+const handleDelete = (notification: any) => {
+  const index = notifications.value.indexOf(notification)
+  if (index !== -1) {
+    notifications.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }
 }
 
-function handlePageChange(page: number) {
-  currentPage.value = page
+const handleBatchDelete = () => {
+  notifications.value = notifications.value.filter(
+    n => !selectedNotifications.value.includes(n.id)
+  )
+  selectedNotifications.value = []
+  ElMessage.success('批量删除成功')
 }
 
-function handleOpenSettings() {
-  settings.value = { ...notificationStore.settings }
-  settingsVisible.value = true
+const handleNotificationAction = () => {
+  if (currentNotification.value?.action) {
+    showDetailDialog.value = false
+    // router.push(currentNotification.value.action)
+    ElMessage.success('即将跳转到目标页面')
+  }
 }
-
-async function handleSaveSettings() {
-  await notificationStore.updateSettings(settings.value)
-  settingsVisible.value = false
-  ElMessage.success('设置已保存')
-}
-
-onMounted(() => {
-  notificationStore.fetchNotifications()
-  notificationStore.fetchSettings()
-})
 </script>
 
 <style scoped>
-.notification-center {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px;
+.notifications-page {
+  min-height: 100vh;
+  background: var(--bg-secondary);
 }
 
-.header {
+.page-header {
+  position: relative;
+  padding: var(--spacing-16) var(--spacing-6);
+  overflow: hidden;
+}
+
+.header-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.header-bg .bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+  color: white;
+}
+
+.header-content h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-4);
+}
+
+.header-content p {
+  font-size: var(--font-size-lg);
+  opacity: 0.9;
+}
+
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-6) var(--spacing-12);
+}
+
+/* 统计卡片 */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-8);
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+}
+
+.stat-icon.icon-all { background: var(--gradient-primary); }
+.stat-icon.icon-system { background: var(--gradient-info); }
+.stat-icon.icon-learning { background: var(--gradient-success); }
+.stat-icon.icon-interaction { background: var(--gradient-warning); }
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* 布局 */
+.notifications-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--spacing-6);
+}
+
+/* 分类侧边栏 */
+.categories-sidebar {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-md);
+  height: fit-content;
+  position: sticky;
+  top: 80px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.category-item:hover {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+}
+
+.category-item.active {
+  background: var(--primary-bg);
+  color: var(--primary-color);
+  font-weight: var(--font-weight-medium);
+}
+
+.category-item .el-icon {
+  font-size: 18px;
+}
+
+.category-item span:first-of-type {
+  flex: 1;
+}
+
+.category-item .count {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.category-item.active .count {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* 通知列表 */
+.notifications-list {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: 1px solid var(--border-primary);
 }
 
-.header h1 {
-  margin: 0;
-  font-size: 24px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.selected-count {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
 }
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-2);
 }
 
-.filter-bar {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.notification-list {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+/* 通知项 */
+.notifications {
+  padding: var(--spacing-2);
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .notification-item {
   display: flex;
   align-items: flex-start;
-  padding: 20px;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.2s;
-}
-
-.notification-item:last-child {
-  border-bottom: none;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--spacing-2);
 }
 
 .notification-item:hover {
-  background-color: #f5f7fa;
+  background: var(--bg-hover);
 }
 
 .notification-item.unread {
-  background-color: #ecf5ff;
+  background: var(--primary-bg);
 }
 
-.notification-item.unread:hover {
-  background-color: #d9ecff;
+.notification-item.unread::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 40px;
+  background: var(--primary-color);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.notification-item {
+  position: relative;
+}
+
+.item-checkbox {
+  padding-top: var(--spacing-1);
 }
 
 .item-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
+  font-size: 20px;
+  color: white;
   flex-shrink: 0;
 }
 
-.item-icon.type-system { background: var(--el-color-info-light-9); color: var(--el-color-info); }
-.item-icon.type-warning { background: var(--el-color-danger-light-9); color: var(--el-color-danger); }
-.item-icon.type-report { background: var(--el-color-success-light-9); color: var(--el-color-success); }
-.item-icon.type-test { background: var(--el-color-warning-light-9); color: var(--el-color-warning); }
-.item-icon.type-points { background: #fdf6ec; color: #e6a23c; }
-.item-icon.type-achievement { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
-.item-icon.type-social { background: #ecf5ff; color: #409eff; }
-.item-icon.type-activity { background: #f0f9eb; color: #67c23a; }
+.item-icon.type-system { background: var(--info-color); }
+.item-icon.type-learning { background: var(--success-color); }
+.item-icon.type-interaction { background: var(--warning-color); }
+.item-icon.type-activity { background: var(--purple-color); }
+.item-icon.type-warning { background: var(--danger-color); }
 
 .item-content {
   flex: 1;
   min-width: 0;
-  cursor: pointer;
 }
 
 .item-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-1);
 }
 
-.item-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.item-tag {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.tag-system { background: var(--el-color-info-light-9); color: var(--el-color-info); }
-.tag-warning { background: var(--el-color-danger-light-9); color: var(--el-color-danger); }
-.tag-report { background: var(--el-color-success-light-9); color: var(--el-color-success); }
-.tag-test { background: var(--el-color-warning-light-9); color: var(--el-color-warning); }
-.tag-achievement { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
-.tag-activity { background: #f0f9eb; color: #67c23a; }
-
-.item-text {
-  margin: 0 0 8px;
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
-}
-
-.item-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.item-content h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .item-time {
-  font-size: 12px;
-  color: #999;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
 }
 
-.urgent-tag {
-  font-size: 11px;
-  padding: 1px 6px;
-  background: #f56c6c;
-  color: white;
-  border-radius: 4px;
+.item-content p {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .item-actions {
   display: flex;
-  gap: 8px;
-  margin-left: 16px;
+  gap: var(--spacing-1);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
-.pagination-wrapper {
-  margin-top: 20px;
+.notification-item:hover .item-actions {
+  opacity: 1;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12);
   text-align: center;
 }
 
-.settings-form {
-  padding: 16px 0;
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--bg-secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-4);
 }
 
-.setting-group {
-  margin-bottom: 24px;
+.empty-state h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-2);
 }
 
-.setting-group h4 {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: #333;
+.empty-state p {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
 }
 
-.setting-group .el-checkbox {
-  display: block;
-  margin: 8px 0;
+/* 详情对话框 */
+.detail-content {
+  padding: var(--spacing-2);
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--border-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+.detail-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+}
+
+.detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.detail-type {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.detail-time {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.detail-body p {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--spacing-4);
+}
+
+.detail-extra {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+}
+
+.extra-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.extra-item:last-child {
+  border-bottom: none;
+}
+
+.extra-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.extra-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .notifications-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .categories-sidebar {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+  }
+
+  .category-item {
+    margin-bottom: 0;
+  }
 }
 
 @media (max-width: 768px) {
-  .notification-center {
-    padding: 16px;
+  .page-header {
+    padding: var(--spacing-10) var(--spacing-4);
   }
-  
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+
+  .header-content h1 {
+    font-size: var(--font-size-2xl);
   }
-  
+
+  .page-container {
+    padding: 0 var(--spacing-4) var(--spacing-8);
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
   .notification-item {
-    flex-direction: column;
+    flex-wrap: wrap;
   }
-  
-  .item-icon {
-    margin-bottom: 12px;
-  }
-  
+
   .item-actions {
-    margin-left: 0;
-    margin-top: 12px;
-    align-self: flex-end;
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: var(--spacing-2);
+    opacity: 1;
   }
 }
 </style>

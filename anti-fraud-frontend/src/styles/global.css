@@ -1237,3 +1237,248 @@ img, video {
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
 }
+/* ========================================
+   响应式设计 - 移动端适配
+   ======================================== */
+
+/* 超小屏幕设备 (手机竖屏) */
+@media screen and (max-width: 575.98px) {
+  :root {
+    /* 缩小字号以适应小屏幕 */
+    --font-size-base: 13px;
+    --font-size-lg: 15px;
+    --font-size-xl: 17px;
+    --font-size-2xl: 19px;
+    --font-size-3xl: 22px;
+    --font-size-4xl: 26px;
+    
+    /* 调整间距 */
+    --spacing-4: 12px;
+    --spacing-5: 16px;
+    --spacing-6: 20px;
+    --spacing-8: 24px;
+  }
+  
+  /* 导航栏适配 */
+  .app-header {
+    height: auto !important;
+    padding: 0 12px !important;
+  }
+  
+  .header-content {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 0;
+  }
+  
+  .nav-menu {
+    display: none !important;
+  }
+  
+  .logo {
+    font-size: 14px;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  /* 显示移动端菜单按钮 */
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  
+  /* 卡片响应式 */
+  .card {
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
+  
+  /* 隐藏移动端不需要的元素 */
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  /* 搜索框 */
+  .search-input {
+    max-width: 120px;
+  }
+  
+  /* 表格响应式 */
+  .el-table {
+    font-size: 12px;
+  }
+  
+  .el-table__header th {
+    padding: 8px 0;
+  }
+  
+  /* 模态框适配 */
+  .el-dialog {
+    width: 95% !important;
+    max-width: 95vw;
+    margin: 10px auto !important;
+  }
+  
+  /* 表单适配 */
+  .el-form-item {
+    margin-bottom: 16px;
+  }
+  
+  /* 按钮适配 */
+  .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  /* 栅格调整 */
+  .el-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  .el-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+/* 小屏幕设备 (手机横屏小平板) */
+@media screen and (min-width: 576px) and (max-width: 767.98px) {
+  :root {
+    --font-size-base: 13.5px;
+    --font-size-3xl: 23px;
+    --font-size-4xl: 27px;
+  }
+  
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  .card {
+    padding: 20px;
+  }
+  
+  .el-dialog {
+    width: 90% !important;
+  }
+}
+
+/* 平板设备 */
+@media screen and (min-width: 768px) and (max-width: 991.98px) {
+  :root {
+    --font-size-4xl: 28px;
+    --font-size-5xl: 30px;
+  }
+  
+  /* 隐藏次要导航项 */
+  .hide-tablet {
+    display: none !important;
+  }
+  
+  .el-dialog {
+    width: 80% !important;
+    max-width: 720px;
+  }
+}
+
+/* 大屏幕设备 */
+@media screen and (min-width: 992px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* 横屏适配 */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  .app-header {
+    height: 50px !important;
+    line-height: 50px;
+  }
+  
+  .banner-section {
+    min-height: 200px;
+  }
+  
+  .hero-content {
+    padding: 20px;
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 移除hover效果 */
+  .btn:active:not(:disabled) {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+  
+  /* 增大触摸目标 */
+  .el-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .el-menu-item,
+  .el-sub-menu__title {
+    min-height: 48px;
+    line-height: 48px;
+  }
+  
+  /* 隐藏下拉菜单箭头（触摸设备不需要） */
+  .el-sub-menu__icon-arrow {
+    display: none;
+  }
+  
+  /* 优化滚动 */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+}
+
+/* 高DPI屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .card,
+  .btn,
+  .el-input__inner {
+    transform: translateZ(0);
+  }
+}
+
+/* 安全区域适配 (iPhone X及更新型号) */
+@supports (padding: env(safe-area-inset-top)) {
+  .app-container {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .app-footer {
+    padding-bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom));
+  }
+  
+  .fixed-bottom-bar {
+    bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 打印样式 */
+@media print {
+  .app-header,
+  .app-footer,
+  .no-print {
+    display: none !important;
+  }
+  
+  .app-main {
+    padding: 0;
+    margin: 0;
+  }
+  
+  .card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}

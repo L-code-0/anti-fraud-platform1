@@ -13,10 +13,11 @@ spring:
       password: MyRedis123
       database: 0
 
-# 开发环境 JWT 密钥（仅用于本地开发）
+# 开发环境 JWT 密钥
+# 开发时可通过环境变量覆盖，生产部署时必须使用环境变量
 jwt:
-  secret: dev-only-secret-key-2024-not-for-production-use-min-32-chars
-  expiration: 86400000
+  secret: ${JWT_SECRET:dev-only-secret-key-2024-not-for-production-use-min-32-chars}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 # 开发环境 CORS 配置（允许本地开发服务器）
 cors:

@@ -1,4 +1,4 @@
-package com.anti.fraud.config;
+package com.anti.fraud.common.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.activity.mapper.ActivityMapper">
+
+    <!-- 活动列表查询 - 关联报名状态，避免N+1 -->
+    <select id="selectActivityPage" resultType="java.util.Map">
+        SELECT 
+            a.id,
+            a.activity_name as activityName,
+            a.activity_type as activityType,
+            a.cover_image as coverImage,
+            a.description,
+            a.start_time as startTime,
+            a.end_time as endTime,
+            a.max_participants as maxParticipants,
+            a.current_participants as currentParticipants,
+            a.points_reward as pointsReward,
+            a.status,
+            a.create_time as createTime,
+            a.creator_id as creatorId,
+            a.creator_name as creatorName,
+            CASE a.activity_type
+                WHEN 1 THEN '培训讲座'
+                WHEN 2 THEN '知识竞赛'
+                WHEN 3 THEN '演练活动'
+                WHEN 4 THEN '宣传活动'
+                ELSE '其他活动'
+            END as activityTypeName,
+            CASE a.status
+                WHEN 0 THEN '筹备中'
+                WHEN 1 THEN '报名中'
+                WHEN 2 THEN '进行中'
+                WHEN 3 THEN '已结束'
+                WHEN 4 THEN '已取消'
+                ELSE '未知'
+            END as statusName,
+            CASE 
+                WHEN ar.id IS NOT NULL THEN 1 
+                ELSE 0 
+            END as isRegistered,
+            CASE 
+                WHEN a.max_participants IS NOT NULL AND a.current_participants >= a.max_participants 
+                THEN 1 ELSE 0 
+            END as isFull
+        FROM activity a
+        LEFT JOIN activity_registration ar ON a.id = ar.activity_id AND ar.user_id = #{userId} AND ar.deleted = 0
+        WHERE a.deleted = 0
+        <if test="status != null">
+            AND a.status = #{status}
+        </if>
+        <if test="activityType != null">
+            AND a.activity_type = #{activityType}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND a.activity_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY a.status ASC, a.start_time DESC
+    </select>
+
+    <!-- 活动详情 - 关联报名人数和用户报名状态 -->
+    <select id="selectActivityDetail" resultType="java.util.Map">
+        SELECT 
+            a.id,
+            a.activity_name as activityName,
+            a.activity_type as activityType,
+            a.cover_image as coverImage,
+            a.description,
+            a.start_time as startTime,
+            a.end_time as endTime,
+            a.max_participants as maxParticipants,
+            a.current_participants as currentParticipants,
+            a.points_reward as pointsReward,
+            a.status,
+            a.create_time as createTime,
+            a.creator_id as creatorId,
+            a.creator_name as creatorName,
+            CASE a.activity_type
+                WHEN 1 THEN '培训讲座'
+                WHEN 2 THEN '知识竞赛'
+                WHEN 3 THEN '演练活动'
+                WHEN 4 THEN '宣传活动'
+                ELSE '其他活动'
+            END as activityTypeName,
+            CASE a.status
+                WHEN 0 THEN '筹备中'
+                WHEN 1 THEN '报名中'
+                WHEN 2 THEN '进行中'
+                WHEN 3 THEN '已结束'
+                WHEN 4 THEN '已取消'
+                ELSE '未知'
+            END as statusName,
+            CASE WHEN ar.id IS NOT NULL THEN 1 ELSE 0 END as isRegistered,
+            CASE WHEN ar2.id IS NOT NULL THEN 1 ELSE 0 END as isSignedIn,
+            (SELECT COUNT(*) FROM activity_feedback af WHERE af.activity_id = a.id AND af.deleted = 0) as feedbackCount
+        FROM activity a
+        LEFT JOIN activity_registration ar ON a.id = ar.activity_id AND ar.user_id = #{userId} AND ar.deleted = 0
+        LEFT JOIN activity_sign_in ar2 ON a.id = ar2.activity_id AND ar2.user_id = #{userId} AND ar2.deleted = 0
+        WHERE a.id = #{id} AND a.deleted = 0
+    </select>
+
+    <!-- 获取活动参与者列表 -->
+    <select id="selectActivityParticipants" resultType="java.util.Map">
+        SELECT 
+            ar.id,
+            ar.user_id as userId,
+            u.real_name as userName,
+            u.avatar,
+            u.department,
+            ar.register_time as registerTime,
+            CASE ar.status
+                WHEN 0 THEN '已报名'
+                WHEN 1 THEN '已签到'
+                WHEN 2 THEN '已完成'
+                WHEN 3 THEN '已取消'
+                ELSE '未知'
+            END as statusName
+        FROM activity_registration ar
+        LEFT JOIN user u ON ar.user_id = u.id AND u.deleted = 0
+        WHERE ar.activity_id = #{activityId} AND ar.deleted = 0
+        ORDER BY ar.register_time DESC
+    </select>
+
+    <!-- 更新活动当前参与人数 -->
+    <update id="updateParticipantCount">
+        UPDATE activity a
+        SET current_participants = (
+            SELECT COUNT(*) FROM activity_registration 
+            WHERE activity_id = #{activityId} AND deleted = 0 AND status != 3
+        )
+        WHERE a.id = #{activityId}
+    </update>
+
+    <!-- 获取即将开始的活动 -->
+    <select id="selectUpcomingActivities" resultType="java.util.Map">
+        SELECT 
+            a.id,
+            a.activity_name as activityName,
+            a.activity_type as activityType,
+            a.cover_image as coverImage,
+            a.start_time as startTime,
+            a.end_time as endTime,
+            a.max_participants as maxParticipants,
+            a.current_participants as currentParticipants,
+            a.points_reward as pointsReward,
+            a.status,
+            CASE a.activity_type
+                WHEN 1 THEN '培训讲座'
+                WHEN 2 THEN '知识竞赛'
+                WHEN 3 THEN '演练活动'
+                WHEN 4 THEN '宣传活动'
+                ELSE '其他活动'
+            END as activityTypeName
+        FROM activity a
+        WHERE a.deleted = 0 AND a.status IN (1, 2)
+        ORDER BY a.start_time ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
