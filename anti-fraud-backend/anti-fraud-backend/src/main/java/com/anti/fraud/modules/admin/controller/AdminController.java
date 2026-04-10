@@ -26,49 +26,49 @@ public class AdminController {
 
     @Operation(summary = "获取仪表盘统计数据", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/dashboard/stats")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<DashboardStatsVO> getDashboardStats() {
         return Result.success(adminService.getDashboardStats());
     }
 
     @Operation(summary = "获取用户增长趋势", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/dashboard/user-trend")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<List<TrendDataVO>> getUserTrend(@RequestParam(defaultValue = "7") Integer days) {
         return Result.success(adminService.getUserTrend(days));
     }
 
     @Operation(summary = "获取测试参与趋势", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/dashboard/test-trend")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<List<TrendDataVO>> getTestTrend(@RequestParam(defaultValue = "7") Integer days) {
         return Result.success(adminService.getTestTrend(days));
     }
 
     @Operation(summary = "获取知识分类统计", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/dashboard/knowledge-stats")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<List<TrendDataVO>> getKnowledgeStats() {
         return Result.success(adminService.getKnowledgeStats());
     }
 
     @Operation(summary = "获取各院系学习参与率", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/dashboard/department-stats")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<List<DepartmentStatsVO>> getDepartmentStats() {
         return Result.success(adminService.getDepartmentStats());
     }
 
     @Operation(summary = "获取高发诈骗类型统计", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/dashboard/fraud-type-stats")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<List<FraudTypeStatsVO>> getFraudTypeStats() {
         return Result.success(adminService.getFraudTypeStats());
     }
 
     @Operation(summary = "获取举报处理时效", security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/dashboard/report-efficiency")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<TrendDataVO> getReportEfficiency() {
         return Result.success(adminService.getReportEfficiency());
     }

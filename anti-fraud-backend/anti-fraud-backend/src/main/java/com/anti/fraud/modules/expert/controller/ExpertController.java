@@ -64,7 +64,7 @@ public class ExpertController {
             @Parameter(hidden = true) @RequestAttribute("userId") Long userId,
             @Parameter(hidden = true) @RequestAttribute(value = "userName", required = false) String userName) {
         Long id = expertService.createAnalysis(createDTO, userId, userName != null ? userName : "专家");
-        return Result.success(id, "发布成功");
+        return Result.success("发布成功", id);
     }
 
     @Operation(summary = "删除案例分析", description = "删除自己发布的案例分析")
@@ -102,7 +102,7 @@ public class ExpertController {
             @Parameter(hidden = true) @RequestAttribute("userId") Long userId,
             @Parameter(hidden = true) @RequestAttribute(value = "userName", required = false) String userName) {
         Long id = expertService.createAdvice(createDTO, userId, userName != null ? userName : "专家");
-        return Result.success(id, "发布成功");
+        return Result.success("发布成功", id);
     }
 
     @Operation(summary = "删除专家建议", description = "删除自己发布的专家建议")

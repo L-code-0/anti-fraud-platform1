@@ -10,11 +10,7 @@ import com.anti.fraud.modules.user.service.UserService;
 import com.anti.fraud.modules.user.vo.LoginVO;
 import com.anti.fraud.modules.user.vo.UserVO;
 import cn.hutool.captcha.CaptchaUtil;
-import cn.hutool.captcha.ICaptcha;
-import cn.hutool.captcha.generator.CodeGenerator;
-import cn.hutool.captcha.generator.MathGenerator;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.http.useragent.UserAgentUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -184,24 +180,21 @@ public class AuthController {
     @Operation(summary = "获取图形验证码")
     @GetMapping("/captcha")
     public Result<Map<String, String>> getCaptcha() {
-        // 使用 Hutool 生成图形验证码
-        // 使用数学公式验证码，更安全
-        CodeGenerator codeGenerator = new MathGenerator();
-        ICaptcha captcha = CaptchaUtil.createCaptcha(codeGenerator);
-        captcha.setWriter(new java.io.ByteArrayOutputStream());
+        // 使用 Hutool 生成图形验证码（剪切干扰验证码）
+        cn.hutool.captcha.ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(120, 40, 4, 4);
 
         // 生成唯一 key 用于标识本次验证码
         String captchaKey = IdUtil.simpleUUID();
 
         // 获取验证码答案
-        String captchaCode = codeGenerator.generate();
+        String captchaCode = captcha.getCode();
 
         // 将验证码答案存入 Redis，设置5分钟过期
         String redisKey = CAPTCHA_KEY_PREFIX + captchaKey;
         redisUtils.set(redisKey, captchaCode, CAPTCHA_EXPIRE_SECONDS, TimeUnit.SECONDS);
 
         // 生成验证码图片 Base64
-        String captchaImage = "data:image/png;base64," + cn.hutool.core.codec.Base64.encode(captcha.getImage());
+        String captchaImage = "data:image/png;base64," + captcha.getImageBase64Data();
 
         Map<String, String> result = new HashMap<>();
         result.put("captchaKey", captchaKey);

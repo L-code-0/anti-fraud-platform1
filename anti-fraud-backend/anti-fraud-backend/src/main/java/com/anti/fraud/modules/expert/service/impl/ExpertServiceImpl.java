@@ -12,6 +12,7 @@ import com.anti.fraud.modules.expert.vo.AdviceVO;
 import com.anti.fraud.modules.expert.vo.AnalysisVO;
 import com.anti.fraud.modules.expert.vo.ExpertStatsVO;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -58,7 +59,7 @@ public class ExpertServiceImpl implements ExpertService {
     public Page<AnalysisVO> getAnalysisPage(Integer page, Integer size, Long expertId, Integer type) {
         Page<Map<String, Object>> pageParam = new Page<>(page, size);
 
-        Page<Map<String, Object>> resultPage = analysisMapper.selectAnalysisPage(
+        IPage<Map<String, Object>> resultPage = analysisMapper.selectAnalysisPage(
                 pageParam, expertId, type
         );
 
@@ -124,7 +125,7 @@ public class ExpertServiceImpl implements ExpertService {
     public Page<AdviceVO> getAdvicePage(Integer page, Integer size, Long expertId, String category) {
         Page<Map<String, Object>> pageParam = new Page<>(page, size);
 
-        Page<Map<String, Object>> resultPage = adviceMapper.selectAdvicePage(
+        IPage<Map<String, Object>> resultPage = adviceMapper.selectAdvicePage(
                 pageParam, expertId, category
         );
 

@@ -13,7 +13,9 @@ import com.anti.fraud.modules.classroom.service.ClassService;
 import com.anti.fraud.modules.classroom.vo.ClassDetailVO;
 import com.anti.fraud.modules.classroom.vo.ClassStatsVO;
 import com.anti.fraud.modules.classroom.vo.ClassStudentVO;
+import com.anti.fraud.modules.classroom.vo.ClassVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,7 +52,7 @@ public class ClassServiceImpl implements ClassService {
     public Page<ClassVO> getClassPage(ClassQueryDTO queryDTO) {
         Page<Map<String, Object>> page = new Page<>(queryDTO.getPage(), queryDTO.getSize());
 
-        Page<Map<String, Object>> resultPage = classInfoMapper.selectClassPage(
+        IPage<Map<String, Object>> resultPage = classInfoMapper.selectClassPage(
                 page,
                 queryDTO.getKeyword(),
                 null
@@ -177,7 +179,7 @@ public class ClassServiceImpl implements ClassService {
     public Page<ClassStudentVO> getStudentPage(Long classId, Integer page, Integer size, String keyword) {
         Page<Map<String, Object>> pageParam = new Page<>(page, size);
 
-        Page<Map<String, Object>> resultPage = classStudentMapper.selectStudentPage(
+        IPage<Map<String, Object>> resultPage = classStudentMapper.selectStudentPage(
                 pageParam,
                 classId,
                 keyword

@@ -1,6 +1,7 @@
 package com.anti.fraud.modules.activity.controller;
 
 import com.anti.fraud.common.result.Result;
+import com.anti.fraud.common.enums.UserRole;
 import com.anti.fraud.modules.activity.dto.ActivityCreateDTO;
 import com.anti.fraud.modules.activity.service.ActivityService;
 import com.anti.fraud.modules.activity.vo.ActivityVO;
@@ -40,7 +41,7 @@ public class ActivityController {
 
     @Operation(summary = "创建活动", security = @SecurityRequirement(name = "Bearer"))
     @PostMapping
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<Void> createActivity(@RequestBody ActivityCreateDTO createDTO) {
         activityService.createActivity(createDTO);
         return Result.successMsg("创建成功");
@@ -48,7 +49,7 @@ public class ActivityController {
 
     @Operation(summary = "更新活动", security = @SecurityRequirement(name = "Bearer"))
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<Void> updateActivity(@PathVariable Long id, @RequestBody ActivityCreateDTO createDTO) {
         activityService.updateActivity(id, createDTO);
         return Result.successMsg("更新成功");
@@ -56,7 +57,7 @@ public class ActivityController {
 
     @Operation(summary = "删除活动", security = @SecurityRequirement(name = "Bearer"))
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('" + UserRole.ADMIN + "') or hasRole('" + UserRole.SUPER_ADMIN + "')")
+    @PreAuthorize("hasRole('" + UserRole.ROLE_ADMIN + "') or hasRole('" + UserRole.ROLE_SUPER_ADMIN + "')")
     public Result<Void> deleteActivity(@PathVariable Long id) {
         activityService.deleteActivity(id);
         return Result.successMsg("删除成功");

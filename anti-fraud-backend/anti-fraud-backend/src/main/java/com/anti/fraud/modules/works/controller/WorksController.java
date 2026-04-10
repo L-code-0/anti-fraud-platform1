@@ -23,7 +23,7 @@ public class WorksController {
     @PostMapping
     public Result<Long> submitWorks(@RequestBody WorksSubmitDTO dto) {
         Long worksId = worksService.submitWorks(dto);
-        return Result.success(worksId, "提交成功，请等待审核");
+        return Result.success("提交成功，请等待审核", worksId);
     }
 
     @Operation(summary = "我的作品列表", security = @SecurityRequirement(name = "Bearer"))

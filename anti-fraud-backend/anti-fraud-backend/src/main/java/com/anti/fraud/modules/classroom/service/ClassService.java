@@ -7,6 +7,7 @@ import com.anti.fraud.modules.classroom.dto.JoinClassDTO;
 import com.anti.fraud.modules.classroom.vo.ClassDetailVO;
 import com.anti.fraud.modules.classroom.vo.ClassStatsVO;
 import com.anti.fraud.modules.classroom.vo.ClassStudentVO;
+import com.anti.fraud.modules.classroom.vo.ClassVO;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**

@@ -9,6 +9,7 @@ import com.anti.fraud.modules.classroom.service.ClassService;
 import com.anti.fraud.modules.classroom.vo.ClassDetailVO;
 import com.anti.fraud.modules.classroom.vo.ClassStatsVO;
 import com.anti.fraud.modules.classroom.vo.ClassStudentVO;
+import com.anti.fraud.modules.classroom.vo.ClassVO;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -52,7 +53,7 @@ public class ClassController {
             @RequestBody ClassCreateDTO createDTO,
             @Parameter(hidden = true) @RequestAttribute("userId") Long userId) {
         Long classId = classService.createClass(createDTO, userId);
-        return Result.success(classId, "创建成功");
+        return Result.success("创建成功", classId);
     }
 
     @Operation(summary = "更新班级", description = "管理员或教师更新班级信息")

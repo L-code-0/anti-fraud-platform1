@@ -23,7 +23,7 @@ public class TaskController {
     @PostMapping
     public Result<Long> createTask(@RequestBody TaskCreateDTO dto) {
         Long taskId = taskService.createTask(dto);
-        return Result.success(taskId, "创建成功");
+        return Result.success("创建成功", taskId);
     }
 
     @Operation(summary = "我发布的任务列表（教师）", security = @SecurityRequirement(name = "Bearer"))

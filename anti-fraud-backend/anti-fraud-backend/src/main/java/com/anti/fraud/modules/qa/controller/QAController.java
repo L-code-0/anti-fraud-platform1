@@ -24,7 +24,7 @@ public class QAController {
     @PostMapping("/question")
     public Result<Long> askQuestion(@RequestBody QuestionDTO dto) {
         Long questionId = qaService.askQuestion(dto);
-        return Result.success(questionId, "提问成功");
+        return Result.success("提问成功", questionId);
     }
 
     @Operation(summary = "问题列表")
@@ -46,7 +46,7 @@ public class QAController {
     @PostMapping("/answer")
     public Result<Long> answerQuestion(@RequestBody AnswerDTO dto) {
         Long answerId = qaService.answerQuestion(dto);
-        return Result.success(answerId, "回答成功");
+        return Result.success("回答成功", answerId);
     }
 
     @Operation(summary = "采纳回答", security = @SecurityRequirement(name = "Bearer"))
