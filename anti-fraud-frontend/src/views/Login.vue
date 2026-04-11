@@ -22,7 +22,7 @@
       <div class="login-intro" v-if="!isMobile">
         <div class="intro-content">
           <div class="intro-badge">
-            <el-icon><Shield /></el-icon>
+            <el-icon><Lock /></el-icon>
             <span>安全可信</span>
           </div>
           <h1 class="intro-title">高校反诈安全知识普及平台</h1>
@@ -107,6 +107,7 @@
                 placeholder="请输入密码"
                 size="large"
                 show-password
+                autocomplete="new-password"
                 @focus="focusedField = 'password'"
                 @blur="focusedField = ''"
                 @keyup.enter="handleLogin"
@@ -126,7 +127,6 @@
                   size="large"
                   class="captcha-input"
                   @keyup.enter="handleLogin"
-                  @input="form.captchaCode = form.captchaCode.replace(/\D/g, '')"
                   maxlength="4"
                 >
                   <template #prefix>
@@ -258,7 +258,7 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { 
   User, Lock, ArrowRight, ChatDotRound, Message, Key, 
-  UserFilled, Avatar, Setting, Shield, Loading
+  UserFilled, Avatar, Setting, Loading
 } from '@element-plus/icons-vue'
 import { 
   getCaptcha, 
@@ -437,7 +437,8 @@ const refreshCaptcha = async () => {
     const res = await getCaptcha()
     if (res.code === 200 && res.data) {
       captchaKey.value = res.data.captchaKey
-      captchaImage.value = res.data.captchaImage
+      // 后端已返回完整的 data URL，直接使用
+      captchaImage.value = res.data.captchaImage || res.data.image
       form.captchaCode = ''
     }
   } catch (error) {

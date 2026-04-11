@@ -159,7 +159,8 @@ public class AnalysisServiceImpl implements AnalysisService {
         return recommendations.stream().limit(5).collect(Collectors.toList());
     }
 
-    private List<CategoryMasteryVO> getCategoryMastery(Long userId) {
+    @Override
+    public List<Map<String, Object>> getCategoryMastery(Long userId) {
         List<LearningWeakness> weaknesses = weaknessMapper.selectList(
                 new LambdaQueryWrapper<LearningWeakness>()
                         .eq(LearningWeakness::getUserId, userId)
@@ -167,13 +168,13 @@ public class AnalysisServiceImpl implements AnalysisService {
 
         return weaknesses.stream()
                 .map(w -> {
-                    CategoryMasteryVO vo = new CategoryMasteryVO();
-                    vo.setCategoryName(w.getCategoryName());
-                    vo.setTotalQuestions(w.getTotalQuestions());
-                    vo.setCorrectQuestions(w.getTotalQuestions() - w.getWrongQuestions());
-                    vo.setCorrectRate(w.getCorrectRate());
-                    vo.setMasteryLevel(getMasteryLevel(w.getCorrectRate()));
-                    return vo;
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("categoryName", w.getCategoryName());
+                    map.put("totalQuestions", w.getTotalQuestions());
+                    map.put("correctQuestions", w.getTotalQuestions() - w.getWrongQuestions());
+                    map.put("correctRate", w.getCorrectRate());
+                    map.put("masteryLevel", getMasteryLevel(w.getCorrectRate()));
+                    return map;
                 })
                 .collect(Collectors.toList());
     }
@@ -228,37 +229,71 @@ public class AnalysisServiceImpl implements AnalysisService {
         // 保存薄弱点数据
         if (report.getWeaknesses() != null) {
             for (WeaknessVO weakness : report.getWeaknesses()) {
-                LearningWeakness entity = new LearningWeakness();
-                entity.setUserId(userId);
-                entity.setCategoryName(weakness.getCategoryName());
-                entity.setCorrectRate(weakness.getCorrectRate());
-                entity.setWeaknessLevel(weakness.getWeaknessLevel());
-                entity.setUpdateTime(LocalDateTime.now());
-                weaknessMapper.insert(entity);
-            }
-        }
-        
-        // 保存分类掌握情况
-        if (report.getCategoryMastery() != null) {
-            for (CategoryMasteryVO mastery : report.getCategoryMastery()) {
+                // 查找是否已存在该分类的薄弱点记录
                 LearningWeakness entity = weaknessMapper.selectOne(
                         new LambdaQueryWrapper<LearningWeakness>()
                                 .eq(LearningWeakness::getUserId, userId)
-                                .eq(LearningWeakness::getCategoryName, mastery.getCategoryName())
+                                .eq(LearningWeakness::getCategoryName, weakness.getCategoryName())
                 );
-                if (entity != null) {
-                    entity.setTotalQuestions(mastery.getTotalQuestions());
-                    entity.setCorrectRate(mastery.getCorrectRate());
-                    entity.setWeaknessLevel(calculateWeaknessLevel(mastery.getCorrectRate()));
+                
+                if (entity == null) {
+                    // 新增记录
+                    entity = new LearningWeakness();
+                    entity.setUserId(userId);
+                    entity.setCategory(weakness.getCategoryName().toLowerCase().replace(" ", "_"));
+                    entity.setCategoryName(weakness.getCategoryName());
+                    entity.setTotalQuestions(10); // 默认值，实际应根据真实数据计算
+                    entity.setWrongQuestions((int) (10 * (1 - weakness.getCorrectRate())));
+                    entity.setCorrectRate(weakness.getCorrectRate());
+                    entity.setWeaknessLevel(weakness.getWeaknessLevel());
+                    entity.setUpdateTime(LocalDateTime.now());
+                    weaknessMapper.insert(entity);
+                } else {
+                    // 更新记录
+                    entity.setCorrectRate(weakness.getCorrectRate());
+                    entity.setWeaknessLevel(weakness.getWeaknessLevel());
                     entity.setUpdateTime(LocalDateTime.now());
                     weaknessMapper.updateById(entity);
                 }
             }
         }
+
+        // 保存分类掌握情况
+        if (report.getCategoryMastery() != null) {
+            for (Map<String, Object> mastery : report.getCategoryMastery()) {
+                String categoryName = (String) mastery.get("categoryName");
+                Integer totalQuestions = (Integer) mastery.get("totalQuestions");
+                Double correctRate = (Double) mastery.get("correctRate");
+                
+                LearningWeakness entity = weaknessMapper.selectOne(
+                        new LambdaQueryWrapper<LearningWeakness>()
+                                .eq(LearningWeakness::getUserId, userId)
+                                .eq(LearningWeakness::getCategoryName, categoryName)
+                );
+                
+                if (entity != null) {
+                    // 更新记录
+                    entity.setTotalQuestions(totalQuestions);
+                    entity.setWrongQuestions((int) (totalQuestions * (1 - correctRate)));
+                    entity.setCorrectRate(correctRate);
+                    entity.setWeaknessLevel(calculateWeaknessLevel(correctRate));
+                    entity.setUpdateTime(LocalDateTime.now());
+                    weaknessMapper.updateById(entity);
+                } else {
+                    // 新增记录
+                    entity = new LearningWeakness();
+                    entity.setUserId(userId);
+                    entity.setCategory(categoryName.toLowerCase().replace(" ", "_"));
+                    entity.setCategoryName(categoryName);
+                    entity.setTotalQuestions(totalQuestions);
+                    entity.setWrongQuestions((int) (totalQuestions * (1 - correctRate)));
+                    entity.setCorrectRate(correctRate);
+                    entity.setWeaknessLevel(calculateWeaknessLevel(correctRate));
+                    entity.setUpdateTime(LocalDateTime.now());
+                    weaknessMapper.insert(entity);
+                }
+            }
+        }
     }
 
-    @Override
-    public List<Map<String, Object>> getCategoryMastery(Long userId) {
-        return weaknessMapper.selectCategoryMastery(userId);
-    }
 }

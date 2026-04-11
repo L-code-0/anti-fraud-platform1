@@ -170,9 +170,9 @@ const loadWarnings = async () => {
     total.value = res.data?.total || 0
   } catch (e) {
     warningList.value = [
-      { id: 1, title: '冒充公检法诈骗高危预警', warningType: 1, level: 3, status: 1, viewCount: 3256, publishTime: '2024-01-15' },
-      { id: 2, title: '近期网络兼职诈骗案例通报', warningType: 2, level: 2, status: 1, viewCount: 2180, publishTime: '2024-01-14' },
-      { id: 3, title: '寒假期间安全提醒', warningType: 3, level: 1, status: 1, viewCount: 1560, publishTime: '2024-01-13' }
+      { id: 1, title: '冒充公检法诈骗高危预警', warningType: 1, level: 3, status: 1, viewCount: 3256, publishTime: '2026-01-15' },
+      { id: 2, title: '近期网络兼职诈骗案例通报', warningType: 2, level: 2, status: 1, viewCount: 2180, publishTime: '2026-01-14' },
+      { id: 3, title: '寒假期间安全提醒', warningType: 3, level: 1, status: 1, viewCount: 1560, publishTime: '2026-01-13' }
     ]
     total.value = 3
   }

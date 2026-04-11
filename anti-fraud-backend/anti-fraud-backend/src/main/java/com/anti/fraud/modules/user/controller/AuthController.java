@@ -21,7 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
+import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Slf4j  // 添加这行
 public class AuthController {
 
     private final UserService userService;
@@ -47,12 +48,10 @@ public class AuthController {
 
     // Redis Key 前缀
     private static final String CAPTCHA_KEY_PREFIX = "captcha:";
-    private static final String DEVICE_KEY_PREFIX = "device:";
     private static final String TOKEN_VERSION_PREFIX = "token:version:";
 
     // 配置
     private static final long CAPTCHA_EXPIRE_SECONDS = 300;
-    private static final int TOKEN_EXPIRE_DAYS = 7;
 
     @Operation(summary = "用户登录")
     @PostMapping("/login")
@@ -115,7 +114,6 @@ public class AuthController {
             Map<String, Object> result = new HashMap<>();
             result.put("user", loginVO);
             result.put("deviceId", deviceId);
-            result.put("remainingAttempts", MAX_LOGIN_FAIL_COUNT);
 
             return Result.success("登录成功", loginVO);
 
@@ -206,8 +204,6 @@ public class AuthController {
     @Operation(summary = "获取图形验证码")
     @GetMapping("/captcha")
     public Result<Map<String, String>> getCaptcha(HttpServletRequest request) {
-        String clientIp = getClientIp(request);
-
         // 频率限制
         RateLimitService.RateLimitResult rateLimitResult = rateLimitService.checkApiLimit(request);
         if (!rateLimitResult.isAllowed()) {
@@ -224,7 +220,7 @@ public class AuthController {
         redisUtils.set(redisKey, captchaCode, CAPTCHA_EXPIRE_SECONDS, TimeUnit.SECONDS);
 
         // 生成验证码图片
-        String captchaImage = "data:image/png;base64," + captcha.getImageBase64Data();
+        String captchaImage = captcha.getImageBase64Data();
 
         Map<String, String> result = new HashMap<>();
         result.put("captchaKey", captchaKey);
@@ -441,8 +437,6 @@ public class AuthController {
 
     // ========== 私有方法 ==========
 
-    private static final int MAX_LOGIN_FAIL_COUNT = 5;
-
     private void handleLoginSuccess(HttpServletRequest request, LoginVO loginVO,
                                     String clientIp, String deviceId, String deviceInfo) {
         // 清理登录失败记录
@@ -476,9 +470,6 @@ public class AuthController {
     private void handleLoginFailure(String username, String clientIp, String reason) {
         // 记录失败
         boolean locked = loginSecurityService.recordLoginFailure(username);
-
-        // 获取剩余尝试次数
-        int remainingAttempts = loginSecurityService.getRemainingLoginAttempts(username);
 
         // 记录登录日志
         loginSecurityService.recordLoginLog(null, username, false, clientIp, null, reason);
@@ -565,4 +556,3 @@ public class AuthController {
         return "new_access_token_" + System.currentTimeMillis();
     }
 }
-

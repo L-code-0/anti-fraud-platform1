@@ -7,8 +7,10 @@ import com.anti.fraud.common.utils.SecurityUtils;
 import com.anti.fraud.modules.qa.dto.AnswerDTO;
 import com.anti.fraud.modules.qa.dto.QuestionDTO;
 import com.anti.fraud.modules.qa.entity.AnswerInfo;
+import com.anti.fraud.modules.qa.entity.FollowUpQuestion;
 import com.anti.fraud.modules.qa.entity.QuestionInfo;
 import com.anti.fraud.modules.qa.mapper.AnswerInfoMapper;
+import com.anti.fraud.modules.qa.mapper.FollowUpQuestionMapper;
 import com.anti.fraud.modules.qa.mapper.QuestionInfoMapper;
 import com.anti.fraud.modules.qa.service.QAService;
 import com.anti.fraud.modules.qa.vo.AnswerVO;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +33,7 @@ public class QAServiceImpl implements QAService {
 
     private final QuestionInfoMapper questionMapper;
     private final AnswerInfoMapper answerMapper;
+    private final FollowUpQuestionMapper followUpQuestionMapper;
     private final UserMapper userMapper;
 
     @Override
@@ -153,10 +158,12 @@ public class QAServiceImpl implements QAService {
                         .eq(AnswerInfo::getIsAccepted, 1)
         ).forEach(a -> {
             a.setIsAccepted(0);
+            a.setAcceptTime(null);
             answerMapper.updateById(a);
         });
 
         answer.setIsAccepted(1);
+        answer.setAcceptTime(LocalDateTime.now());
         answerMapper.updateById(answer);
     }
 
@@ -216,5 +223,96 @@ public class QAServiceImpl implements QAService {
         vo.setLikeCount(answer.getLikeCount());
         vo.setCreateTime(answer.getCreateTime());
         return vo;
+    }
+
+    @Override
+    @Transactional
+    public Long followUpQuestion(Long questionId, Long answerId, String content) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        User user = userMapper.selectById(userId);
+
+        QuestionInfo question = questionMapper.selectById(questionId);
+        if (question == null) {
+            throw new BusinessException("问题不存在");
+        }
+
+        AnswerInfo answer = answerMapper.selectById(answerId);
+        if (answer == null || !answer.getQuestionId().equals(questionId)) {
+            throw new BusinessException("回答不存在或不属于该问题");
+        }
+
+        FollowUpQuestion followUp = new FollowUpQuestion();
+        followUp.setQuestionId(questionId);
+        followUp.setAnswerId(answerId);
+        followUp.setAskerId(userId);
+        followUp.setAskerName(user.getRealName());
+        followUp.setContent(content);
+        followUp.setStatus(0);
+        followUp.setCreateTime(LocalDateTime.now());
+
+        followUpQuestionMapper.insert(followUp);
+        return followUp.getId();
+    }
+
+    @Override
+    @Transactional
+    public void answerFollowUp(Long followUpId, String content) {
+        FollowUpQuestion followUp = followUpQuestionMapper.selectById(followUpId);
+        if (followUp == null) {
+            throw new BusinessException("追问不存在");
+        }
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        AnswerInfo answer = answerMapper.selectById(followUp.getAnswerId());
+
+        if (!answer.getAnswererId().equals(userId)) {
+            throw new BusinessException("只能回答自己收到的追问");
+        }
+
+        followUp.setStatus(1);
+        followUp.setUpdateTime(LocalDateTime.now());
+        followUpQuestionMapper.updateById(followUp);
+    }
+
+    @Override
+    public List<FollowUpQuestion> getFollowUpQuestions(Long questionId) {
+        return followUpQuestionMapper.selectByQuestionId(questionId);
+    }
+
+    @Override
+    public List<FollowUpQuestion> getUserFollowUpQuestions(Long userId) {
+        return followUpQuestionMapper.selectByAskerId(userId);
+    }
+
+    @Override
+    public Map<String, Object> getUserAcceptanceRate(Long userId) {
+        // 获取用户的回答总数
+        Long totalAnswers = answerMapper.selectCount(
+                new LambdaQueryWrapper<AnswerInfo>()
+                        .eq(AnswerInfo::getAnswererId, userId)
+        );
+
+        // 获取用户被采纳的回答数
+        Long acceptedAnswers = answerMapper.selectCount(
+                new LambdaQueryWrapper<AnswerInfo>()
+                        .eq(AnswerInfo::getAnswererId, userId)
+                        .eq(AnswerInfo::getIsAccepted, 1)
+        );
+
+        double acceptanceRate = totalAnswers > 0 ? (double) acceptedAnswers / totalAnswers * 100 : 0;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalAnswers", totalAnswers);
+        result.put("acceptedAnswers", acceptedAnswers);
+        result.put("acceptanceRate", String.format("%.2f%%", acceptanceRate));
+
+        return result;
+    }
+
+    @Override
+    public Page<Map<String, Object>> getExpertAcceptanceRateRank(Integer page, Integer size) {
+        // 这里简化实现，实际应该使用SQL查询获取专家的采纳率排行榜
+        // 暂时返回空列表
+        return new Page<>();
     }
 }

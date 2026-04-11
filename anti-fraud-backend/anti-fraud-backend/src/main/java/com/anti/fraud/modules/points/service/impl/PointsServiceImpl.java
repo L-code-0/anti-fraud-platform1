@@ -121,7 +121,7 @@ public class PointsServiceImpl implements PointsService {
         //     }
         // }
         // return result;
-        
+
         // 临时实现：返回所有勋章中已获得的
         return getAllBadges().stream()
                 .filter(BadgeVO::getIsAcquired)
@@ -162,34 +162,32 @@ public class PointsServiceImpl implements PointsService {
         if (user == null) {
             return;
         }
-        
+
         // 查询用户已获得的勋章
         // List<UserBadge> existingBadges = userBadgeMapper.selectList(
         //     new LambdaQueryWrapper<UserBadge>().eq(UserBadge::getUserId, userId)
         // );
         // Set<Long> acquiredBadgeIds = existingBadges.stream()
         //     .map(UserBadge::getBadgeId).collect(Collectors.toSet());
-        
+
         // 查询所有可获得的勋章
         List<BadgeInfo> allBadges = badgeInfoMapper.selectList(
-            new LambdaQueryWrapper<BadgeInfo>().eq(BadgeInfo::getStatus, 1)
+                new LambdaQueryWrapper<BadgeInfo>().eq(BadgeInfo::getStatus, 1)
         );
-        
+
         for (BadgeInfo badge : allBadges) {
             // 检查是否满足获得条件
-            boolean shouldAward = false;
-            String awardReason = "";
-            
             // 根据勋章类型检查条件
-            switch (badge.getBadgeType()) {
-                case "points_level":
+            String badgeTypeStr = String.valueOf(badge.getBadgeType());
+            switch (badgeTypeStr) {
+                case "1":  // points_level - 积分等级勋章
                     // 积分等级勋章：达到指定积分
-                    if (user.getPoints() >= badge.getPointsReward()) {
-                        shouldAward = true;
-                        awardReason = "达到" + badge.getPointsReward() + "积分";
-                    }
+                    // if (user.getPoints() >= badge.getPointsReward()) {
+                    //     shouldAward = true;
+                    //     awardReason = "达到" + badge.getPointsReward() + "积分";
+                    // }
                     break;
-                case "learning":
+                case "2":  // learning - 学习勋章
                     // 学习勋章：完成一定学习时长
                     // int studyMinutes = getUserStudyMinutes(userId);
                     // if (studyMinutes >= badge.getPointsReward()) {
@@ -197,7 +195,7 @@ public class PointsServiceImpl implements PointsService {
                     //     awardReason = "学习时长达到" + studyMinutes + "分钟";
                     // }
                     break;
-                case "test":
+                case "3":  // test - 测验勋章
                     // 测验勋章：完成一定数量测验
                     // int testCount = getUserTestCount(userId);
                     // if (testCount >= badge.getPointsReward()) {
@@ -205,11 +203,11 @@ public class PointsServiceImpl implements PointsService {
                     //     awardReason = "完成" + testCount + "次测验";
                     // }
                     break;
-                case "simulation":
+                case "4":  // simulation - 演练勋章
                     // 演练勋章：完成一定数量演练
                     break;
             }
-            
+
             // if (shouldAward && !acquiredBadgeIds.contains(badge.getId())) {
             //     // 授予勋章
             //     UserBadge newBadge = new UserBadge();
@@ -217,14 +215,14 @@ public class PointsServiceImpl implements PointsService {
             //     newBadge.setBadgeId(badge.getId());
             //     newBadge.setCreateTime(LocalDateTime.now());
             //     userBadgeMapper.insert(newBadge);
-            //     
+            //
             //     // 发送通知
             //     notificationService.sendSystemNotification(
             //         "获得新勋章",
             //         "恭喜您获得了「" + badge.getBadgeName() + "」勋章！",
             //         userId
             //     );
-            //     
+            //
             //     log.info("用户 {} 获得勋章: {}", userId, badge.getBadgeName());
             // }
         }

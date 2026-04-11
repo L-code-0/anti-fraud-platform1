@@ -10,7 +10,7 @@ import lombok.Data;
 @Schema(description = "创建班级请求")
 public class ClassCreateDTO {
 
-    @Schema(description = "班级名称", required = true)
+    @Schema(description = "班级名称", requiredMode = io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED)
     private String className;
 
     @Schema(description = "班主任姓名")

@@ -428,11 +428,11 @@ const hotKnowledge = ref([
 
 // 用户活跃数据
 const userActivityData = ref([
-  { date: '2024-01-15', newUsers: 125, activeUsers: 1258, weeklyUsers: 5680, avgSessionTime: 1860, bounceRate: 32, retentionRate: 68 },
-  { date: '2024-01-16', newUsers: 142, activeUsers: 1385, weeklyUsers: 5720, avgSessionTime: 1920, bounceRate: 28, retentionRate: 72 },
-  { date: '2024-01-17', newUsers: 138, activeUsers: 1420, weeklyUsers: 5780, avgSessionTime: 2100, bounceRate: 25, retentionRate: 75 },
-  { date: '2024-01-18', newUsers: 156, activeUsers: 1568, weeklyUsers: 5850, avgSessionTime: 1980, bounceRate: 30, retentionRate: 70 },
-  { date: '2024-01-19', newUsers: 168, activeUsers: 1685, weeklyUsers: 5920, avgSessionTime: 2250, bounceRate: 22, retentionRate: 78 }
+  { date: '2026-01-15', newUsers: 125, activeUsers: 1258, weeklyUsers: 5680, avgSessionTime: 1860, bounceRate: 32, retentionRate: 68 },
+  { date: '2026-01-16', newUsers: 142, activeUsers: 1385, weeklyUsers: 5720, avgSessionTime: 1920, bounceRate: 28, retentionRate: 72 },
+  { date: '2026-01-17', newUsers: 138, activeUsers: 1420, weeklyUsers: 5780, avgSessionTime: 2100, bounceRate: 25, retentionRate: 75 },
+  { date: '2026-01-18', newUsers: 156, activeUsers: 1568, weeklyUsers: 5850, avgSessionTime: 1980, bounceRate: 30, retentionRate: 70 },
+  { date: '2026-01-19', newUsers: 168, activeUsers: 1685, weeklyUsers: 5920, avgSessionTime: 2250, bounceRate: 22, retentionRate: 78 }
 ])
 
 // 内容分析数据

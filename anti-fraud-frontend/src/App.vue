@@ -9,7 +9,7 @@
             <div class="logo" @click="$router.push('/')">
               <el-icon class="logo-icon"><Lock /></el-icon>
               <span class="logo-text">高校反诈安全</span>
-              <span class="logo-badge">V3.0</span>
+              <span class="logo-badge">MU</span>
             </div>
 
             <el-menu
@@ -111,6 +111,9 @@
 
             <!-- 消息通知 -->
             <NotificationPanel />
+
+            <!-- 移动端菜单 -->
+            <MobileMenu />
 
             <!-- 用户信息 -->
             <template v-if="userStore.isLoggedIn && userStore.userInfo">
@@ -230,7 +233,7 @@
           </div>
           <el-divider />
           <div class="footer-bottom">
-            <p>© 2024 高校反诈安全知识普及平台 | 保护财产安全，从学习反诈知识开始</p>
+            <p>© 2026 高校反诈安全知识普及平台 | 保护财产安全，从学习反诈知识开始</p>
             <p class="footer-stats">
               <span>注册用户：<strong>10,000+</strong></span>
               <span>学习次数：<strong>50,000+</strong></span>
@@ -255,12 +258,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import * as VueRouter from 'vue-router'
+const useRoute = VueRouter.useRoute
+const useRouter = VueRouter.useRouter
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import NotificationPanel from '@/components/common/NotificationPanel.vue'
 import GlobalLoading from '@/components/common/GlobalLoading.vue'
+import MobileMenu from '@/components/common/MobileMenu.vue'
 import {
   Lock, SwitchButton, Setting, Monitor, User, Star, TrendCharts,
   ChatDotRound, QuestionFilled, DocumentCopy, Rank, Trophy, Medal,
@@ -908,6 +914,36 @@ onUnmounted(() => {
     right: var(--spacing-4);
     width: 40px;
     height: 40px;
+  }
+  
+  /* 搜索框适配 */
+  .global-search {
+    width: 160px;
+  }
+  
+  .global-search:focus-within {
+    width: 200px;
+  }
+  
+  /* 隐藏移动端不需要的元素 */
+  .user-details {
+    display: none;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  .logo {
+    gap: var(--spacing-2);
+  }
+  
+  .logo-icon {
+    font-size: 24px;
+  }
+  
+  .header-content {
+    padding: 0 var(--spacing-4);
   }
 }
 </style>

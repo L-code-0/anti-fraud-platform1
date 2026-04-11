@@ -8,9 +8,7 @@ import com.anti.fraud.modules.analysis.vo.LearningReportVO;
 import com.anti.fraud.modules.analysis.vo.WeaknessVO;
 import com.anti.fraud.modules.test.entity.TestRecord;
 import com.anti.fraud.modules.test.mapper.TestRecordMapper;
-import com.anti.fraud.modules.simulation.entity.SimulationRecord;
 import com.anti.fraud.modules.simulation.mapper.SimulationRecordMapper;
-import com.anti.fraud.modules.knowledge.entity.KnowledgeContent;
 import com.anti.fraud.modules.knowledge.mapper.KnowledgeContentMapper;
 import com.anti.fraud.modules.user.entity.User;
 import com.anti.fraud.modules.user.mapper.UserMapper;
@@ -23,9 +21,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,13 +73,13 @@ class AnalysisServiceTest {
         TestRecord record1 = new TestRecord();
         record1.setId(1L);
         record1.setUserId(1L);
-        record1.setUserScore(85);
+        record1.setUserScore(BigDecimal.valueOf(85));
         testRecords.add(record1);
 
         TestRecord record2 = new TestRecord();
         record2.setId(2L);
         record2.setUserId(1L);
-        record2.setUserScore(90);
+        record2.setUserScore(BigDecimal.valueOf(90));
         testRecords.add(record2);
 
         // 初始化薄弱点
@@ -200,9 +199,8 @@ class AnalysisServiceTest {
         analysisService.updateWeaknessAnalysis(1L, "telecom_fraud", false);
 
         // Then
-        verify(weaknessMapper, times(1)).insert(argThat(entity -> {
-            LearningWeakness lw = (LearningWeakness) entity;
-            return lw.getWeaknessLevel() == 3; // 严重
+        verify(weaknessMapper, times(1)).insert(argThat((LearningWeakness entity) -> {
+            return entity.getWeaknessLevel() != null && entity.getWeaknessLevel() == 3; // 严重
         }));
     }
 
@@ -213,15 +211,15 @@ class AnalysisServiceTest {
         when(weaknessMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(weaknesses);
 
         // When
-        List<CategoryMasteryVO> result = analysisService.getCategoryMastery(1L);
+        List<Map<String, Object>> result = analysisService.getCategoryMastery(1L);
 
         // Then
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("电信诈骗", result.get(0).getCategoryName());
-        assertEquals(10, result.get(0).getTotalQuestions());
-        assertEquals(6, result.get(0).getCorrectQuestions());
-        assertEquals(0.6, result.get(0().getCorrectRate()));
+        assertEquals("电信诈骗", result.get(0).get("categoryName"));
+        assertEquals(10, result.get(0).get("totalQuestions"));
+        assertEquals(6, result.get(0).get("correctQuestions"));
+        assertEquals(0.6, result.get(0).get("correctRate"));
     }
 
     @Test

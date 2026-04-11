@@ -146,7 +146,7 @@
         </el-main>
         
         <el-footer class="admin-footer">
-          <span>高校反诈安全知识普及平台 © 2024</span>
+          <span>高校反诈安全知识普及平台 © 2026</span>
         </el-footer>
       </el-container>
     </el-container>

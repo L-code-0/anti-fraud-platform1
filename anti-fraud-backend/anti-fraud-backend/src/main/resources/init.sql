@@ -369,3 +369,225 @@ CREATE TABLE activity_registration (
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     UNIQUE KEY uk_activity_user (activity_id, user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='活动报名表';
+
+-- 学习薄弱点表
+DROP TABLE IF EXISTS learning_weakness;
+CREATE TABLE learning_weakness (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    category VARCHAR(50) COMMENT '知识分类',
+    category_name VARCHAR(100) COMMENT '分类名称',
+    total_questions INT DEFAULT 0 COMMENT '该分类总题数',
+    wrong_questions INT DEFAULT 0 COMMENT '错题数',
+    correct_rate DECIMAL(5,2) DEFAULT 0.00 COMMENT '正确率',
+    weakness_level TINYINT DEFAULT 1 COMMENT '薄弱等级 1-轻微 2-中等 3-严重',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    KEY idx_user_id (user_id),
+    KEY idx_category (category),
+    KEY idx_correct_rate (correct_rate)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学习薄弱点表';
+
+-- 院系表
+DROP TABLE IF EXISTS department_info;
+CREATE TABLE department_info (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '院系ID',
+    department_name VARCHAR(100) NOT NULL COMMENT '院系名称',
+    description VARCHAR(500) COMMENT '院系描述',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    status TINYINT DEFAULT 1 COMMENT '状态',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='院系表';
+
+-- 班级表
+DROP TABLE IF EXISTS class_info;
+CREATE TABLE class_info (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '班级ID',
+    class_name VARCHAR(100) NOT NULL COMMENT '班级名称',
+    class_code VARCHAR(50) UNIQUE COMMENT '班级码',
+    teacher_id BIGINT COMMENT '班主任ID',
+    teacher_name VARCHAR(50) COMMENT '班主任姓名',
+    description VARCHAR(500) COMMENT '班级描述',
+    student_count INT DEFAULT 0 COMMENT '学生人数',
+    learning_progress INT DEFAULT 0 COMMENT '学习进度',
+    mastery_rate INT DEFAULT 0 COMMENT '知识掌握率',
+    average_score INT DEFAULT 0 COMMENT '平均分',
+    status TINYINT DEFAULT 1 COMMENT '状态：0-已关闭 1-正常',
+    creator_id BIGINT COMMENT '创建者ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='班级表';
+
+-- 导出任务表
+DROP TABLE IF EXISTS export_task;
+CREATE TABLE export_task (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '任务ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    task_type VARCHAR(50) NOT NULL COMMENT '任务类型：users, test-scores, reports等',
+    params JSON COMMENT '导出参数',
+    file_name VARCHAR(255) COMMENT '文件名',
+    file_path VARCHAR(500) COMMENT '文件存储路径',
+    status TINYINT DEFAULT 0 COMMENT '状态：0-等待中 1-处理中 2-完成 3-失败',
+    progress INT DEFAULT 0 COMMENT '进度百分比',
+    total_count INT DEFAULT 0 COMMENT '总数据量',
+    processed_count INT DEFAULT 0 COMMENT '已处理数据量',
+    error_message VARCHAR(500) COMMENT '错误信息',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    KEY idx_user_id (user_id),
+    KEY idx_status (status),
+    KEY idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导出任务表';
+
+-- 插入示例院系数据
+INSERT INTO department_info (department_name, sort_order) VALUES
+('计算机科学与技术学院', 1),
+('经济管理学院', 2),
+('人文学院', 3),
+('外国语学院', 4),
+('理学院', 5);
+
+-- 插入示例班级数据
+INSERT INTO class_info (class_name, class_code, teacher_id, teacher_name, status) VALUES
+('计算机科学与技术1班', 'CS202301', 4, '李老师', 1),
+('计算机科学与技术2班', 'CS202302', 4, '李老师', 1),
+('软件工程1班', 'SE202301', 4, '李老师', 1),
+('财务管理1班', 'FM202301', 4, '李老师', 1),
+('市场营销1班', 'MM202301', 4, '李老师', 1);
+
+-- 知识图谱节点表
+DROP TABLE IF EXISTS knowledge_node;
+CREATE TABLE knowledge_node (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '节点ID',
+    node_name VARCHAR(100) NOT NULL COMMENT '节点名称',
+    node_type VARCHAR(50) COMMENT '节点类型：诈骗类型、防范措施、案例等',
+    description TEXT COMMENT '节点描述',
+    keywords VARCHAR(255) COMMENT '关键词',
+    importance INT DEFAULT 1 COMMENT '重要性等级：1-5',
+    related_count INT DEFAULT 0 COMMENT '关联节点数量',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识图谱节点表';
+
+-- 知识图谱边表
+DROP TABLE IF EXISTS knowledge_edge;
+CREATE TABLE knowledge_edge (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '边ID',
+    source_node_id BIGINT NOT NULL COMMENT '源节点ID',
+    target_node_id BIGINT NOT NULL COMMENT '目标节点ID',
+    relationship_type VARCHAR(50) COMMENT '关系类型：属于、包含、预防、案例等',
+    relationship_description VARCHAR(255) COMMENT '关系描述',
+    strength INT DEFAULT 1 COMMENT '关系强度：1-5',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志',
+    KEY idx_source_node (source_node_id),
+    KEY idx_target_node (target_node_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识图谱边表';
+
+-- 插入示例知识图谱数据
+INSERT INTO knowledge_node (node_name, node_type, description, importance) VALUES
+('电信诈骗', '诈骗类型', '通过电话、短信等电信手段实施的诈骗', 5),
+('网络诈骗', '诈骗类型', '通过互联网实施的诈骗', 5),
+('冒充公检法', '诈骗手法', '冒充公安、检察院、法院等机关工作人员实施的诈骗', 4),
+('刷单诈骗', '诈骗手法', '以刷单兼职为诱饵实施的诈骗', 4),
+('验证码泄露', '防范措施', '保护验证码不被泄露', 3),
+('转账核实', '防范措施', '涉及转账时进行电话核实', 5),
+('案例1', '案例', '张三遭遇冒充公检法诈骗', 2),
+('案例2', '案例', '李四遭遇刷单诈骗', 2);
+
+-- 插入知识图谱关系
+INSERT INTO knowledge_edge (source_node_id, target_node_id, relationship_type, strength) VALUES
+(1, 3, '包含', 5),
+(2, 4, '包含', 5),
+(3, 5, '预防措施', 4),
+(3, 6, '预防措施', 5),
+(4, 5, '预防措施', 3),
+(4, 6, '预防措施', 4),
+(7, 3, '案例', 5),
+(8, 4, '案例', 5);
+
+-- 用户能力水平表
+DROP TABLE IF EXISTS user_ability;
+CREATE TABLE user_ability (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    overall_ability INT DEFAULT 50 COMMENT '综合能力水平：0-100',
+    knowledge_mastery INT DEFAULT 50 COMMENT '知识掌握程度：0-100',
+    test_performance INT DEFAULT 50 COMMENT '测试表现：0-100',
+    adaptive_level TINYINT DEFAULT 1 COMMENT '自适应等级：1-5',
+    last_test_time DATETIME COMMENT '上次测试时间',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志',
+    UNIQUE KEY idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户能力水平表';
+
+-- 测试记录表
+DROP TABLE IF EXISTS test_record;
+CREATE TABLE test_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '测试记录ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    paper_id BIGINT COMMENT '试卷ID',
+    test_type TINYINT DEFAULT 1 COMMENT '测试类型：1-普通测试 2-自适应测试',
+    score INT COMMENT '测试得分',
+    pass TINYINT DEFAULT 0 COMMENT '是否通过：0-未通过 1-通过',
+    duration INT COMMENT '测试时长(分钟)',
+    start_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
+    end_time DATETIME COMMENT '结束时间',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志',
+    KEY idx_user_id (user_id),
+    KEY idx_paper_id (paper_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='测试记录表';
+
+-- 演练场景表
+DROP TABLE IF EXISTS drill_scenario;
+CREATE TABLE drill_scenario (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '场景ID',
+    scenario_name VARCHAR(200) NOT NULL COMMENT '场景名称',
+    scenario_desc TEXT COMMENT '场景描述',
+    difficulty TINYINT DEFAULT 1 COMMENT '难度等级：1-5',
+    duration INT DEFAULT 15 COMMENT '演练时长(分钟)',
+    scenario_type VARCHAR(50) COMMENT '场景类型：电信诈骗、网络诈骗等',
+    scenario_content TEXT COMMENT '场景内容',
+    options TEXT COMMENT '选项',
+    correct_answer VARCHAR(255) COMMENT '正确答案',
+    feedback TEXT COMMENT '反馈内容',
+    status TINYINT DEFAULT 1 COMMENT '状态：1-启用 0-禁用',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志',
+    KEY idx_status (status),
+    KEY idx_scenario_type (scenario_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='演练场景表';
+
+-- 演练记录表
+DROP TABLE IF EXISTS drill_record;
+CREATE TABLE drill_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    scenario_id BIGINT NOT NULL COMMENT '场景ID',
+    scenario_name VARCHAR(200) COMMENT '场景名称',
+    score INT COMMENT '得分',
+    correct_rate INT COMMENT '正确率',
+    duration INT COMMENT '演练时长(分钟)',
+    answers TEXT COMMENT '答案',
+    feedback TEXT COMMENT '反馈',
+    status TINYINT DEFAULT 1 COMMENT '状态：1-完成 0-未完成',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '删除标志',
+    KEY idx_user_id (user_id),
+    KEY idx_scenario_id (scenario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='演练记录表';
+
+-- 插入示例演练场景
+INSERT INTO drill_scenario (scenario_name, scenario_desc, difficulty, duration, scenario_type, status) VALUES
+('电信诈骗演练', '模拟接到冒充公检法的电话，学习如何识别和应对', 1, 15, '电信诈骗', 1),
+('网络诈骗演练', '模拟网购诈骗场景，学习如何保护个人信息', 2, 20, '网络诈骗', 1),
+('短信诈骗演练', '模拟收到钓鱼短信，学习如何辨别真伪', 3, 15, '短信诈骗', 1),
+('综合反诈演练', '多种诈骗场景混合，全面提升应对能力', 4, 30, '综合诈骗', 1);
+

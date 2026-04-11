@@ -182,9 +182,9 @@ const loadKnowledge = async () => {
     total.value = res.data?.total || 0
   } catch (e) {
     knowledgeList.value = [
-      { id: 1, title: '冒充公检法诈骗案例分析', contentType: 1, authorName: '王专家', viewCount: 2356, likeCount: 128, status: 1, isHot: true, isRecommend: true, publishTime: '2024-01-15' },
-      { id: 2, title: '网络兼职刷单诈骗防范指南', contentType: 1, authorName: '李老师', viewCount: 1892, likeCount: 98, status: 1, isRecommend: true, publishTime: '2024-01-14' },
-      { id: 3, title: '校园贷陷阱识别指南', contentType: 1, authorName: '王专家', viewCount: 3210, likeCount: 156, status: 1, isHot: true, publishTime: '2024-01-13' }
+      { id: 1, title: '冒充公检法诈骗案例分析', contentType: 1, authorName: '王专家', viewCount: 2356, likeCount: 128, status: 1, isHot: true, isRecommend: true, publishTime: '2026-01-15' },
+      { id: 2, title: '网络兼职刷单诈骗防范指南', contentType: 1, authorName: '李老师', viewCount: 1892, likeCount: 98, status: 1, isRecommend: true, publishTime: '2026-01-14' },
+      { id: 3, title: '校园贷陷阱识别指南', contentType: 1, authorName: '王专家', viewCount: 3210, likeCount: 156, status: 1, isHot: true, publishTime: '2026-01-13' }
     ]
     total.value = 3
   }

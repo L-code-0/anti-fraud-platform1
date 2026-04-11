@@ -51,6 +51,9 @@ public class UserVO {
     @Schema(description = "等级")
     private Integer level;
 
+    @Schema(description = "状态：0-禁用，1-正常")
+    private Integer status;
+
     /**
      * 敏感字段的原始值（仅用于内部处理，不返回给前端）
      */

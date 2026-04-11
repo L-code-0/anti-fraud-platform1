@@ -74,7 +74,7 @@ public class TokenSecurityService {
         String refreshToken = UUID.randomUUID().toString().replace("-", "");
         String refreshKey = REFRESH_TOKEN_PREFIX + refreshToken;
 
-        java.util.Map<String, String> tokenData = new java.util.HashMap<>();
+        java.util.Map<String, Object> tokenData = new java.util.HashMap<>();
         tokenData.put("userId", userId.toString());
         tokenData.put("family", tokenFamily);
         tokenData.put("createTime", String.valueOf(System.currentTimeMillis()));
@@ -410,3 +410,4 @@ public class TokenSecurityService {
         return remaining < threshold;
     }
 }
+

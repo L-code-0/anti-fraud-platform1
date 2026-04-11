@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 权限VO
- * 
+ *
  * @author Anti-Fraud Platform Team
  */
 @Data
@@ -31,9 +31,6 @@ public class PermissionVO implements Serializable {
 
     /** 类型：1-菜单 2-按钮 3-接口 */
     private Integer type;
-
-    /** 类型名称 */
-    private String typeName;
 
     /** 父权限ID */
     private Long parentId;
@@ -68,6 +65,9 @@ public class PermissionVO implements Serializable {
     /** 子权限列表 */
     private List<PermissionVO> children;
 
+    /** 角色关联的权限ID列表（用于角色菜单权限树） */
+    private List<Long> permissionIds;
+
     // ==================== 类型名称映射 ====================
     public String getTypeName() {
         if (type == null) return "";
@@ -79,3 +79,4 @@ public class PermissionVO implements Serializable {
         }
     }
 }
+

@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 角色Mapper接口
- * 
+ *
  * @author Anti-Fraud Platform Team
  */
 @Mapper
@@ -49,4 +49,19 @@ public interface RoleMapper extends BaseMapper<Role> {
      */
     @Select("SELECT COUNT(1) > 0 FROM sys_user_role WHERE user_id = #{userId} AND role_id = #{roleId}")
     boolean hasRole(@Param("userId") Long userId, @Param("roleId") Long roleId);
+
+    /**
+     * 删除角色权限关联
+     * @param roleId 角色ID
+     */
+    @org.apache.ibatis.annotations.Delete("DELETE FROM sys_role_permission WHERE role_id = #{roleId}")
+    void deleteRolePermissions(@Param("roleId") Long roleId);
+
+    /**
+     * 插入角色权限关联
+     * @param roleId 角色ID
+     * @param permissionId 权限ID
+     */
+    @org.apache.ibatis.annotations.Insert("INSERT INTO sys_role_permission (role_id, permission_id, create_time) VALUES (#{roleId}, #{permissionId}, NOW())")
+    void insertRolePermission(@Param("roleId") Long roleId, @Param("permissionId") Long permissionId);
 }

@@ -129,10 +129,10 @@ const loadUsers = async () => {
     total.value = res.data?.total || 0
   } catch (e) {
     userList.value = [
-      { id: 1, username: 'student1', realName: '张三', phone: '13800138001', roleId: 1, points: 100, level: 2, status: 1, createTime: '2024-01-10' },
-      { id: 2, username: 'teacher1', realName: '李老师', phone: '13800138002', roleId: 2, points: 200, level: 3, status: 1, createTime: '2024-01-09' },
-      { id: 3, username: 'expert1', realName: '王专家', phone: '13800138003', roleId: 4, points: 500, level: 4, status: 1, createTime: '2024-01-08' },
-      { id: 4, username: 'admin', realName: '系统管理员', phone: '13800138000', roleId: 5, points: 0, level: 1, status: 1, createTime: '2024-01-01' }
+      { id: 1, username: 'student1', realName: '张三', phone: '13800138001', roleId: 1, points: 100, level: 2, status: 1, createTime: '2026-01-10' },
+      { id: 2, username: 'teacher1', realName: '李老师', phone: '13800138002', roleId: 2, points: 200, level: 3, status: 1, createTime: '2026-01-09' },
+      { id: 3, username: 'expert1', realName: '王专家', phone: '13800138003', roleId: 4, points: 500, level: 4, status: 1, createTime: '2026-01-08' },
+      { id: 4, username: 'admin', realName: '系统管理员', phone: '13800138000', roleId: 5, points: 0, level: 1, status: 1, createTime: '2026-01-01' }
     ]
     total.value = 4
   }

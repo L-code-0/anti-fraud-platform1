@@ -247,7 +247,7 @@ export function validatePasswordFormat(password: string): { valid: boolean; mess
 // 敏感信息加密存储
 // ============================================
 
-class SecureStorage {
+export class SecureStorage {
   private secretKey: string
 
   constructor() {

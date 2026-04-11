@@ -311,7 +311,7 @@ const loadWrongQuestions = async () => {
           correctAnswer: 1,
           mastered: false,
           analysis: '点击陌生链接并填写个人信息是导致个人信息泄露的常见原因。诈骗者通常通过钓鱼链接诱导用户输入个人信息。',
-          errorTime: '2024-01-15 14:30'
+          errorTime: '2026-01-15 14:30'
         },
         {
           id: 2,
@@ -324,7 +324,7 @@ const loadWrongQuestions = async () => {
           correctAnswer: 1,
           mastered: true,
           analysis: '遇到此类短信，应通过官方渠道核实，不要轻易点击陌生链接。正规快递公司不会通过短信索要个人信息。',
-          errorTime: '2024-01-14 09:15'
+          errorTime: '2026-01-14 09:15'
         }
       ]
       total.value = 2
@@ -343,7 +343,7 @@ const loadWrongQuestions = async () => {
         correctAnswer: 1,
         mastered: false,
         analysis: '点击陌生链接并填写个人信息是导致个人信息泄露的常见原因。诈骗者通常通过钓鱼链接诱导用户输入个人信息。',
-        errorTime: '2024-01-15 14:30'
+        errorTime: '2026-01-15 14:30'
       }
     ]
     total.value = 1

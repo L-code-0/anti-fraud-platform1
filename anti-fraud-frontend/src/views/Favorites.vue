@@ -268,7 +268,7 @@ const loadFavorites = async () => {
           viewCount: 1256,
           likeCount: 89,
           isRead: true,
-          collectTime: '2024-01-15'
+          collectTime: '2026-01-15'
         },
         {
           id: 2,
@@ -279,7 +279,7 @@ const loadFavorites = async () => {
           viewCount: 892,
           likeCount: 56,
           isRead: false,
-          collectTime: '2024-01-14'
+          collectTime: '2026-01-14'
         },
         {
           id: 3,
@@ -290,7 +290,7 @@ const loadFavorites = async () => {
           viewCount: 2103,
           likeCount: 167,
           isRead: true,
-          collectTime: '2024-01-13'
+          collectTime: '2026-01-13'
         }
       ]
       total.value = 3
@@ -314,7 +314,7 @@ const loadFavorites = async () => {
         viewCount: 1256,
         likeCount: 89,
         isRead: true,
-        collectTime: '2024-01-15'
+        collectTime: '2026-01-15'
       }
     ]
     total.value = 1

@@ -2,8 +2,7 @@ package com.anti.fraud.modules.file.dto;
 
 import lombok.Data;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+
 
 /**
  * 文件上传DTO

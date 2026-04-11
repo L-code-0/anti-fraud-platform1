@@ -85,7 +85,7 @@
                 {{ activity.statusName }}
               </div>
               <div class="card-reward" v-if="activity.reward">
-                <el-icon><Gift /></el-icon>
+                <el-icon><Present /></el-icon>
                 {{ activity.reward }}
               </div>
             </div>
@@ -171,10 +171,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import * as VueRouter from 'vue-router'
+const useRouter = VueRouter.useRouter
 import { ElMessage } from 'element-plus'
 import {
-  Star, Calendar, Location, User, Gift, Trophy, Flag, Medal
+  Star, Calendar, Location, User, Present
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -193,10 +194,10 @@ const typeTabs = [
 
 const featuredActivity = ref({
   id: 1,
-  title: '2024年度反诈知识大赛',
+  title: '2026年度反诈知识大赛',
   desc: '年度盛典，丰厚奖品等你来拿！前50名可获得精美礼品，前10名可获得荣誉证书和奖金',
   cover: 'https://picsum.photos/seed/featured/800/400',
-  date: '2024-02-01 至 2024-02-28',
+  date: '2026-02-01 至 2026-02-28',
   location: '线上+线下',
   participants: 1234,
   endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -225,7 +226,7 @@ const activities = ref([
     title: '校园反诈宣传活动',
     desc: '志愿者招募中',
     cover: 'https://picsum.photos/seed/act2/400/250',
-    date: '2024-02-15',
+    date: '2026-02-15',
     location: '大学生活动中心',
     participants: 156,
     status: 'upcoming',
@@ -241,7 +242,7 @@ const activities = ref([
     title: '反诈专家讲座',
     desc: '邀请反诈中心专家现场分享',
     cover: 'https://picsum.photos/seed/act3/400/250',
-    date: '2024-02-20',
+    date: '2026-02-20',
     location: '图书馆报告厅',
     participants: 300,
     status: 'upcoming',
@@ -256,7 +257,7 @@ const activities = ref([
     title: '防骗情景剧大赛',
     desc: '以情景剧形式展示防骗技巧',
     cover: 'https://picsum.photos/seed/act4/400/250',
-    date: '2024-01-15',
+    date: '2026-01-15',
     location: '线上',
     participants: 89,
     status: 'ended',

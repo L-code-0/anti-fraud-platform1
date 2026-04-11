@@ -91,7 +91,7 @@ const analysisList = ref([
     summary: '受害人接到自称电商客服的电话，称其订单异常需要退款，按照对方指示操作后被骗。',
     viewCount: 1234,
     thumbCount: 89,
-    createTime: '2024-03-15'
+    createTime: '2026-03-15'
   },
   {
     id: 2,
@@ -100,7 +100,7 @@ const analysisList = ref([
     summary: '近期出现利用AI换脸技术冒充熟人诈骗的案件，骗子通过视频通话取得信任后实施诈骗。',
     viewCount: 2345,
     thumbCount: 156,
-    createTime: '2024-03-10'
+    createTime: '2026-03-10'
   }
 ])
 

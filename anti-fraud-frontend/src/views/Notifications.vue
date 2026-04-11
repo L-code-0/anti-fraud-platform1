@@ -263,7 +263,7 @@ const notifications = ref([
     type: 'activity',
     icon: 'Medal',
     title: '反诈知识大赛报名即将截止',
-    content: '2024年度反诈知识大赛报名将于明天截止，赶快报名参加吧！丰厚奖品等着你',
+    content: '2026年度反诈知识大赛报名将于明天截止，赶快报名参加吧！丰厚奖品等着你',
     time: '2小时前',
     read: false,
     action: '/activity/1',

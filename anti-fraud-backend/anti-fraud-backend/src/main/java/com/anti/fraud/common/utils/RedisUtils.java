@@ -6,6 +6,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -135,5 +137,108 @@ public class RedisUtils {
     public Long increment(String key, long delta) {
         log.debug("Redis自增操作: key={}, delta={}", key, delta);
         return redisTemplate.opsForValue().increment(key, delta);
+    }
+
+    /**
+     * 获取键的剩余过期时间
+     *
+     * @param key 缓存键
+     * @return 剩余过期时间（秒），如果键不存在或没有过期时间返回-1
+     */
+    public Long getExpire(String key) {
+        log.debug("获取Redis缓存过期时间: key={}", key);
+        return redisTemplate.getExpire(key);
+    }
+
+    /**
+     * 设置Hash字段值
+     *
+     * @param key 缓存键
+     * @param hashKey Hash的field
+     * @param value Hash的value
+     */
+    public void hset(String key, String hashKey, Object value) {
+        log.debug("设置Redis Hash: key={}, hashKey={}", key, hashKey);
+        redisTemplate.opsForHash().put(key, hashKey, value);
+    }
+
+    /**
+     * 设置Hash（存储整个Map）
+     *
+     * @param key 缓存键
+     * @param map Hash的键值对
+     */
+    public void hset(String key, Map<String, Object> map) {
+        log.debug("设置Redis Hash: key={}", key);
+        redisTemplate.opsForHash().putAll(key, map);
+    }
+
+    /**
+     * 获取Hash中指定字段的值
+     *
+     * @param key 缓存键
+     * @param hashKey Hash的field
+     * @return Hash的value
+     */
+    public Object hget(String key, String hashKey) {
+        log.debug("获取Redis Hash: key={}, hashKey={}", key, hashKey);
+        return redisTemplate.opsForHash().get(key, hashKey);
+    }
+
+    /**
+     * 获取Hash中所有数据
+     *
+     * @param key 缓存键
+     * @return Hash的所有键值对
+     */
+    public Map<Object, Object> hgetAll(String key) {
+        log.debug("获取Redis Hash所有数据: key={}", key);
+        return redisTemplate.opsForHash().entries(key);
+    }
+
+    /**
+     * 删除Hash中指定字段
+     *
+     * @param key 缓存键
+     * @param hashKeys Hash的field集合
+     * @return 删除的字段数量
+     */
+    public Long hdel(String key, Object... hashKeys) {
+        log.debug("删除Redis Hash: key={}, hashKeys={}", key, hashKeys);
+        return redisTemplate.opsForHash().delete(key, hashKeys);
+    }
+
+    /**
+     * 判断Hash中指定字段是否存在
+     *
+     * @param key 缓存键
+     * @param hashKey Hash的field
+     * @return 是否存在
+     */
+    public Boolean hHasKey(String key, String hashKey) {
+        log.debug("检查Redis Hash字段是否存在: key={}, hashKey={}", key, hashKey);
+        return redisTemplate.opsForHash().hasKey(key, hashKey);
+    }
+
+    /**
+     * 获取Hash中所有field
+     *
+     * @param key 缓存键
+     * @return 所有field的Set
+     */
+    public Set<Object> hkeys(String key) {
+        log.debug("获取Redis Hash所有field: key={}", key);
+        return redisTemplate.opsForHash().keys(key);
+    }
+
+    /**
+     * 获取Hash中字段数量
+     *
+     * @param key 缓存键
+     * @return 字段数量
+     */
+    public Long hsize(String key) {
+        log.debug("获取Redis Hash大小: key={}", key);
+        return redisTemplate.opsForHash().size(key);
     }
 }

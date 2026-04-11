@@ -9,8 +9,6 @@ import com.anti.fraud.modules.permission.mapper.RoleMapper;
 import com.anti.fraud.modules.permission.service.PermissionService;
 import com.anti.fraud.modules.permission.vo.PermissionVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +22,7 @@ import java.util.stream.Collectors;
 
 /**
  * 权限Service实现类
- * 
+ *
  * @author Anti-Fraud Platform Team
  */
 @Slf4j
@@ -39,7 +37,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     public Page<PermissionVO> queryPage(PermissionQueryDTO queryDTO) {
         Page<Permission> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
-        
+
         if (StringUtils.hasText(queryDTO.getName())) {
             wrapper.like(Permission::getName, queryDTO.getName());
         }
@@ -55,13 +53,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         if (queryDTO.getParentId() != null) {
             wrapper.eq(Permission::getParentId, queryDTO.getParentId());
         }
-        
+
         wrapper.orderByAsc(Permission::getSort);
         Page<Permission> result = page(page, wrapper);
-        
+
         Page<PermissionVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
         voPage.setRecords(result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList()));
-        
+
         return voPage;
     }
 
@@ -88,7 +86,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permission.setKeepAlive(dto.getKeepAlive() != null ? dto.getKeepAlive() : 1);
         permission.setDescription(dto.getDescription());
         permission.setRemark(dto.getRemark());
-        
+
         return baseMapper.insert(permission) > 0;
     }
 
@@ -98,7 +96,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         if (dto.getId() == null) {
             return false;
         }
-        
+
         Permission permission = new Permission();
         permission.setId(dto.getId());
         permission.setName(dto.getName());
@@ -114,7 +112,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permission.setKeepAlive(dto.getKeepAlive() != null ? dto.getKeepAlive() : 1);
         permission.setDescription(dto.getDescription());
         permission.setRemark(dto.getRemark());
-        
+
         return baseMapper.updateById(permission) > 0;
     }
 
@@ -125,8 +123,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         List<Long> ids = new ArrayList<>();
         ids.add(id);
         findChildIds(id, ids);
-        
-        return baseMapper.deleteBatchIds(ids) > 0;
+
+        return baseMapper.deleteByIds(ids) > 0;
     }
 
     private void findChildIds(Long parentId, List<Long> ids) {
@@ -154,7 +152,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         List<Permission> menus = permissions.stream()
                 .filter(p -> p.getType() != null && p.getType() == 1)
                 .collect(Collectors.toList());
-        
+
         return buildMenuTree(menus);
     }
 
@@ -167,7 +165,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     private List<PermissionVO> buildMenuTree(List<Permission> permissions) {
         Map<Long, List<Permission>> groupByParent = permissions.stream()
                 .collect(Collectors.groupingBy(Permission::getParentId));
-        
+
         List<PermissionVO> result = new ArrayList<>();
         for (Permission permission : permissions) {
             if (permission.getParentId() == null || permission.getParentId() == 0) {
@@ -176,7 +174,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                 result.add(vo);
             }
         }
-        
+
         // 按sort排序
         result.sort(Comparator.comparing(PermissionVO::getSort));
         return result;
@@ -187,14 +185,14 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         if (children.isEmpty()) {
             return Collections.emptyList();
         }
-        
+
         List<PermissionVO> childVOs = new ArrayList<>();
         for (Permission child : children) {
             PermissionVO vo = convertToVO(child);
             vo.setChildren(buildChildren(child.getId(), groupByParent));
             childVOs.add(vo);
         }
-        
+
         childVOs.sort(Comparator.comparing(PermissionVO::getSort));
         return childVOs;
     }
@@ -211,27 +209,15 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     @Transactional(rollbackFor = Exception.class)
     public boolean assignPermissions(Long roleId, List<Long> permissionIds) {
         // 先删除该角色的所有权限
-        QueryWrapper<Object> wrapper = new QueryWrapper<>();
-        wrapper.eq("role_id", roleId);
-        baseMapper.delete(wrapper.eq("role_id", roleId));
-        
-        // 执行原生SQL删除
-        String deleteSql = "DELETE FROM sys_role_permission WHERE role_id = " + roleId;
-        baseMapper.execute(wrapper);
-        
+        roleMapper.deleteRolePermissions(roleId);
+
         // 重新插入权限
         if (permissionIds != null && !permissionIds.isEmpty()) {
-            String insertSql = "INSERT INTO sys_role_permission (role_id, permission_id, create_time) VALUES ";
-            StringBuilder values = new StringBuilder();
             for (Long permissionId : permissionIds) {
-                if (values.length() > 0) {
-                    values.append(",");
-                }
-                values.append("(").append(roleId).append(",").append(permissionId).append(",NOW())");
+                roleMapper.insertRolePermission(roleId, permissionId);
             }
-            baseMapper.execute(new QueryWrapper<>(insertSql + values));
         }
-        
+
         return true;
     }
 
@@ -283,3 +269,4 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         return vo;
     }
 }
+

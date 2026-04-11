@@ -16,6 +16,8 @@ public class ReportInfo {
 
     private String reportNo;
 
+    private Long reporterId;
+
     private Long userId;
 
     private Integer reportType;
@@ -25,6 +27,11 @@ public class ReportInfo {
     private String title;
 
     private String description;
+
+    /**
+     * 举报内容
+     */
+    private String content;
 
     private String phoneNumber;
 

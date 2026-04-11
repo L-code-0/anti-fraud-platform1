@@ -72,4 +72,30 @@ public class TaskController {
         taskService.deleteTask(id);
         return Result.successMsg("删除成功");
     }
+
+    @Operation(summary = "设置任务提醒", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/{id}/reminder")
+    public Result<Void> setTaskReminder(
+            @PathVariable Long id,
+            @RequestParam Integer remindType,
+            @RequestParam Integer remindDays) {
+        taskService.setTaskReminder(id, remindType, remindDays);
+        return Result.successMsg("设置提醒成功");
+    }
+
+    @Operation(summary = "触发任务提醒", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/reminders/trigger")
+    public Result<Void> triggerTaskReminders() {
+        taskService.triggerTaskReminders();
+        return Result.successMsg("触发提醒成功");
+    }
+
+    @Operation(summary = "自动分配任务", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/{id}/auto-assign")
+    public Result<Void> autoAssignTask(
+            @PathVariable Long id,
+            @RequestParam Integer strategy) {
+        taskService.autoAssignTask(id, strategy);
+        return Result.successMsg("自动分配任务成功");
+    }
 }

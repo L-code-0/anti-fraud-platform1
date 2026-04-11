@@ -147,9 +147,9 @@ const loadTasks = async () => {
     total.value = res.data?.total || 0
   } catch (e) {
     taskList.value = [
-      { id: 1, taskName: '观看反诈视频', taskTypeName: '视频学习', className: '计科2201', relatedName: '冒充公检法诈骗案例分析', startTime: '2024-01-15', endTime: '2024-01-20', status: 1, statusName: '进行中', completionRate: 75, completedStudents: 30, totalStudents: 40 },
-      { id: 2, taskName: '完成反诈测试', taskTypeName: '在线测试', className: '计科2201', relatedName: '电信诈骗防范测试', startTime: '2024-01-16', endTime: '2024-01-22', status: 1, statusName: '进行中', completionRate: 60, completedStudents: 24, totalStudents: 40 },
-      { id: 3, taskName: '学习校园贷知识', taskTypeName: '知识学习', className: '计科2202', relatedName: '校园贷陷阱识别指南', startTime: '2024-01-14', endTime: '2024-01-18', status: 2, statusName: '已结束', completionRate: 90, completedStudents: 36, totalStudents: 40 }
+      { id: 1, taskName: '观看反诈视频', taskTypeName: '视频学习', className: '计科2201', relatedName: '冒充公检法诈骗案例分析', startTime: '2026-01-15', endTime: '2026-01-20', status: 1, statusName: '进行中', completionRate: 75, completedStudents: 30, totalStudents: 40 },
+      { id: 2, taskName: '完成反诈测试', taskTypeName: '在线测试', className: '计科2201', relatedName: '电信诈骗防范测试', startTime: '2026-01-16', endTime: '2026-01-22', status: 1, statusName: '进行中', completionRate: 60, completedStudents: 24, totalStudents: 40 },
+      { id: 3, taskName: '学习校园贷知识', taskTypeName: '知识学习', className: '计科2202', relatedName: '校园贷陷阱识别指南', startTime: '2026-01-14', endTime: '2026-01-18', status: 2, statusName: '已结束', completionRate: 90, completedStudents: 36, totalStudents: 40 }
     ]
     total.value = 3
   }
@@ -179,10 +179,10 @@ const viewDetail = (row: any) => {
 
 const viewCompletions = (row: any) => {
   completions.value = [
-    { studentName: '张三', status: 1, score: 95, completeTime: '2024-01-16 10:30:00' },
-    { studentName: '李四', status: 1, score: 88, completeTime: '2024-01-16 14:20:00' },
+    { studentName: '张三', status: 1, score: 95, completeTime: '2026-01-16 10:30:00' },
+    { studentName: '李四', status: 1, score: 88, completeTime: '2026-01-16 14:20:00' },
     { studentName: '王五', status: 0, score: null, completeTime: null },
-    { studentName: '赵六', status: 1, score: 92, completeTime: '2024-01-17 09:15:00' }
+    { studentName: '赵六', status: 1, score: 92, completeTime: '2026-01-17 09:15:00' }
   ]
   showCompletionsDialog.value = true
 }

@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: anti-fraud-gateway
+  cloud:
+    gateway:
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://anti-fraud-user-service
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=2
+
+        # 知识服务路由
+        - id: knowledge-service
+          uri: lb://anti-fraud-knowledge-service
+          predicates:
+            - Path=/api/knowledge/**
+          filters:
+            - StripPrefix=2
+
+        # 测试服务路由
+        - id: test-service
+          uri: lb://anti-fraud-test-service
+          predicates:
+            - Path=/api/test/**
+          filters:
+            - StripPrefix=2
+
+        # 举报服务路由
+        - id: report-service
+          uri: lb://anti-fraud-report-service
+          predicates:
+            - Path=/api/report/**,/api/warning/**
+          filters:
+            - StripPrefix=2
+
+        # 前端静态资源路由
+        - id: frontend
+          uri: http://localhost:5173
+          predicates:
+            - Path=/**
+          filters:
+            - RewritePath=/(?<segment>.*), /${segment}
+
+# Eureka客户端配置
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://admin:admin123@localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.cloud.client.ip-address}:${server.port}
+
+# 安全配置
+spring:
+  security:
+    user:
+      name: admin
+      password: admin123

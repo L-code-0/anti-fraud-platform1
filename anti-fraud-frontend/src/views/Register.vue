@@ -26,7 +26,7 @@
           <div class="register-header">
             <div class="logo-wrapper">
               <div class="logo-icon">
-                <el-icon><UserPlus /></el-icon>
+                <el-icon><UserFilled /></el-icon>
               </div>
               <div class="logo-ring"></div>
             </div>
@@ -288,7 +288,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  User, UserPlus, Lock, Avatar, Postcard, Phone, Key, Message,
+  User, UserFilled, Lock, Avatar, Postcard, Phone, Key, Message,
   ArrowLeft, ArrowRight, Loading, CircleCheck, CircleClose
 } from '@element-plus/icons-vue'
 

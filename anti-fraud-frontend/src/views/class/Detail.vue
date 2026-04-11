@@ -337,11 +337,11 @@ const loadStudents = async () => {
     // 模拟数据
     studentList.value = Array.from({ length: 10 }, (_, i) => ({
       id: i + 1,
-      studentId: `2024${String(i + 1).padStart(4, '0')}`,
+      studentId: `2026${String(i + 1).padStart(4, '0')}`,
       name: ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十', '郑一', '王二'][i],
       learningProgress: Math.floor(Math.random() * 100),
       score: Math.floor(Math.random() * 40) + 60,
-      lastLogin: '2024-01-15 10:30'
+      lastLogin: '2026-01-15 10:30'
     }))
     total.value = 45
   }

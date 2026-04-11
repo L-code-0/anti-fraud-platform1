@@ -2,7 +2,7 @@ package com.anti.fraud.common.aspect;
 
 import com.anti.fraud.common.annotation.RequirePermission;
 import com.anti.fraud.common.annotation.RequireRole;
-import com.anti.fraud.common.enums.UserRole;
+
 import com.anti.fraud.common.exception.BusinessException;
 import com.anti.fraud.common.utils.SecurityUtils;
 import com.anti.fraud.modules.permission.service.PermissionService;
@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 /**
  * 权限校验切面
  * 处理 @RequirePermission 和 @RequireRole 注解
- * 
+ *
  * @author Anti-Fraud Platform Team
  */
 @Slf4j
@@ -38,12 +38,12 @@ public class PermissionAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         RequirePermission annotation = method.getAnnotation(RequirePermission.class);
-        
+
         // 检查方法上的注解，如果没有则检查类上的注解
         if (annotation == null) {
             annotation = joinPoint.getTarget().getClass().getAnnotation(RequirePermission.class);
         }
-        
+
         if (annotation == null) {
             return joinPoint.proceed();
         }
@@ -83,11 +83,11 @@ public class PermissionAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         RequireRole annotation = method.getAnnotation(RequireRole.class);
-        
+
         if (annotation == null) {
             annotation = joinPoint.getTarget().getClass().getAnnotation(RequireRole.class);
         }
-        
+
         if (annotation == null) {
             return joinPoint.proceed();
         }
@@ -103,7 +103,7 @@ public class PermissionAspect {
     /**
      * 检查权限编码
      */
-    private Object checkCodePermission(ProceedingJoinPoint joinPoint, RequirePermission annotation, Long userId) {
+    private Object checkCodePermission(ProceedingJoinPoint joinPoint, RequirePermission annotation, Long userId) throws Throwable {
         String[] codes = annotation.value();
         if (codes == null || codes.length == 0) {
             return joinPoint.proceed();
@@ -141,7 +141,7 @@ public class PermissionAspect {
     /**
      * 检查角色权限
      */
-    private Object checkRolePermission(ProceedingJoinPoint joinPoint, RequirePermission annotation, Long userId) {
+    private Object checkRolePermission(ProceedingJoinPoint joinPoint, RequirePermission annotation, Long userId) throws Throwable {
         String[] roles = annotation.value();
         if (roles == null || roles.length == 0) {
             return joinPoint.proceed();
@@ -177,7 +177,7 @@ public class PermissionAspect {
     /**
      * 检查角色权限（@RequireRole注解专用）
      */
-    private Object checkRolePermission(ProceedingJoinPoint joinPoint, RequireRole annotation, Long userId) {
+    private Object checkRolePermission(ProceedingJoinPoint joinPoint, RequireRole annotation, Long userId) throws Throwable {
         String[] roles = annotation.value();
         if (roles == null || roles.length == 0) {
             return joinPoint.proceed();

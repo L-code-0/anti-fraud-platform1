@@ -249,12 +249,12 @@ const mallItems = ref([
 ])
 
 const historyRecords = ref([
-  { id: 1, title: '每日签到', time: '2024-01-15 08:00', points: 5, type: 'add' },
-  { id: 2, title: '完成测试', time: '2024-01-15 10:30', points: 20, type: 'add' },
-  { id: 3, title: '学习文章', time: '2024-01-15 14:00', points: 10, type: 'add' },
-  { id: 4, title: '兑换商品', time: '2024-01-14 16:00', points: 100, type: 'sub' },
-  { id: 5, title: '通过考试', time: '2024-01-14 11:00', points: 50, type: 'add' },
-  { id: 6, title: '兑换商品', time: '2024-01-13 15:00', points: 500, type: 'sub' }
+  { id: 1, title: '每日签到', time: '2026-01-15 08:00', points: 5, type: 'add' },
+  { id: 2, title: '完成测试', time: '2026-01-15 10:30', points: 20, type: 'add' },
+  { id: 3, title: '学习文章', time: '2026-01-15 14:00', points: 10, type: 'add' },
+  { id: 4, title: '兑换商品', time: '2026-01-14 16:00', points: 100, type: 'sub' },
+  { id: 5, title: '通过考试', time: '2026-01-14 11:00', points: 50, type: 'add' },
+  { id: 6, title: '兑换商品', time: '2026-01-13 15:00', points: 500, type: 'sub' }
 ])
 
 const displayedHistory = computed(() => {

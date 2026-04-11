@@ -5,7 +5,7 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
-import { getCsrfToken, SecureStorage } from '@/utils/security'
+import { getCsrfToken, secureStorage } from '@/utils/security'
 
 const baseURL = '/api'
 
@@ -79,7 +79,7 @@ service.interceptors.response.use(
           ElMessage.error('登录已过期，请重新登录')
           localStorage.removeItem('token')
           localStorage.removeItem('userInfo')
-          SecureStorage.removeItem('csrfToken')
+          secureStorage.removeItem('csrfToken')
           // 延迟跳转，让用户看到提示
           setTimeout(() => {
             window.location.href = '/login'
@@ -122,7 +122,7 @@ service.interceptors.response.use(
           errorMessage = '登录已过期，请重新登录'
           localStorage.removeItem('token')
           localStorage.removeItem('userInfo')
-          SecureStorage.removeItem('csrfToken')
+          secureStorage.removeItem('csrfToken')
           setTimeout(() => {
             window.location.href = '/login'
           }, 1500)

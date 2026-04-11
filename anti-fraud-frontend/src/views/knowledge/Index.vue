@@ -180,7 +180,7 @@ const knowledgeList = ref([
     views: '2.3k',
     likes: 328,
     comments: 56,
-    time: '2024-01-15',
+    time: '2026-01-15',
     cover: 'https://picsum.photos/seed/k1/400/250'
   },
   {
@@ -193,7 +193,7 @@ const knowledgeList = ref([
     views: '1.8k',
     likes: 256,
     comments: 42,
-    time: '2024-01-14',
+    time: '2026-01-14',
     cover: 'https://picsum.photos/seed/k2/400/250'
   },
   {
@@ -206,7 +206,7 @@ const knowledgeList = ref([
     views: '3.1k',
     likes: 456,
     comments: 89,
-    time: '2024-01-13',
+    time: '2026-01-13',
     cover: 'https://picsum.photos/seed/k3/400/250'
   },
   {
@@ -219,7 +219,7 @@ const knowledgeList = ref([
     views: '1.5k',
     likes: 198,
     comments: 34,
-    time: '2024-01-12',
+    time: '2026-01-12',
     cover: 'https://picsum.photos/seed/k4/400/250'
   },
   {
@@ -232,7 +232,7 @@ const knowledgeList = ref([
     views: '1.2k',
     likes: 167,
     comments: 28,
-    time: '2024-01-11',
+    time: '2026-01-11',
     cover: 'https://picsum.photos/seed/k5/400/250'
   },
   {
@@ -245,7 +245,7 @@ const knowledgeList = ref([
     views: '2.0k',
     likes: 289,
     comments: 51,
-    time: '2024-01-10',
+    time: '2026-01-10',
     cover: 'https://picsum.photos/seed/k6/400/250'
   },
   {
@@ -258,7 +258,7 @@ const knowledgeList = ref([
     views: '2.8k',
     likes: 412,
     comments: 78,
-    time: '2024-01-09',
+    time: '2026-01-09',
     cover: 'https://picsum.photos/seed/k7/400/250'
   },
   {
@@ -271,7 +271,7 @@ const knowledgeList = ref([
     views: '1.6k',
     likes: 234,
     comments: 45,
-    time: '2024-01-08',
+    time: '2026-01-08',
     cover: 'https://picsum.photos/seed/k8/400/250'
   }
 ])

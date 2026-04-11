@@ -19,6 +19,7 @@ public class AnswerInfo {
     private String answererName;
     private String answererTitle; // 专家头衔
     private Integer isAccepted; // 是否被采纳
+    private LocalDateTime acceptTime; // 采纳时间
     private Integer likeCount;
     private LocalDateTime createTime;
 

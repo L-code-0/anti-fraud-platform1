@@ -317,7 +317,7 @@ const badges = [
   { id: 2, name: '学习达人', icon: 'Reading', unlocked: true },
   { id: 3, name: '测试高手', icon: 'EditPen', unlocked: true },
   { id: 4, name: '反诈专家', icon: 'Trophy', unlocked: true },
-  { id: 5, name: '防骗达人', icon: 'Shield', unlocked: false },
+  { id: 5, name: '防骗达人', icon: 'Lock', unlocked: false },
   { id: 6, name: '金牌会员', icon: 'Medal', unlocked: false }
 ]
 

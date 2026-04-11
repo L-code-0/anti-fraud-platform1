@@ -232,7 +232,7 @@ const loadComments = async () => {
       author: ['张三', '李四', '王五', '赵六', '钱七'][i],
       avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
       content: `这是一条评论内容 ${i + 1}，非常有价值的信息，感谢分享！`,
-      time: '2024-01-15 10:30',
+      time: '2026-01-15 10:30',
       likes: Math.floor(Math.random() * 20),
       isLiked: false,
       replies: i < 2 ? Array.from({ length: 2 }, (_, j) => ({
@@ -240,7 +240,7 @@ const loadComments = async () => {
         author: ['孙八', '周九'][j],
         avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
         content: `这是回复 ${j + 1}`,
-        time: '2024-01-15 11:00'
+        time: '2026-01-15 11:00'
       })) : []
     }))
   } catch (e) {

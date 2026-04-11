@@ -1,0 +1,11 @@
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\controller\ReportController.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\controller\WarningController.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\entity\Report.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\entity\Warning.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\mapper\ReportMapper.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\mapper\WarningMapper.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\ReportServiceApplication.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\service\impl\ReportServiceImpl.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\service\impl\WarningServiceImpl.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\service\ReportService.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-report-service\src\main\java\com\anti\fraud\report\service\WarningService.java

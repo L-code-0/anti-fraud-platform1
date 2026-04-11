@@ -282,7 +282,7 @@ const loadData = async () => {
     const res = await get('/analysis/data', params)
     // 模拟数据
     detailData.value = Array.from({ length: 10 }, (_, i) => ({
-      date: `2024-01-${String(i + 1).padStart(2, '0')}`,
+      date: `2026-01-${String(i + 1).padStart(2, '0')}`,
       users: Math.floor(Math.random() * 200) + 700,
       studyTime: Math.floor(Math.random() * 50) + 100,
       completion: Math.floor(Math.random() * 20) + 70,
@@ -293,7 +293,7 @@ const loadData = async () => {
   } catch (e) {
     // 模拟数据
     detailData.value = Array.from({ length: 10 }, (_, i) => ({
-      date: `2024-01-${String(i + 1).padStart(2, '0')}`,
+      date: `2026-01-${String(i + 1).padStart(2, '0')}`,
       users: Math.floor(Math.random() * 200) + 700,
       studyTime: Math.floor(Math.random() * 50) + 100,
       completion: Math.floor(Math.random() * 20) + 70,

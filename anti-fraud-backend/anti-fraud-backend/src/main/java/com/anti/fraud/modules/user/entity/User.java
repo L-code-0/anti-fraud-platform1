@@ -36,6 +36,8 @@ public class User implements Serializable {
 
     private Long departmentId;
 
+    private String department;
+
     private Long classId;
 
     private Integer roleId;

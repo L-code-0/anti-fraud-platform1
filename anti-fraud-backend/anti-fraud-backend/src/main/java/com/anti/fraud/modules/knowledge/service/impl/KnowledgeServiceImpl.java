@@ -197,8 +197,8 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         // 记录学习进度到Redis，使用hash存储用户学习进度
         // 格式: learning:progress:{userId}:{knowledgeId} -> {startTime, duration, lastVisitTime}
         try {
-            String redisKey = String.format("learning:progress:%d:%d", userId, id);
             // 这里使用RedisUtils记录学习进度
+            // String redisKey = String.format("learning:progress:%d:%d", userId, id);
             // RedisUtils.hset(redisKey, "duration", duration);
             // RedisUtils.hset(redisKey, "lastVisitTime", System.currentTimeMillis());
             log.debug("用户 {} 学习知识 {} 时长 {} 秒", userId, id, duration);

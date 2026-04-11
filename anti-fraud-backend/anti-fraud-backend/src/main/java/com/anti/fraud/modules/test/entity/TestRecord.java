@@ -20,6 +20,11 @@ public class TestRecord {
 
     private Integer totalScore;
 
+    /**
+     * 得分（整数）
+     */
+    private Integer score;
+
     private BigDecimal userScore;
 
     private Integer correctCount;

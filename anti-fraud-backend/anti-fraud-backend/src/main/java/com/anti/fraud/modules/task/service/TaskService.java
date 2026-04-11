@@ -39,4 +39,24 @@ public interface TaskService {
      * 删除任务
      */
     void deleteTask(Long id);
+
+    /**
+     * 设置任务提醒
+     */
+    void setTaskReminder(Long taskId, Integer remindType, Integer remindDays);
+
+    /**
+     * 触发任务提醒
+     */
+    void triggerTaskReminders();
+
+    /**
+     * 自动分配任务
+     */
+    void autoAssignTask(Long taskId, Integer strategy);
+
+    /**
+     * 获取需要提醒的任务列表
+     */
+    java.util.List<com.anti.fraud.modules.task.entity.ClassTask> getTasksToRemind();
 }

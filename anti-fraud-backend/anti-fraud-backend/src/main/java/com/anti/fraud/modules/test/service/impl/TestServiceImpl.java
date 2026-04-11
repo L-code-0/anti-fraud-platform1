@@ -1,297 +1,159 @@
 package com.anti.fraud.modules.test.service.impl;
 
-import com.anti.fraud.common.exception.BusinessException;
-import com.anti.fraud.common.utils.SecurityUtils;
-import com.anti.fraud.modules.test.dto.AnswerDTO;
-import com.anti.fraud.modules.test.dto.AnswerSubmitDTO;
-import com.anti.fraud.modules.test.entity.Paper;
-import com.anti.fraud.modules.test.entity.Question;
-import com.anti.fraud.modules.test.entity.TestRecord;
-import com.anti.fraud.modules.test.mapper.PaperMapper;
-import com.anti.fraud.modules.test.mapper.QuestionMapper;
-import com.anti.fraud.modules.test.mapper.TestRecordMapper;
+import com.anti.fraud.modules.test.entity.UserAbility;
+import com.anti.fraud.modules.test.mapper.UserAbilityMapper;
 import com.anti.fraud.modules.test.service.TestService;
-import com.anti.fraud.modules.test.vo.PaperVO;
-import com.anti.fraud.modules.test.vo.QuestionResultVO;
-import com.anti.fraud.modules.test.vo.QuestionVO;
-import com.anti.fraud.modules.test.vo.TestResultVO;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class TestServiceImpl implements TestService {
+public class TestServiceImpl extends ServiceImpl<UserAbilityMapper, UserAbility> implements TestService {
 
-    private final PaperMapper paperMapper;
-    private final QuestionMapper questionMapper;
-    private final TestRecordMapper testRecordMapper;
-    private final ObjectMapper objectMapper;
+    @Autowired
+    private UserAbilityMapper userAbilityMapper;
 
     @Override
-    public List<PaperVO> getAvailablePapers() {
-        List<Paper> papers = paperMapper.selectList(
-                new LambdaQueryWrapper<Paper>()
-                        .eq(Paper::getStatus, 1)
-                        .orderByDesc(Paper::getCreateTime)
-        );
-
-        return papers.stream()
-                .map(this::convertToPaperVO)
-                .collect(Collectors.toList());
+    public UserAbility initUserAbility(Long userId) {
+        UserAbility ability = new UserAbility();
+        ability.setUserId(userId);
+        ability.setOverallAbility(50);
+        ability.setKnowledgeMastery(50);
+        ability.setTestPerformance(50);
+        ability.setAdaptiveLevel(1);
+        ability.setLastTestTime(LocalDateTime.now());
+        userAbilityMapper.insert(ability);
+        return ability;
     }
 
     @Override
-    public List<QuestionVO> getPaperQuestions(Long paperId) {
-        Paper paper = paperMapper.selectById(paperId);
-        if (paper == null) {
-            throw new BusinessException("试卷不存在");
+    public UserAbility getUserAbility(Long userId) {
+        QueryWrapper<UserAbility> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        UserAbility ability = userAbilityMapper.selectOne(queryWrapper);
+        if (ability == null) {
+            return initUserAbility(userId);
         }
-
-        List<Question> questions;
-        if (paper.getPaperType() == 1) {
-            // 随机组卷
-            questions = questionMapper.selectRandomQuestions(null, paper.getQuestionCount());
-        } else {
-            // 固定试卷 - 从题库随机抽取
-            questions = questionMapper.selectList(
-                    new LambdaQueryWrapper<Question>()
-                            .eq(Question::getStatus, 1)
-                            .last("LIMIT " + paper.getQuestionCount())
-            );
-        }
-
-        return questions.stream()
-                .map(this::convertToQuestionVO)
-                .collect(Collectors.toList());
+        return ability;
     }
 
     @Override
-    @Transactional
-    public Long startTest(Long paperId) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
+    public Map<String, Object> adaptiveTest(Long userId, Integer questionCount) {
+        UserAbility ability = getUserAbility(userId);
+        
+        // 根据用户能力水平生成自适应测试
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", userId);
+        result.put("abilityLevel", ability.getAdaptiveLevel());
+        result.put("questionCount", questionCount);
+        
+        // 模拟生成题目
+        List<Map<String, Object>> questions = new ArrayList<>();
+        for (int i = 0; i < questionCount; i++) {
+            Map<String, Object> question = new HashMap<>();
+            question.put("id", i + 1);
+            question.put("content", "测试题目 " + (i + 1));
+            question.put("type", 1);
+            question.put("difficulty", ability.getAdaptiveLevel());
+            questions.add(question);
         }
-
-        Paper paper = paperMapper.selectById(paperId);
-        if (paper == null) {
-            throw new BusinessException("试卷不存在");
-        }
-
-        TestRecord record = new TestRecord();
-        record.setUserId(userId);
-        record.setPaperId(paperId);
-        record.setTotalScore(paper.getTotalScore());
-        record.setIsCompleted(0);
-        record.setStartTime(LocalDateTime.now());
-
-        testRecordMapper.insert(record);
-
-        return record.getId();
-    }
-
-    @Override
-    @Transactional
-    public TestResultVO submitAnswers(AnswerSubmitDTO submitDTO) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
-        }
-
-        TestRecord record = testRecordMapper.selectById(submitDTO.getRecordId());
-        if (record == null || !record.getUserId().equals(userId)) {
-            throw new BusinessException("测试记录不存在");
-        }
-
-        if (record.getIsCompleted() == 1) {
-            throw new BusinessException("该测试已提交");
-        }
-
-        Paper paper = paperMapper.selectById(record.getPaperId());
-        List<Question> questions = questionMapper.selectBatchIds(
-                submitDTO.getAnswers().stream()
-                        .map(AnswerDTO::getQuestionId)
-                        .collect(Collectors.toList())
-        );
-
-        Map<Long, Question> questionMap = questions.stream()
-                .collect(Collectors.toMap(Question::getId, q -> q));
-
-        List<QuestionResultVO> questionResults = new ArrayList<>();
-        int correctCount = 0;
-        BigDecimal totalScore = BigDecimal.ZERO;
-
-        for (AnswerDTO answer : submitDTO.getAnswers()) {
-            Question question = questionMap.get(answer.getQuestionId());
-            if (question == null) continue;
-
-            QuestionResultVO result = new QuestionResultVO();
-            result.setQuestionId(question.getId());
-            result.setContent(question.getContent());
-            result.setUserAnswer(answer.getAnswer());
-            result.setCorrectAnswer(question.getAnswer());
-            result.setAnalysis(question.getAnalysis());
-            result.setScore(question.getScore());
-
-            boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
-            result.setIsCorrect(isCorrect);
-
-            if (isCorrect) {
-                correctCount++;
-                result.setEarnedScore(question.getScore());
-                totalScore = totalScore.add(BigDecimal.valueOf(question.getScore()));
-            } else {
-                result.setEarnedScore(0);
-            }
-
-            questionResults.add(result);
-        }
-
-        record.setUserScore(totalScore);
-        record.setCorrectCount(correctCount);
-        record.setWrongCount(submitDTO.getAnswers().size() - correctCount);
-        record.setDuration(submitDTO.getDuration());
-        record.setIsCompleted(1);
-        record.setIsPassed(totalScore.compareTo(BigDecimal.valueOf(paper.getPassScore())) >= 0 ? 1 : 0);
-        record.setSubmitTime(LocalDateTime.now());
-
-        testRecordMapper.updateById(record);
-
-        TestResultVO resultVO = new TestResultVO();
-        resultVO.setRecordId(record.getId());
-        resultVO.setPaperId(record.getPaperId());
-        resultVO.setPaperName(paper.getPaperName());
-        resultVO.setTotalScore(record.getTotalScore());
-        resultVO.setUserScore(record.getUserScore());
-        resultVO.setCorrectCount(record.getCorrectCount());
-        resultVO.setWrongCount(record.getWrongCount());
-        resultVO.setIsPassed(record.getIsPassed() == 1);
-        resultVO.setDuration(record.getDuration());
-        resultVO.setQuestions(questionResults);
-        resultVO.setSubmitTime(record.getSubmitTime());
-
-        return resultVO;
-    }
-
-    @Override
-    public TestResultVO getTestResult(Long recordId) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        TestRecord record = testRecordMapper.selectById(recordId);
-
-        if (record == null || !record.getUserId().equals(userId)) {
-            throw new BusinessException("测试记录不存在");
-        }
-
-        Paper paper = paperMapper.selectById(record.getPaperId());
-
-        TestResultVO resultVO = new TestResultVO();
-        resultVO.setRecordId(record.getId());
-        resultVO.setPaperId(record.getPaperId());
-        resultVO.setPaperName(paper.getPaperName());
-        resultVO.setTotalScore(record.getTotalScore());
-        resultVO.setUserScore(record.getUserScore());
-        resultVO.setCorrectCount(record.getCorrectCount());
-        resultVO.setWrongCount(record.getWrongCount());
-        resultVO.setIsPassed(record.getIsPassed() == 1);
-        resultVO.setDuration(record.getDuration());
-        resultVO.setSubmitTime(record.getSubmitTime());
-
-        return resultVO;
-    }
-
-    @Override
-    public Page<TestResultVO> getMyTestRecords(Integer page, Integer size) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
-        }
-
-        Page<TestRecord> recordPage = new Page<>(page, size);
-        testRecordMapper.selectPage(recordPage,
-                new LambdaQueryWrapper<TestRecord>()
-                        .eq(TestRecord::getUserId, userId)
-                        .eq(TestRecord::getIsCompleted, 1)
-                        .orderByDesc(TestRecord::getSubmitTime)
-        );
-
-        // 手动转换避免类型不兼容
-        Page<TestResultVO> result = new Page<>(recordPage.getCurrent(), recordPage.getSize(), recordPage.getTotal());
-        result.setRecords(recordPage.getRecords().stream().map(record -> {
-            Paper paper = paperMapper.selectById(record.getPaperId());
-            TestResultVO vo = new TestResultVO();
-            vo.setRecordId(record.getId());
-            vo.setPaperId(record.getPaperId());
-            vo.setPaperName(paper != null ? paper.getPaperName() : "");
-            vo.setTotalScore(record.getTotalScore());
-            vo.setUserScore(record.getUserScore());
-            vo.setCorrectCount(record.getCorrectCount());
-            vo.setWrongCount(record.getWrongCount());
-            vo.setIsPassed(record.getIsPassed() == 1);
-            vo.setDuration(record.getDuration());
-            vo.setSubmitTime(record.getSubmitTime());
-            return vo;
-        }).collect(Collectors.toList()));
+        
+        result.put("questions", questions);
+        result.put("paperId", System.currentTimeMillis());
+        
         return result;
     }
 
     @Override
-    public List<TestResultVO> getRankingList(Long paperId) {
-        List<TestRecord> records = testRecordMapper.selectList(
-                new LambdaQueryWrapper<TestRecord>()
-                        .eq(TestRecord::getPaperId, paperId)
-                        .eq(TestRecord::getIsCompleted, 1)
-                        .orderByDesc(TestRecord::getUserScore)
-                        .last("LIMIT 100")
-        );
-
-        return records.stream()
-                .map(record -> {
-                    TestResultVO vo = new TestResultVO();
-                    vo.setRecordId(record.getId());
-                    vo.setUserScore(record.getUserScore());
-                    vo.setDuration(record.getDuration());
-                    return vo;
-                })
-                .collect(Collectors.toList());
+    public Map<String, Object> submitTest(Long userId, Long paperId, Map<String, Object> answers) {
+        UserAbility ability = getUserAbility(userId);
+        
+        // 模拟评分和能力评估
+        int score = new Random().nextInt(50) + 50;
+        int newAbility = ability.getOverallAbility() + (score - 70) / 2;
+        newAbility = Math.max(0, Math.min(100, newAbility));
+        
+        // 更新用户能力
+        ability.setOverallAbility(newAbility);
+        ability.setLastTestTime(LocalDateTime.now());
+        ability.setAdaptiveLevel(Math.min(5, Math.max(1, newAbility / 20 + 1)));
+        userAbilityMapper.updateById(ability);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("score", score);
+        result.put("pass", score >= 60);
+        result.put("newAbility", newAbility);
+        result.put("testId", System.currentTimeMillis());
+        
+        return result;
     }
 
-    private PaperVO convertToPaperVO(Paper paper) {
-        PaperVO vo = new PaperVO();
-        vo.setId(paper.getId());
-        vo.setPaperName(paper.getPaperName());
-        vo.setPaperType(paper.getPaperType());
-        vo.setTotalScore(paper.getTotalScore());
-        vo.setPassScore(paper.getPassScore());
-        vo.setDuration(paper.getDuration());
-        vo.setQuestionCount(paper.getQuestionCount());
-        return vo;
+    @Override
+    public Map<String, Object> generateTestReport(Long userId, Long testId) {
+        UserAbility ability = getUserAbility(userId);
+        
+        Map<String, Object> report = new HashMap<>();
+        report.put("testId", testId);
+        report.put("userId", userId);
+        report.put("abilityLevel", ability.getAdaptiveLevel());
+        report.put("overallAbility", ability.getOverallAbility());
+        
+        // 模拟测试结果分析
+        Map<String, Object> analysis = new HashMap<>();
+        analysis.put("correctRate", new Random().nextDouble() * 0.5 + 0.5);
+        analysis.put("averageTime", new Random().nextInt(60) + 30);
+        analysis.put("ranking", new Random().nextInt(100) + 1);
+        
+        // 知识点掌握情况
+        List<Map<String, Object>> knowledgeMastery = new ArrayList<>();
+        knowledgeMastery.add(Map.of("category", "电信诈骗", "mastery", new Random().nextInt(50) + 50));
+        knowledgeMastery.add(Map.of("category", "网络诈骗", "mastery", new Random().nextInt(50) + 50));
+        knowledgeMastery.add(Map.of("category", "校园贷", "mastery", new Random().nextInt(50) + 50));
+        
+        analysis.put("knowledgeMastery", knowledgeMastery);
+        report.put("analysis", analysis);
+        
+        // 改进建议
+        List<String> suggestions = new ArrayList<>();
+        suggestions.add("加强电信诈骗防范知识的学习");
+        suggestions.add("提高网络安全意识");
+        suggestions.add("定期参加模拟测试");
+        report.put("suggestions", suggestions);
+        
+        return report;
     }
 
-    private QuestionVO convertToQuestionVO(Question question) {
-        QuestionVO vo = new QuestionVO();
-        vo.setId(question.getId());
-        vo.setQuestionType(question.getQuestionType());
-        vo.setContent(question.getContent());
-        vo.setScore(question.getScore());
-        vo.setDifficulty(question.getDifficulty());
+    @Override
+    public Map<String, Object> analyzeWeaknesses(Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 模拟分析结果
+        List<Map<String, Object>> weaknesses = new ArrayList<>();
+        weaknesses.add(Map.of("category", "电信诈骗", "weaknessLevel", 3, "description", "对电信诈骗的识别能力较弱"));
+        weaknesses.add(Map.of("category", "网络诈骗", "weaknessLevel", 2, "description", "对网络诈骗的防范意识需要加强"));
+        
+        result.put("weaknesses", weaknesses);
+        result.put("totalWeaknessCount", weaknesses.size());
+        
+        return result;
+    }
 
-        try {
-            List<String> options = objectMapper.readValue(question.getOptions(), new TypeReference<List<String>>() {});
-            vo.setOptions(options);
-        } catch (Exception e) {
-            vo.setOptions(new ArrayList<>());
-        }
-
-        return vo;
+    @Override
+    public Map<String, Object> recommendLearningContent(Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 模拟推荐内容
+        List<Map<String, Object>> recommendations = new ArrayList<>();
+        recommendations.add(Map.of("id", 1, "title", "电信诈骗防范指南", "type", "article", "priority", 1));
+        recommendations.add(Map.of("id", 2, "title", "网络诈骗案例分析", "type", "video", "priority", 2));
+        recommendations.add(Map.of("id", 3, "title", "校园贷风险防范", "type", "article", "priority", 3));
+        
+        result.put("recommendations", recommendations);
+        result.put("totalRecommendations", recommendations.size());
+        
+        return result;
     }
 }

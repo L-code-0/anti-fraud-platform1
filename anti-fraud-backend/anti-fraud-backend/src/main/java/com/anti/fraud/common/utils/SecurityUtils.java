@@ -63,6 +63,18 @@ public class SecurityUtils {
     }
 
     /**
+     * 获取当前登录用户的用户名（别名）
+     * <p>
+     * 与 getCurrentUsername() 功能相同，提供别名以兼容不同调用习惯。
+     * </p>
+     *
+     * @return 用户名，未登录返回null
+     */
+    public static String getCurrentUserName() {
+        return getCurrentUsername();
+    }
+
+    /**
      * 检查当前用户是否具有指定角色
      *
      * @param role 角色标识（格式：ROLE_XXX）

@@ -302,7 +302,7 @@ const loadDetail = async () => {
       id: route.params.id,
       title: '冒充公检法诈骗案例分析',
       authorName: '王专家',
-      publishTime: '2024-01-15',
+      publishTime: '2026-01-15',
       viewCount: 2356,
       likeCount: 128,
       collectCount: 56,
@@ -336,7 +336,7 @@ const loadComments = async () => {
         userId: 1,
         userName: '张三',
         content: '这篇文章写得很好，学到了很多防骗知识！',
-        createTime: '2024-01-15 14:30',
+        createTime: '2026-01-15 14:30',
         likeCount: 12,
         isAuthor: false,
         replies: [
@@ -345,7 +345,7 @@ const loadComments = async () => {
             userId: 2,
             userName: '李四',
             content: '确实，我也学到了不少',
-            createTime: '2024-01-15 15:00',
+            createTime: '2026-01-15 15:00',
             likeCount: 3,
             isAuthor: false
           }
@@ -356,7 +356,7 @@ const loadComments = async () => {
         userId: 3,
         userName: '王五',
         content: '希望能多一些类似的案例分析',
-        createTime: '2024-01-14 10:20',
+        createTime: '2026-01-14 10:20',
         likeCount: 8,
         isAuthor: true,
         replies: []

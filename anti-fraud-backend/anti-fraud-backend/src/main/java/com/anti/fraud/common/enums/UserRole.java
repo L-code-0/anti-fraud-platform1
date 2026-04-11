@@ -37,34 +37,60 @@ public enum UserRole {
     // ==================== Spring Security 权限表达式使用的角色名称 ====================
     // 用于 @PreAuthorize("hasRole('ROLE_ADMIN')") 这样的表达式
     // 注意：hasRole() 会自动添加 ROLE_ 前缀，所以这里使用不带 ROLE_ 前缀的名称
-    
+
     /**
      * 管理员角色名称 - 用于 @PreAuthorize 注解
      * 用法: hasRole(UserRole.ROLE_ADMIN)
      */
     public static final String ROLE_ADMIN = "ADMIN";
-    
+
     /**
      * 反诈专家角色名称 - 用于 @PreAuthorize 注解
      * 用法: hasRole(UserRole.ROLE_EXPERT)
      */
     public static final String ROLE_EXPERT = "EXPERT";
-    
+
     /**
      * 系统管理员角色名称 - 用于 @PreAuthorize 注解
      * 用法: hasRole(UserRole.ROLE_SUPER_ADMIN)
      */
     public static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
-    
+
     /**
      * 教师角色名称 - 用于 @PreAuthorize 注解
      * 用法: hasRole(UserRole.ROLE_TEACHER)
      */
     public static final String ROLE_TEACHER = "TEACHER";
-    
+
     /**
      * 学生角色名称 - 用于 @PreAuthorize 注解
      * 用法: hasRole(UserRole.ROLE_STUDENT)
      */
     public static final String ROLE_STUDENT = "STUDENT";
+
+    // ==================== 角色代码常量（用于数据库存储和比较） ====================
+    /**
+     * 超级管理员角色代码
+     */
+    public static final String CODE_SUPER_ADMIN = "SUPER_ADMIN";
+
+    /**
+     * 管理员角色代码
+     */
+    public static final String CODE_ADMIN = "ADMIN";
+
+    /**
+     * 反诈专家角色代码
+     */
+    public static final String CODE_EXPERT = "EXPERT";
+
+    /**
+     * 教师角色代码
+     */
+    public static final String CODE_TEACHER = "TEACHER";
+
+    /**
+     * 学生角色代码
+     */
+    public static final String CODE_STUDENT = "STUDENT";
 }

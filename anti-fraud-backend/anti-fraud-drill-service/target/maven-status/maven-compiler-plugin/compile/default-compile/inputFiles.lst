@@ -1,0 +1,8 @@
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\controller\DrillController.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\DrillServiceApplication.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\entity\DrillRecord.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\entity\DrillScenario.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\mapper\DrillRecordMapper.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\mapper\DrillScenarioMapper.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\service\DrillService.java
+D:\anti-fraud-platform\anti-fraud-backend\anti-fraud-drill-service\src\main\java\com\anti\fraud\drill\service\impl\DrillServiceImpl.java

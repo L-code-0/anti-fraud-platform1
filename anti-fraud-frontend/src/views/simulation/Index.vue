@@ -174,7 +174,7 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   VideoPlay, User, Star, Clock, ArrowRight, Promotion,
-  Phone, Message, ShoppingCart, Money, Gift, InfoFilled,
+  Phone, Message, ShoppingCart, Money, InfoFilled,
   CircleCheck, WarnTriangleFilled, Comment
 } from '@element-plus/icons-vue'
 
@@ -370,6 +370,8 @@ const selectStrategy = (id: number) => {
   text-align: center;
   box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
+  min-height: 200px;
+  justify-content: space-between;
 }
 
 .type-card:hover {
@@ -794,6 +796,10 @@ const selectStrategy = (id: number) => {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .scenes-grid {
+    grid-template-columns: 1fr;
+  }
+
   .simulation-content {
     grid-template-columns: 1fr;
     height: auto;
@@ -818,6 +824,10 @@ const selectStrategy = (id: number) => {
     margin-top: 0;
   }
 
+  .type-card {
+    min-height: 180px;
+  }
+
   .scenes-grid {
     grid-template-columns: 1fr;
   }
@@ -829,6 +839,31 @@ const selectStrategy = (id: number) => {
 
   .step-arrow {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    padding: 0 var(--spacing-4) var(--spacing-8);
+  }
+
+  .type-card {
+    padding: var(--spacing-4);
+    min-height: 160px;
+  }
+
+  .type-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .scene-image {
+    height: 160px;
+  }
+
+  .process-section {
+    padding: var(--spacing-6);
   }
 }
 </style>

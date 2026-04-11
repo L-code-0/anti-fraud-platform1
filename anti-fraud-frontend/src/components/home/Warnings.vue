@@ -65,9 +65,9 @@ onMounted(async () => {
   } catch (e) {
     // 使用模拟数据
     warnings.value = [
-      { id: 1, title: '警惕新型"AI换脸"诈骗', content: '近期出现利用AI技术进行视频通话诈骗的新手法，诈骗分子通过AI换脸技术冒充熟人进行诈骗...', warningLevel: 4, publishTime: '2024-01-15' },
-      { id: 2, title: '冒充客服退款诈骗高发', content: '近期冒充电商平台客服退款诈骗案件高发，请广大师生提高警惕...', warningLevel: 3, publishTime: '2024-01-14' },
-      { id: 3, title: '寒假兼职诈骗预警', content: '寒假期间是兼职诈骗高发期，请同学们谨慎对待各种兼职信息...', warningLevel: 2, publishTime: '2024-01-13' }
+      { id: 1, title: '警惕新型"AI换脸"诈骗', content: '近期出现利用AI技术进行视频通话诈骗的新手法，诈骗分子通过AI换脸技术冒充熟人进行诈骗...', warningLevel: 4, publishTime: '2026-01-15' },
+      { id: 2, title: '冒充客服退款诈骗高发', content: '近期冒充电商平台客服退款诈骗案件高发，请广大师生提高警惕...', warningLevel: 3, publishTime: '2026-01-14' },
+      { id: 3, title: '寒假兼职诈骗预警', content: '寒假期间是兼职诈骗高发期，请同学们谨慎对待各种兼职信息...', warningLevel: 2, publishTime: '2026-01-13' }
     ]
   }
 })

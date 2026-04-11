@@ -1,5 +1,5 @@
 package com.anti.fraud.modules.analysis.vo;
-
+import java.util.Map;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.util.List;
@@ -23,7 +23,7 @@ public class LearningReportVO {
     private Integer simulationCount;
 
     @Schema(description = "知识点掌握情况")
-    private List<CategoryMasteryVO> categoryMastery;
+    private List<Map<String, Object>> categoryMastery;
 
     @Schema(description = "薄弱知识点")
     private List<WeaknessVO> weaknesses;

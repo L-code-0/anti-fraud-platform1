@@ -3,14 +3,16 @@ package com.anti.fraud.common.config;
 import com.anti.fraud.security.filter.JwtAuthenticationFilter;
 import com.anti.fraud.security.handler.AccessDeniedHandlerImpl;
 import com.anti.fraud.security.handler.AuthenticationEntryPointImpl;
-import lombok.RequiredArgsConstructor;
+import com.anti.fraud.common.utils.JwtUtils;
+import com.anti.fraud.common.utils.RedisUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,14 +30,29 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
     private final CorsProperties corsProperties;
+    private final JwtUtils jwtUtils;
+    private final RedisUtils redisUtils;
+    private final ObjectMapper objectMapper;
+
+    public SecurityConfig(AuthenticationEntryPointImpl authenticationEntryPoint,
+                          AccessDeniedHandlerImpl accessDeniedHandler,
+                          CorsProperties corsProperties,
+                          JwtUtils jwtUtils,
+                          RedisUtils redisUtils,
+                          ObjectMapper objectMapper) {
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
+        this.corsProperties = corsProperties;
+        this.jwtUtils = jwtUtils;
+        this.redisUtils = redisUtils;
+        this.objectMapper = objectMapper;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -43,13 +60,24 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtUtils, redisUtils, objectMapper);
+    }
+
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration() {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(jwtAuthenticationFilter());
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // CSRF Token 处理属性
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
-        
+
         http
-                // 启用CSRF防护，但排除公开接口
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(requestHandler)
@@ -80,7 +108,7 @@ public class SecurityConfig {
                                 "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -88,8 +116,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // 使用配置化的域名列表
+
         List<String> allowedOrigins = corsProperties.getAllowedOrigins();
         if (allowedOrigins.isEmpty()) {
             log.warn("【安全警告】CORS 未配置允许的域名，生产环境必须显式配置！");
@@ -98,13 +125,11 @@ public class SecurityConfig {
             log.info("CORS 允许的源: {}", allowedOrigins);
             configuration.setAllowedOriginPatterns(allowedOrigins);
         }
-        
+
         configuration.setAllowedMethods(corsProperties.getAllowedMethodsList());
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(corsProperties.getAllowCredentials());
         configuration.setMaxAge(corsProperties.getMaxAge());
-        
-        // 允许X-CSRF-Token头
         configuration.setExposedHeaders(Arrays.asList("X-CSRF-Token", "Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

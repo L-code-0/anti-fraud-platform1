@@ -244,12 +244,12 @@ const loadActivity = async () => {
     // 使用模拟数据
     activity.value = {
       id: Number(id),
-      activityName: '2024年反诈知识竞赛',
+      activityName: '2026年反诈知识竞赛',
       activityType: 1,
       coverImage: '',
       description: `
         <h3>活动介绍</h3>
-        <p>为提高全校师生的反诈意识和能力，学生处联合保卫处举办2024年反诈知识竞赛活动。</p>
+        <p>为提高全校师生的反诈意识和能力，学生处联合保卫处举办2026年反诈知识竞赛活动。</p>
         
         <h3>活动内容</h3>
         <ul>
@@ -267,8 +267,8 @@ const loadActivity = async () => {
         </ul>
       `,
       rules: '1. 每人仅可参与一次\n2. 答题时间为30分钟\n3. 严禁作弊行为\n4. 成绩相同时按答题时间排序',
-      startTime: '2024-03-01',
-      endTime: '2024-03-15',
+      startTime: '2026-03-01',
+      endTime: '2026-03-15',
       location: '',
       maxParticipants: 500,
       currentParticipants: 320,

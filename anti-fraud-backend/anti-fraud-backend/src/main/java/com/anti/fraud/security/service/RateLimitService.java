@@ -105,6 +105,10 @@ public class RateLimitService {
     public static final LimitConfig API_LIMIT = new LimitConfig(100, 60);           // 1分钟内100次
     public static final LimitConfig STRICT_API_LIMIT = new LimitConfig(30, 60);       // 1分钟内30次
     public static final LimitConfig SEARCH_LIMIT = new LimitConfig(20, 60);          // 1分钟内20次
+    public static final LimitConfig EXPORT_LIMIT = new LimitConfig(5, 600);          // 10分钟内5次
+    public static final LimitConfig REPORT_LIMIT = new LimitConfig(10, 600);         // 10分钟内10次
+    public static final LimitConfig ADMIN_API_LIMIT = new LimitConfig(200, 60);      // 管理员API 1分钟内200次
+    public static final LimitConfig USER_API_LIMIT = new LimitConfig(60, 60);        // 普通用户API 1分钟内60次
 
     /**
      * 检查请求是否允许
@@ -297,5 +301,51 @@ public class RateLimitService {
      */
     public RateLimitResult checkSearchLimit(HttpServletRequest request) {
         return checkRateLimit(request, LimitType.IP, "search", SEARCH_LIMIT);
+    }
+
+    /**
+     * 导出频率限制
+     */
+    public RateLimitResult checkExportLimit(HttpServletRequest request) {
+        return checkRateLimit(request, LimitType.IP, "export", EXPORT_LIMIT);
+    }
+
+    /**
+     * 举报频率限制
+     */
+    public RateLimitResult checkReportLimit(HttpServletRequest request) {
+        return checkRateLimit(request, LimitType.IP, "report", REPORT_LIMIT);
+    }
+
+    /**
+     * 管理员API频率限制
+     */
+    public RateLimitResult checkAdminApiLimit(HttpServletRequest request) {
+        return checkRateLimit(request, LimitType.IP, "admin_api", ADMIN_API_LIMIT);
+    }
+
+    /**
+     * 普通用户API频率限制
+     */
+    public RateLimitResult checkUserApiLimit(HttpServletRequest request) {
+        return checkRateLimit(request, LimitType.IP, "user_api", USER_API_LIMIT);
+    }
+
+    /**
+     * 基于路径的API频率限制
+     */
+    public RateLimitResult checkPathBasedLimit(HttpServletRequest request, String path, LimitConfig config) {
+        String ip = getClientIp(request);
+        String identifier = "path:" + path + ":ip:" + ip;
+        return checkRateLimit(identifier, config);
+    }
+
+    /**
+     * 基于用户角色的API频率限制
+     */
+    public RateLimitResult checkRoleBasedLimit(HttpServletRequest request, String role, LimitConfig config) {
+        String ip = getClientIp(request);
+        String identifier = "role:" + role + ":ip:" + ip;
+        return checkRateLimit(identifier, config);
     }
 }

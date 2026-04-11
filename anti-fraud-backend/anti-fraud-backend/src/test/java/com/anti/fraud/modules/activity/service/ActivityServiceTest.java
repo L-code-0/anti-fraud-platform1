@@ -81,7 +81,7 @@ class ActivityServiceTest {
 
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(1L);
-            
+
             when(activityMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                     .thenReturn(page);
 
@@ -163,7 +163,7 @@ class ActivityServiceTest {
         activityService.createActivity(createDTO);
 
         // Then
-        verify(activityMapper, times(1)).insert(argThat(activity -> {
+        verify(activityMapper, times(1)).insert(argThat((Activity activity) -> {
             return activity.getStatus() == 1; // 报名中
         }));
     }

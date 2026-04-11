@@ -157,9 +157,9 @@ const loadReports = async () => {
     total.value = res.data?.total || 0
   } catch (e) {
     reportList.value = [
-      { id: 1, reportNo: 'RPT20240115001', title: '可疑电话举报', reportType: 1, fraudType: '电信诈骗', riskLevel: 3, status: 0, createTime: '2024-01-15 10:30:00' },
-      { id: 2, reportNo: 'RPT20240114002', title: '可疑链接举报', reportType: 3, fraudType: '网络诈骗', riskLevel: 2, status: 1, createTime: '2024-01-14 15:20:00' },
-      { id: 3, reportNo: 'RPT20240113003', title: '兼职诈骗举报', reportType: 4, fraudType: '兼职诈骗', riskLevel: 1, status: 2, handleResult: '已核实并处理', createTime: '2024-01-13 09:15:00' }
+      { id: 1, reportNo: 'RPT20260115001', title: '可疑电话举报', reportType: 1, fraudType: '电信诈骗', riskLevel: 3, status: 0, createTime: '2026-01-15 10:30:00' },
+      { id: 2, reportNo: 'RPT20260114002', title: '可疑链接举报', reportType: 3, fraudType: '网络诈骗', riskLevel: 2, status: 1, createTime: '2026-01-14 15:20:00' },
+      { id: 3, reportNo: 'RPT20260113003', title: '兼职诈骗举报', reportType: 4, fraudType: '兼职诈骗', riskLevel: 1, status: 2, handleResult: '已核实并处理', createTime: '2026-01-13 09:15:00' }
     ]
     total.value = 3
   }

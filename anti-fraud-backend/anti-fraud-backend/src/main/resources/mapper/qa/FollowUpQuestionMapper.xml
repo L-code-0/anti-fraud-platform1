@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anti.fraud.modules.qa.mapper.FollowUpQuestionMapper">
+
+    <select id="selectByQuestionId" resultType="com.anti.fraud.modules.qa.entity.FollowUpQuestion">
+        SELECT * FROM follow_up_question
+        WHERE question_id = #{questionId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByAnswerId" resultType="com.anti.fraud.modules.qa.entity.FollowUpQuestion">
+        SELECT * FROM follow_up_question
+        WHERE answer_id = #{answerId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByAskerId" resultType="com.anti.fraud.modules.qa.entity.FollowUpQuestion">
+        SELECT * FROM follow_up_question
+        WHERE asker_id = #{askerId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

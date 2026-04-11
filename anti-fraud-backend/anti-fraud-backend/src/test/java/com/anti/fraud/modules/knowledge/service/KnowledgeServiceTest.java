@@ -57,9 +57,8 @@ class KnowledgeServiceTest {
         testKnowledge.setTitle("电信诈骗防范指南");
         testKnowledge.setSummary("本文介绍如何识别和防范电信诈骗");
         testKnowledge.setContent("详细内容...");
-        testKnowledge.setContentType("ARTICLE");
+        testKnowledge.setContentType(1); // 1=文章类型
         testKnowledge.setCategoryId(1L);
-        testKnowledge.setCategoryName("电信诈骗");
         testKnowledge.setViewCount(100);
         testKnowledge.setCollectCount(20);
         testKnowledge.setLikeCount(50);

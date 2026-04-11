@@ -23,7 +23,7 @@ import java.util.List;
 
 /**
  * 角色管理Controller
- * 
+ *
  * @author Anti-Fraud Platform Team
  */
 @Tag(name = "角色管理", description = "角色相关接口")
@@ -63,7 +63,7 @@ public class RoleController {
         if (role == null) {
             return Result.fail("角色不存在");
         }
-        
+
         RoleVO vo = new RoleVO();
         vo.setId(role.getId());
         vo.setName(role.getName());
@@ -73,11 +73,11 @@ public class RoleController {
         vo.setStatus(role.getStatus());
         vo.setDataScope(role.getDataScope());
         vo.setCreateTime(role.getCreateTime());
-        
+
         // 获取角色的权限列表
         List<Long> permissionIds = permissionService.getPermissionIdsByRoleId(id);
         vo.setPermissionIds(permissionIds);
-        
+
         return Result.success(vo);
     }
 
@@ -99,7 +99,7 @@ public class RoleController {
         if (existingRole != null) {
             return Result.fail("角色编码已存在");
         }
-        
+
         role.setCreateTime(LocalDateTime.now());
         role.setUpdateTime(LocalDateTime.now());
         roleMapper.insert(role);
@@ -115,13 +115,13 @@ public class RoleController {
         if (existingRole == null) {
             return Result.fail("角色不存在");
         }
-        
+
         // 禁止修改系统内置角色的编码
-        if (existingRole.getCode().equals(UserRole.CODE_SUPER_ADMIN) && 
-            !role.getCode().equals(UserRole.CODE_SUPER_ADMIN)) {
+        if (existingRole.getCode().equals(UserRole.CODE_SUPER_ADMIN) &&
+                !role.getCode().equals(UserRole.CODE_SUPER_ADMIN)) {
             return Result.fail("禁止修改超级管理员角色编码");
         }
-        
+
         role.setId(id);
         role.setUpdateTime(LocalDateTime.now());
         roleMapper.updateById(role);
@@ -137,12 +137,12 @@ public class RoleController {
         if (role == null) {
             return Result.fail("角色不存在");
         }
-        
+
         // 禁止删除系统内置角色
         if (role.getCode().equals(UserRole.CODE_SUPER_ADMIN)) {
             return Result.fail("禁止删除超级管理员角色");
         }
-        
+
         // 删除角色
         roleMapper.deleteById(id);
         return Result.success();
@@ -156,7 +156,7 @@ public class RoleController {
         if (role == null) {
             return Result.fail("角色不存在");
         }
-        
+
         boolean success = permissionService.assignPermissions(id, permissionIds);
         return success ? Result.success() : Result.fail("分配失败");
     }
@@ -166,11 +166,11 @@ public class RoleController {
     @RequirePermission("api:role:menu:tree")
     public Result<List<PermissionVO>> getRoleMenus(@PathVariable Long id) {
         List<Long> permissionIds = permissionService.getPermissionIdsByRoleId(id);
-        
+
         // 获取所有菜单并标记已选中的
         List<PermissionVO> allMenus = permissionService.getAllMenuTree();
         markSelectedMenus(allMenus, permissionIds);
-        
+
         return Result.success(allMenus);
     }
 
@@ -185,17 +185,5 @@ public class RoleController {
             }
         }
     }
-
-    // 内部类用于VO
-    static class PermissionVO extends com.anti.fraud.modules.permission.vo.PermissionVO {
-        private List<Long> permissionIds;
-        
-        public List<Long> getPermissionIds() {
-            return permissionIds;
-        }
-        
-        public void setPermissionIds(List<Long> permissionIds) {
-            this.permissionIds = permissionIds;
-        }
-    }
 }
+

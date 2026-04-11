@@ -60,38 +60,39 @@ public class CacheConfig {
         // 使用JSON序列化器
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
         ObjectMapper objectMapper = new ObjectMapper();
-        
+
         // 设置Java8时间模块支持
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        
+
         // 设置序列化可见性
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        
+
         // 启用类型信息
         objectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );
-        
-        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+
+        // 配置序列化器的对象映射器
+        jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
 
         // 创建字符串序列化器
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
 
         // key采用String的序列化方式
         template.setKeySerializer(stringRedisSerializer);
-        
+
         // hash的key也采用String的序列化方式
         template.setHashKeySerializer(stringRedisSerializer);
-        
+
         // value序列化方式采用JSON序列化
         template.setValueSerializer(jackson2JsonRedisSerializer);
-        
+
         // hash的value序列化方式采用JSON序列化
         template.setHashValueSerializer(jackson2JsonRedisSerializer);
-        
+
         template.afterPropertiesSet();
 
         log.info("RedisTemplate初始化完成");
@@ -112,24 +113,23 @@ public class CacheConfig {
         log.info("初始化RedisCacheManager");
 
         // 配置序列化
-        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        
+        ObjectMapper cacheObjectMapper = new ObjectMapper();
+
         // 设置Java8时间模块支持
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        
+        cacheObjectMapper.registerModule(new JavaTimeModule());
+        cacheObjectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
         // 设置序列化可见性
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        
+        cacheObjectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+
         // 启用类型信息
-        objectMapper.activateDefaultTyping(
+        cacheObjectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );
-        
-        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+
+        Jackson2JsonRedisSerializer<Object> cacheSerializer = new Jackson2JsonRedisSerializer<>(cacheObjectMapper, Object.class);
 
         // 创建Redis缓存配置
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
@@ -138,7 +138,7 @@ public class CacheConfig {
                 // 设置Key的序列化方式
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 // 设置Value的序列化方式
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jackson2JsonRedisSerializer))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(cacheSerializer))
                 // 禁用缓存空值
                 .disableCachingNullValues();
 

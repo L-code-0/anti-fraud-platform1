@@ -1,26 +1,43 @@
 package com.anti.fraud.modules.test.service;
 
-import com.anti.fraud.modules.test.dto.AnswerSubmitDTO;
-import com.anti.fraud.modules.test.vo.PaperVO;
-import com.anti.fraud.modules.test.vo.QuestionVO;
-import com.anti.fraud.modules.test.vo.TestResultVO;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.anti.fraud.modules.test.entity.UserAbility;
+import com.baomidou.mybatisplus.extension.service.IService;
+import java.util.Map;
 
-import java.util.List;
+public interface TestService extends IService<UserAbility> {
 
-public interface TestService {
+    /**
+     * 初始化用户能力水平
+     */
+    UserAbility initUserAbility(Long userId);
 
-    List<PaperVO> getAvailablePapers();
+    /**
+     * 获取用户能力水平
+     */
+    UserAbility getUserAbility(Long userId);
 
-    List<QuestionVO> getPaperQuestions(Long paperId);
+    /**
+     * 自适应测试组卷
+     */
+    Map<String, Object> adaptiveTest(Long userId, Integer questionCount);
 
-    Long startTest(Long paperId);
+    /**
+     * 提交测试答案并评估能力
+     */
+    Map<String, Object> submitTest(Long userId, Long paperId, Map<String, Object> answers);
 
-    TestResultVO submitAnswers(AnswerSubmitDTO submitDTO);
+    /**
+     * 生成详细测试报告
+     */
+    Map<String, Object> generateTestReport(Long userId, Long testId);
 
-    TestResultVO getTestResult(Long recordId);
+    /**
+     * 分析用户学习薄弱点
+     */
+    Map<String, Object> analyzeWeaknesses(Long userId);
 
-    Page<TestResultVO> getMyTestRecords(Integer page, Integer size);
-
-    List<TestResultVO> getRankingList(Long paperId);
+    /**
+     * 推荐个性化学习内容
+     */
+    Map<String, Object> recommendLearningContent(Long userId);
 }

@@ -24,7 +24,6 @@ public class LoginSecurityService {
     private static final String ACCOUNT_LOCK_PREFIX = "security:account:lock:";
     private static final String LOGIN_DEVICE_PREFIX = "security:login:device:";
     private static final String LOGIN_LOCATION_PREFIX = "security:login:location:";
-    private static final String LOGIN_ALERT_PREFIX = "security:login:alert:";
     private static final String TOKEN_BLACKLIST_PREFIX = "security:token:blacklist:";
 
     // 配置常量
@@ -156,7 +155,7 @@ public class LoginSecurityService {
     public void recordDeviceLogin(Long userId, String deviceId, String deviceInfo, String ipAddress, String location) {
         String deviceKey = LOGIN_DEVICE_PREFIX + userId + ":" + deviceId;
 
-        java.util.Map<String, String> deviceData = new java.util.HashMap<>();
+        java.util.Map<String, Object> deviceData = new java.util.HashMap<>();
         deviceData.put("deviceInfo", deviceInfo);
         deviceData.put("ipAddress", ipAddress);
         deviceData.put("location", location);
@@ -185,7 +184,6 @@ public class LoginSecurityService {
      * @return 设备信息列表
      */
     public java.util.List<java.util.Map<String, String>> getUserDevices(Long userId) {
-        String pattern = LOGIN_DEVICE_PREFIX + userId + ":*";
         // 简化实现，实际应使用Redis的SCAN命令
         return new java.util.ArrayList<>();
     }
@@ -236,7 +234,6 @@ public class LoginSecurityService {
      * 发送异地登录提醒
      */
     private void sendLocationAlert(Long userId, String lastLocation, String newLocation, String ipAddress) {
-        String alertKey = LOGIN_ALERT_PREFIX + userId;
         // 实际实现应该调用通知服务发送邮件或短信
         log.warn("异地登录提醒: userId={}, 上次登录地点={}, 当前登录地点={}, IP={}",
                 userId, lastLocation, newLocation, ipAddress);
@@ -257,7 +254,7 @@ public class LoginSecurityService {
         String timestamp = String.valueOf(System.currentTimeMillis());
         String logKey = "security:login:log:" + timestamp + ":" + UUID.randomUUID().toString().substring(0, 8);
 
-        java.util.Map<String, String> logData = new java.util.HashMap<>();
+        java.util.Map<String, Object> logData = new java.util.HashMap<>();
         logData.put("userId", userId != null ? userId.toString() : "unknown");
         logData.put("username", username);
         logData.put("success", String.valueOf(success));

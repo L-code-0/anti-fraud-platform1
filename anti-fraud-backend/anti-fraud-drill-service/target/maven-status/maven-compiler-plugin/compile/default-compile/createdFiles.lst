@@ -1,0 +1,8 @@
+com\anti\fraud\drill\entity\DrillScenario.class
+com\anti\fraud\drill\controller\DrillController.class
+com\anti\fraud\drill\entity\DrillRecord.class
+com\anti\fraud\drill\mapper\DrillScenarioMapper.class
+com\anti\fraud\drill\mapper\DrillRecordMapper.class
+com\anti\fraud\drill\service\impl\DrillServiceImpl.class
+com\anti\fraud\drill\DrillServiceApplication.class
+com\anti\fraud\drill\service\DrillService.class

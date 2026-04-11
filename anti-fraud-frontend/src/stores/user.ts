@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { get, post } from '@/utils/request'
-import { SecureStorage, setCsrfToken } from '@/utils/security'
+import { SecureStorage, secureStorage, setCsrfToken } from '@/utils/security'
 import { ADMIN, EXPERT, SUPER_ADMIN, TEACHER, STUDENT } from '@/constants/roleConstants'
 import { getDefaultPermissionsByRole } from '@/utils/menuGenerator'
 
@@ -205,6 +205,29 @@ export const useUserStore = defineStore('user', {
       localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
     },
     
+    /**
+     * 设置token
+     */
+    setToken(token: string) {
+      this.token = token
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('token', token)
+      }
+    },
+    
+    /**
+     * 设置用户信息
+     */
+    setUserInfo(userInfo: any) {
+      this.userInfo = {
+        ...this.userInfo,
+        ...userInfo
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+      }
+    },
+    
     logout() {
       // 使用 $patch 确保状态更新被正确触发
       this.$patch({
@@ -216,7 +239,7 @@ export const useUserStore = defineStore('user', {
       try {
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
-        SecureStorage.removeItem('csrfToken')
+        secureStorage.removeItem('csrfToken')
         console.log('已清除本地存储的 token、用户信息和 CSRF token')
       } catch (error) {
         console.error('清除本地存储失败:', error)

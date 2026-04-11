@@ -28,6 +28,9 @@ public class LoginVO {
     @Schema(description = "Token")
     private String token;
 
+    @Schema(description = "刷新令牌")
+    private String refreshToken;
+
     @Schema(description = "积分")
     private Integer points;
 

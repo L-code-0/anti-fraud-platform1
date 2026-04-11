@@ -274,17 +274,35 @@ function generateRoutesFromMenus(menus: any[]): RouteRecordRaw[] {
   const routes: RouteRecordRaw[] = []
   
   for (const menu of menus) {
-    if (menu.path && menu.component) {
-      routes.push({
-        path: menu.path,
-        name: menu.name || menu.code,
-        component: () => import(`@/${menu.component}`),
-        meta: {
-          title: menu.name,
-          icon: menu.icon,
-          requiresAuth: true
-        }
-      })
+    if (menu.path) {
+      // 优先使用映射表中的配置
+      const mappedRoute = menuRouteMap[menu.code || menu.permission]
+      
+      if (mappedRoute) {
+        routes.push({
+          path: menu.path,
+          name: menu.name || menu.code,
+          component: mappedRoute.component,
+          meta: {
+            title: menu.name,
+            icon: menu.icon,
+            requiresAuth: true
+          }
+        } as RouteRecordRaw)
+      } else if (menu.component) {
+        // 如果映射表中没有，尝试使用静态导入
+        // 使用 @vite-ignore 抑制警告
+        routes.push({
+          path: menu.path,
+          name: menu.name || menu.code,
+          component: () => import(/* @vite-ignore */ `@/${menu.component}.vue`),
+          meta: {
+            title: menu.name,
+            icon: menu.icon,
+            requiresAuth: true
+          }
+        } as RouteRecordRaw)
+      }
     }
     
     // 递归处理子菜单

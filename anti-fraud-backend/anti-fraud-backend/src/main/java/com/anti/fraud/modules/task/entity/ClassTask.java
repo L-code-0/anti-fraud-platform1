@@ -30,6 +30,16 @@ public class ClassTask {
     private Integer points;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    
+    // 提醒相关字段
+    private Integer remindType; // 提醒类型：0-不提醒, 1-开始前提醒, 2-结束前提醒, 3-两者都提醒
+    private Integer remindDays; // 提醒天数
+    private LocalDateTime remindTime; // 提醒时间
+    private Integer remindStatus; // 提醒状态：0-未提醒, 1-已提醒
+    
+    // 自动分配相关字段
+    private Integer autoAssign; // 是否自动分配：0-手动, 1-自动
+    private Integer assignStrategy; // 分配策略：1-随机分配, 2-按成绩分配, 3-按学习时长分配
 
     @TableLogic
     private Integer deleted;

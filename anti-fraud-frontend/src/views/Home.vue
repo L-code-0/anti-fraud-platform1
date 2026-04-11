@@ -5,7 +5,7 @@
       <div class="header-container">
         <div class="logo-section">
           <div class="logo-icon">
-            <el-icon><Shield /></el-icon>
+            <el-icon><Lock /></el-icon>
           </div>
           <div class="logo-text">
             <span class="logo-title">反诈安全平台</span>
@@ -52,7 +52,7 @@
       <div class="hero-content">
         <div class="hero-badge">
           <el-icon><Star /></el-icon>
-          <span>2024年反诈先锋平台</span>
+          <span>2026年反诈先锋平台</span>
         </div>
 
         <h1 class="hero-title">
@@ -97,7 +97,7 @@
       <div class="hero-visual">
         <div class="shield-visual">
           <div class="shield-main">
-            <el-icon><Shield /></el-icon>
+            <el-icon><Lock /></el-icon>
           </div>
           <div class="shield-ring shield-ring-1"></div>
           <div class="shield-ring shield-ring-2"></div>
@@ -303,7 +303,7 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2024 高校反诈安全知识普及平台. All rights reserved.</p>
+          <p>&copy; 2026 高校反诈安全知识普及平台. All rights reserved.</p>
         </div>
       </div>
     </footer>
@@ -314,7 +314,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  Shield, Lock, Key, Star, Reading, VideoPlay, ArrowRight,
+  Lock, Key, Star, Reading, VideoPlay, ArrowRight,
   Menu, View, Document, WarnTriangleFilled, EditPen, Coordinate
 } from '@element-plus/icons-vue'
 
@@ -416,7 +416,7 @@ const knowledgeList = [
     title: '揭秘冒充公检法诈骗套路',
     desc: '详细解析冒充公检法诈骗的常见套路和识别方法',
     category: '电话诈骗',
-    time: '2024-01-15',
+    time: '2026-01-15',
     views: '2.3k',
     likes: 328,
     cover: 'https://picsum.photos/seed/knowledge1/400/250'
@@ -426,7 +426,7 @@ const knowledgeList = [
     title: '刷单返利诈骗防范指南',
     desc: '网络刷单本身就是违法行为，警惕各种返利诱惑',
     category: '网络诈骗',
-    time: '2024-01-14',
+    time: '2026-01-14',
     views: '1.8k',
     likes: 256,
     cover: 'https://picsum.photos/seed/knowledge2/400/250'
@@ -436,7 +436,7 @@ const knowledgeList = [
     title: '杀猪盘诈骗完整解析',
     desc: '深度剖析杀猪盘诈骗的全过程，提高防范意识',
     category: '社交诈骗',
-    time: '2024-01-13',
+    time: '2026-01-13',
     views: '3.1k',
     likes: 456,
     cover: 'https://picsum.photos/seed/knowledge3/400/250'
@@ -446,7 +446,7 @@ const knowledgeList = [
     title: '虚假贷款诈骗识别技巧',
     desc: '远离非法网贷，警惕各种贷款诈骗陷阱',
     category: '金融诈骗',
-    time: '2024-01-12',
+    time: '2026-01-12',
     views: '1.5k',
     likes: 198,
     cover: 'https://picsum.photos/seed/knowledge4/400/250'

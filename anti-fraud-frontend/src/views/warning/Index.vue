@@ -1,664 +1,640 @@
 <template>
   <div class="warning-page">
-    <!-- 页面标题 -->
+    <!-- 页面头部 -->
     <div class="page-header">
+      <div class="header-bg">
+        <div class="bg-gradient"></div>
+      </div>
       <div class="header-content">
-        <h1>
-          <el-icon><Warning /></el-icon>
-          智能预警系统
-        </h1>
-        <p>实时监控风险行为，及时预警诈骗风险</p>
-        <div class="header-stats">
-          <div class="stat-item danger">
-            <el-icon><WarningFilled /></el-icon>
-            <span>{{ highRiskCount }} 高风险</span>
+        <h1>实时预警中心</h1>
+        <p>获取最新诈骗预警信息，提前防范风险</p>
+      </div>
+    </div>
+
+    <div class="page-container">
+      <!-- 预警统计 -->
+      <div class="stats-section">
+        <div class="stat-card" v-for="stat in stats" :key="stat.label">
+          <div class="stat-icon" :style="{ background: stat.gradient }">
+            <el-icon><component :is="stat.icon" /></el-icon>
           </div>
-          <div class="stat-item warning">
-            <el-icon><Warning /></el-icon>
-            <span>{{ mediumRiskCount }} 中风险</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
           </div>
-          <div class="stat-item info">
-            <el-icon><InfoFilled /></el-icon>
-            <span>{{ lowRiskCount }} 低风险</span>
+        </div>
+      </div>
+
+      <!-- 预警筛选 -->
+      <div class="filter-section">
+        <div class="filter-card">
+          <div class="filter-header">
+            <h3>预警筛选</h3>
           </div>
+          <div class="filter-content">
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-select v-model="filterForm.type" placeholder="诈骗类型" class="w-full">
+                  <el-option label="全部" value="" />
+                  <el-option label="电话诈骗" value="phone" />
+                  <el-option label="网络诈骗" value="online" />
+                  <el-option label="短信诈骗" value="sms" />
+                  <el-option label="社交诈骗" value="social" />
+                </el-select>
+              </el-col>
+              <el-col :span="8">
+                <el-select v-model="filterForm.level" placeholder="预警等级" class="w-full">
+                  <el-option label="全部" value="" />
+                  <el-option label="低" value="low" />
+                  <el-option label="中" value="medium" />
+                  <el-option label="高" value="high" />
+                </el-select>
+              </el-col>
+              <el-col :span="8">
+                <el-button type="primary" @click="filterWarnings">
+                  <el-icon><Search /></el-icon>
+                  筛选
+                </el-button>
+                <el-button @click="resetFilter">
+                  <el-icon><Refresh /></el-icon>
+                  重置
+                </el-button>
+              </el-col>
+            </el-row>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最新预警 -->
+      <div class="warnings-section">
+        <div class="section-header">
+          <h2>最新预警</h2>
+          <el-button type="primary" @click="showAddDialog = true">
+            <el-icon><Plus /></el-icon>
+            发布预警
+          </el-button>
+        </div>
+
+        <div class="warnings-list">
+          <div class="warning-item" v-for="warning in warnings" :key="warning.id">
+            <div class="warning-level" :class="'level-' + warning.level">
+              {{ warning.levelName }}
+            </div>
+            <div class="warning-icon" :class="'type-' + warning.type">
+              <el-icon><component :is="warning.icon" /></el-icon>
+            </div>
+            <div class="warning-content">
+              <div class="warning-header">
+                <span class="warning-type">{{ warning.typeName }}</span>
+                <span class="warning-time">{{ warning.time }}</span>
+              </div>
+              <h4>{{ warning.title }}</h4>
+              <p>{{ warning.desc }}</p>
+              <div class="warning-tags">
+                <span class="tag" v-for="tag in warning.tags" :key="tag">{{ tag }}</span>
+              </div>
+            </div>
+            <div class="warning-actions">
+              <el-button type="primary" text @click="viewWarning(warning)">
+                <el-icon><View /></el-icon>
+                查看详情
+              </el-button>
+              <el-button type="danger" text @click="reportFraud(warning)">
+                <el-icon><WarnTriangleFilled /></el-icon>
+                我遇到类似情况
+              </el-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 30, 50]"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="total"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
         </div>
       </div>
     </div>
 
-    <!-- 操作栏 -->
-    <el-card class="action-card" shadow="hover">
-      <div class="action-bar">
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索预警信息..."
-          prefix-icon="Search"
-          clearable
-          size="large"
-          class="search-input"
-          @keyup.enter="handleSearch"
-          @clear="handleSearch"
-        >
-          <template #append>
-            <el-button type="primary" @click="handleSearch">
-              <el-icon><Search /></el-icon>
-            </el-button>
-          </template>
-        </el-input>
-
-        <div class="filter-actions">
-          <el-select v-model="riskLevel" placeholder="风险等级" clearable size="large" class="filter-select">
-            <el-option label="全部" :value="0" />
-            <el-option label="高风险" :value="1" />
-            <el-option label="中风险" :value="2" />
-            <el-option label="低风险" :value="3" />
-          </el-select>
-
-          <el-select v-model="warningType" placeholder="预警类型" clearable size="large" class="filter-select">
-            <el-option label="全部" :value="0" />
-            <el-option label="电信诈骗" :value="1" />
-            <el-option label="网络诈骗" :value="2" />
-            <el-option label="校园贷" :value="3" />
-            <el-option label="兼职诈骗" :value="4" />
-          </el-select>
-        </div>
-      </div>
-    </el-card>
-
-    <!-- 预警列表 -->
-    <el-card class="warning-list-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <h3>预警信息</h3>
-          <span class="count-tag">{{ total }} 条预警</span>
-        </div>
-      </template>
-
-      <el-table :data="warningList" style="width: 100%">
-        <el-table-column prop="id" label="预警ID" width="120" />
-        <el-table-column label="风险等级" width="120">
-          <template #default="scope">
-            <el-tag :type="getRiskLevelType(scope.row.riskLevel)">
-              {{ getRiskLevelName(scope.row.riskLevel) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="warningType" label="预警类型" width="150">
-          <template #default="scope">
-            <span>{{ getWarningTypeName(scope.row.warningType) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="content" label="预警内容" />
-        <el-table-column prop="riskScore" label="风险分数" width="100" />
-        <el-table-column prop="createTime" label="预警时间" width="180" />
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="scope">
-            <el-button type="primary" size="small" @click="handleWarningDetail(scope.row.id)">
-              <el-icon><View /></el-icon>
-              查看
-            </el-button>
-            <el-button type="success" size="small" @click="handleProcessWarning(scope.row.id)">
-              <el-icon><Check /></el-icon>
-              处理
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 空状态 -->
-      <el-empty 
-        v-if="warningList.length === 0 && !loading" 
-        description="暂无预警信息"
-        :image-size="200"
-      />
-
-      <!-- 分页 -->
-      <div class="pagination-wrapper" v-if="total > 0">
-        <el-pagination
-          v-model:current-page="page"
-          v-model:page-size="size"
-          :page-sizes="[10, 20, 30, 50]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
-      </div>
-    </el-card>
-
-    <!-- 预警详情对话框 -->
+    <!-- 发布预警对话框 -->
     <el-dialog
-      v-model="showDetailDialog"
-      title="预警详情"
-      width="800px"
-    >
-      <div v-if="currentWarning" class="warning-detail">
-        <div class="detail-header">
-          <div class="detail-info">
-            <h4>{{ currentWarning.content }}</h4>
-            <div class="detail-meta">
-              <el-tag :type="getRiskLevelType(currentWarning.riskLevel)">
-                {{ getRiskLevelName(currentWarning.riskLevel) }}
-              </el-tag>
-              <span class="meta-item">
-                <el-icon><Timer /></el-icon>
-                {{ currentWarning.createTime }}
-              </span>
-              <span class="meta-item">
-                <el-icon><DataAnalysis /></el-icon>
-                风险分数：{{ currentWarning.riskScore }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div class="detail-content">
-          <h5>风险分析</h5>
-          <p>{{ currentWarning.analysis }}</p>
-          <h5>建议措施</h5>
-          <p>{{ currentWarning.suggestion }}</p>
-          <h5>相关信息</h5>
-          <div class="related-info">
-            <div class="info-item">
-              <span class="info-label">相关用户：</span>
-              <span>{{ currentWarning.relatedUser }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">相关知识：</span>
-              <el-tag v-for="knowledge in currentWarning.relatedKnowledge" :key="knowledge" size="small" type="info">
-                {{ knowledge }}
-              </el-tag>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showDetailDialog = false">关闭</el-button>
-          <el-button type="primary" @click="handleProcessWarning(currentWarning?.id)">
-            处理预警
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <!-- 处理预警对话框 -->
-    <el-dialog
-      v-model="showProcessDialog"
-      title="处理预警"
+      v-model="showAddDialog"
+      title="发布预警"
       width="600px"
+      :close-on-click-modal="false"
     >
-      <el-form :model="processForm" label-width="100px">
-        <el-form-item label="处理状态">
-          <el-select v-model="processForm.status" placeholder="请选择处理状态">
-            <el-option label="已处理" :value="1" />
-            <el-option label="待处理" :value="2" />
-            <el-option label="误报" :value="3" />
+      <el-form :model="warningForm" label-position="top" class="warning-form">
+        <el-form-item label="预警标题" required>
+          <el-input v-model="warningForm.title" placeholder="请输入预警标题" />
+        </el-form-item>
+
+        <el-form-item label="诈骗类型" required>
+          <el-select v-model="warningForm.type" placeholder="请选择诈骗类型" class="w-full">
+            <el-option label="电话诈骗" value="phone" />
+            <el-option label="网络诈骗" value="online" />
+            <el-option label="短信诈骗" value="sms" />
+            <el-option label="社交诈骗" value="social" />
           </el-select>
         </el-form-item>
-        <el-form-item label="处理结果">
+
+        <el-form-item label="预警等级" required>
+          <el-select v-model="warningForm.level" placeholder="请选择预警等级" class="w-full">
+            <el-option label="低" value="low" />
+            <el-option label="中" value="medium" />
+            <el-option label="高" value="high" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="预警内容" required>
           <el-input
-            v-model="processForm.result"
+            v-model="warningForm.content"
             type="textarea"
             :rows="4"
-            placeholder="请输入处理结果"
+            placeholder="请详细描述预警内容，包括诈骗手法、识别方法、防范措施等"
+          />
+        </el-form-item>
+
+        <el-form-item label="标签">
+          <el-tag
+            v-for="tag in warningForm.tags"
+            :key="tag"
+            closable
+            @close="removeTag(tag)"
+          >
+            {{ tag }}
+          </el-tag>
+          <el-input
+            v-model="newTag"
+            placeholder="输入标签并按回车添加"
+            @keyup.enter="addTag"
+            style="width: 160px; margin-left: 10px;"
           />
         </el-form-item>
       </el-form>
+
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showProcessDialog = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmitProcess">提交</el-button>
-        </span>
+        <el-button @click="showAddDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitWarning">
+          <el-icon><Upload /></el-icon>
+          发布预警
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { get, post } from '@/utils/request'
+import { ref, reactive } from 'vue'
+import * as VueRouter from 'vue-router'
+const useRouter = VueRouter.useRouter
 import { ElMessage } from 'element-plus'
-import { 
-  Warning, WarningFilled, InfoFilled, Search, 
-  View, Check, Timer, DataAnalysis 
+import {
+  View, Plus, Upload, Search, Refresh, WarnTriangleFilled
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
+const showAddDialog = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(100)
 
-// 搜索和筛选
-const searchKeyword = ref('')
-const riskLevel = ref(0)
-const warningType = ref(0)
-const page = ref(1)
-const size = ref(10)
-const total = ref(0)
-const loading = ref(false)
-
-// 统计数据
-const highRiskCount = ref(12)
-const mediumRiskCount = ref(28)
-const lowRiskCount = ref(45)
-
-// 预警列表
-const warningList = ref<any[]>([])
-
-// 对话框状态
-const showDetailDialog = ref(false)
-const showProcessDialog = ref(false)
-
-// 当前预警信息
-const currentWarning = ref<any>(null)
-const currentWarningId = ref('')
-
-// 处理表单
-const processForm = ref({
-  status: 1,
-  result: ''
+const filterForm = reactive({
+  type: '',
+  level: ''
 })
 
-// 加载预警列表
-const loadWarnings = async () => {
-  loading.value = true
-  try {
-    const params = {
-      page: page.value,
-      size: size.value,
-      keyword: searchKeyword.value,
-      riskLevel: riskLevel.value,
-      warningType: warningType.value
-    }
-    const res = await get('/warning/list', params)
-    warningList.value = res.data?.records || res.data || []
-    total.value = res.data?.total || 0
-  } catch (e) {
-    // 模拟数据
-    warningList.value = Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      riskLevel: [1, 2, 3][i % 3],
-      warningType: [1, 2, 3, 4][i % 4],
-      content: ['可疑电信诈骗电话', '可疑网络兼职诈骗', '可疑校园贷短信', '可疑钓鱼网站链接'][i % 4],
-      riskScore: Math.floor(Math.random() * 50) + 50,
-      createTime: '2024-01-15 10:30',
-      analysis: '系统检测到该行为符合诈骗特征，建议立即核实',
-      suggestion: '请立即联系相关用户，进行风险提示',
-      relatedUser: '张三',
-      relatedKnowledge: ['电信诈骗防范', '网络诈骗识别']
-    }))
-    total.value = 85
-  } finally {
-    loading.value = false
+const warningForm = reactive({
+  title: '',
+  type: '',
+  level: '',
+  content: '',
+  tags: [] as string[]
+})
+
+const newTag = ref('')
+
+const stats = ref([
+  { icon: 'WarnTriangleFilled', value: '23', label: '今日预警', gradient: 'var(--gradient-danger)' },
+  { icon: 'Bell', value: '156', label: '本周预警', gradient: 'var(--gradient-warning)' },
+  { icon: 'Message', value: '892', label: '本月预警', gradient: 'var(--gradient-info)' },
+  { icon: 'Trophy', value: '98%', label: '预警准确率', gradient: 'var(--gradient-success)' }
+])
+
+const warnings = ref([
+  {
+    id: 1,
+    type: 'phone',
+    typeName: '电话诈骗',
+    icon: 'Phone',
+    level: 'high',
+    levelName: '高',
+    title: '警惕冒充客服注销账户诈骗',
+    desc: '近期有不法分子冒充电商客服，以注销账户需要转账验证为由实施诈骗，请提高警惕',
+    time: '2小时前',
+    tags: ['高发', '电话诈骗', '冒充客服']
+  },
+  {
+    id: 2,
+    type: 'online',
+    typeName: '网络诈骗',
+    icon: 'Monitor',
+    level: 'medium',
+    levelName: '中',
+    title: '虚假投资理财平台预警',
+    desc: '多个虚假投资理财APP以高回报率为诱饵骗取钱财，请勿轻信',
+    time: '5小时前',
+    tags: ['投资诈骗', 'APP诈骗', '高风险']
+  },
+  {
+    id: 3,
+    type: 'social',
+    typeName: '社交诈骗',
+    icon: 'Message',
+    level: 'high',
+    levelName: '高',
+    title: '杀猪盘诈骗手法升级',
+    desc: '杀猪盘诈骗手法不断升级，请谨慎网络交友',
+    time: '1天前',
+    tags: ['杀猪盘', '情感诈骗', '高发']
+  },
+  {
+    id: 4,
+    type: 'sms',
+    typeName: '短信诈骗',
+    icon: 'Message',
+    level: 'low',
+    levelName: '低',
+    title: '假冒银行积分兑换短信',
+    desc: '收到假冒银行积分兑换短信，点击链接后可能导致个人信息泄露',
+    time: '2天前',
+    tags: ['短信诈骗', '钓鱼链接']
+  }
+])
+
+const filterWarnings = () => {
+  // 模拟筛选功能
+  ElMessage.success('筛选成功')
+}
+
+const resetFilter = () => {
+  filterForm.type = ''
+  filterForm.level = ''
+  ElMessage.success('筛选条件已重置')
+}
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+}
+
+const handleCurrentChange = (current: number) => {
+  currentPage.value = current
+}
+
+const viewWarning = (warning: any) => {
+  // 查看预警详情
+  ElMessage.info('查看预警详情')
+}
+
+const reportFraud = (warning: any) => {
+  // 跳转到举报页面
+  router.push('/report')
+}
+
+const addTag = () => {
+  if (newTag.value && !warningForm.tags.includes(newTag.value)) {
+    warningForm.tags.push(newTag.value)
+    newTag.value = ''
   }
 }
 
-// 搜索
-const handleSearch = () => {
-  page.value = 1
-  loadWarnings()
-}
-
-// 分页
-const handlePageChange = () => {
-  loadWarnings()
-}
-
-const handleSizeChange = () => {
-  page.value = 1
-  loadWarnings()
-}
-
-// 查看预警详情
-const handleWarningDetail = async (warningId: string) => {
-  try {
-    const res = await get(`/warning/${warningId}`)
-    currentWarning.value = res.data
-  } catch (e) {
-    // 模拟数据
-    currentWarning.value = {
-      id: warningId,
-      riskLevel: 1,
-      warningType: 1,
-      content: '可疑电信诈骗电话',
-      riskScore: 85,
-      createTime: '2024-01-15 10:30',
-      analysis: '系统检测到该电话号码与已知诈骗号码特征匹配，近期有多人举报类似号码。该号码通过语音机器人进行诈骗，内容涉及冒充公检法、虚假中奖等。',
-      suggestion: '1. 立即联系相关用户，告知风险 2. 建议用户不要接听该号码 3. 引导用户学习相关防范知识 4. 如已遭受损失，建议报警',
-      relatedUser: '张三',
-      relatedKnowledge: ['电信诈骗防范指南', '冒充公检法诈骗识别', '诈骗电话应对技巧']
-    }
+const removeTag = (tag: string) => {
+  const index = warningForm.tags.indexOf(tag)
+  if (index > -1) {
+    warningForm.tags.splice(index, 1)
   }
-  showDetailDialog.value = true
 }
 
-// 处理预警
-const handleProcessWarning = (warningId: string) => {
-  currentWarningId.value = warningId
-  processForm.value = {
-    status: 1,
-    result: ''
-  }
-  showProcessDialog.value = true
-}
-
-// 提交处理结果
-const handleSubmitProcess = async () => {
-  if (!processForm.value.result) {
-    ElMessage.warning('请输入处理结果')
+const submitWarning = () => {
+  if (!warningForm.title || !warningForm.type || !warningForm.level || !warningForm.content) {
+    ElMessage.warning('请填写必填项')
     return
   }
-  try {
-    await post('/warning/process', {
-      id: currentWarningId.value,
-      status: processForm.value.status,
-      result: processForm.value.result
-    })
-    ElMessage.success('处理成功')
-    showProcessDialog.value = false
-    loadWarnings()
-  } catch (e) {
-    ElMessage.error('处理失败')
-  }
-}
 
-// 获取风险等级类型
-const getRiskLevelType = (level: number) => {
-  const types: Record<number, string> = {
-    1: 'danger',
-    2: 'warning',
-    3: 'info'
-  }
-  return types[level] || 'info'
+  ElMessage.success('预警发布成功')
+  showAddDialog.value = false
 }
-
-// 获取风险等级名称
-const getRiskLevelName = (level: number) => {
-  const names: Record<number, string> = {
-    1: '高风险',
-    2: '中风险',
-    3: '低风险'
-  }
-  return names[level] || '未知'
-}
-
-// 获取预警类型名称
-const getWarningTypeName = (type: number) => {
-  const names: Record<number, string> = {
-    1: '电信诈骗',
-    2: '网络诈骗',
-    3: '校园贷',
-    4: '兼职诈骗'
-  }
-  return names[type] || '未知'
-}
-
-onMounted(() => {
-  loadWarnings()
-})
 </script>
 
 <style scoped>
 .warning-page {
-  padding: 0 0 40px;
-  min-height: calc(100vh - 160px);
+  min-height: 100vh;
+  background: var(--bg-secondary);
 }
 
-/* 页面标题 */
 .page-header {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  padding: 60px 24px;
-  margin-bottom: 40px;
-  border-radius: 16px;
-  color: white;
   position: relative;
+  padding: var(--spacing-16) var(--spacing-6);
   overflow: hidden;
-  text-align: center;
 }
 
-.page-header::before {
-  content: '';
+.header-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
+  inset: 0;
+  z-index: 0;
+}
+
+.header-bg .bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
 }
 
 .header-content {
   position: relative;
   z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+  color: white;
 }
 
 .header-content h1 {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 40px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  justify-content: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-4);
 }
 
 .header-content p {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   opacity: 0.9;
-  margin-bottom: 24px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.header-stats {
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-6) var(--spacing-12);
+}
+
+/* 统计 */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-4);
+  margin-top: calc(-1 * var(--spacing-10));
+  margin-bottom: var(--spacing-8);
+}
+
+.stat-card {
   display: flex;
-  justify-content: center;
-  gap: 48px;
-  margin-top: 32px;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
 }
 
-.stat-item {
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.stat-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 24px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
 }
 
-.stat-item:hover {
-  transform: translateY(-4px);
+.stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
-.stat-item.danger {
-  background: rgba(239, 68, 68, 0.2);
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
-.stat-item.warning {
-  background: rgba(245, 158, 11, 0.2);
+/* 筛选 */
+.filter-section {
+  margin-bottom: var(--spacing-8);
 }
 
-.stat-item.info {
-  background: rgba(59, 130, 246, 0.2);
+.filter-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-5);
+  box-shadow: var(--shadow-md);
 }
 
-.stat-item span {
-  font-size: 16px;
-  font-weight: 500;
+.filter-header {
+  margin-bottom: var(--spacing-4);
 }
 
-/* 操作栏 */
-.action-card {
-  border-radius: 12px;
-  margin-bottom: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.action-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.action-bar {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.search-input {
-  flex: 1;
-  max-width: 500px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.search-input .el-input__wrapper {
-  border-radius: 8px;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.filter-select {
-  min-width: 160px;
-  border-radius: 8px;
+.filter-header h3 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 /* 预警列表 */
-.warning-list-card {
-  border-radius: 12px;
-  overflow: hidden;
+.warnings-section {
+  margin-bottom: var(--spacing-8);
 }
 
-.card-header {
+.section-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 0;
-  margin: -20px -20px 24px;
-  padding: 20px;
-  background: var(--el-color-primary-light-9);
-  border-radius: 12px 12px 0 0;
+  margin-bottom: var(--spacing-6);
 }
 
-.card-header h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin: 0;
+.section-header h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
-.count-tag {
-  background: var(--el-color-primary);
+.warnings-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.warning-item {
+  display: flex;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+}
+
+.warning-item:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.warning-level {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 1px 4px rgba(66, 184, 131, 0.2);
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 8px;
 }
 
-/* 预警详情 */
-.warning-detail {
+.warning-level.level-low {
+  background: var(--success-color);
+}
+
+.warning-level.level-medium {
+  background: var(--warning-color);
+}
+
+.warning-level.level-high {
+  background: var(--danger-color);
+}
+
+.warning-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
   display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.detail-header {
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--el-border-color);
-}
-
-.detail-info h4 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin-bottom: 12px;
-}
-
-.detail-meta {
-  display: flex;
-  gap: 16px;
   align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.warning-icon.type-phone { background: var(--danger-color); }
+.warning-icon.type-online { background: var(--warning-color); }
+.warning-icon.type-sms { background: var(--info-color); }
+.warning-icon.type-social { background: var(--success-color); }
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.warning-type {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--danger-bg);
+  color: var(--danger-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+}
+
+.warning-time {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.warning-content h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.warning-content p {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.warning-tags {
+  display: flex;
+  gap: var(--spacing-2);
   flex-wrap: wrap;
 }
 
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
+.warning-tags .tag {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
 }
 
-.detail-content h5 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 16px 0 8px;
-}
-
-.detail-content p {
-  color: var(--el-text-color-secondary);
-  line-height: 1.5;
-  margin: 0 0 16px;
-}
-
-.related-info {
+.warning-actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.info-item {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.info-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--el-text-color-primary);
-  min-width: 80px;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
 }
 
 /* 分页 */
-.pagination-wrapper {
+.pagination {
   display: flex;
   justify-content: center;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 2px solid var(--el-color-primary-light-9);
+  margin-top: var(--spacing-6);
+}
+
+/* 预警表单 */
+.warning-form {
+  padding: var(--spacing-2);
 }
 
 /* 响应式 */
+@media (max-width: 1024px) {
+  .stats-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
-  .action-bar {
+  .page-header {
+    padding: var(--spacing-10) var(--spacing-4);
+  }
+
+  .header-content h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .stats-section {
+    grid-template-columns: 1fr;
+    margin-top: 0;
+  }
+
+  .warning-item {
     flex-direction: column;
-    align-items: stretch;
   }
-  
-  .search-input {
-    max-width: none;
-  }
-  
-  .filter-actions {
-    justify-content: space-between;
-  }
-  
-  .header-stats {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .stat-item {
-    width: 200px;
+
+  .warning-actions {
+    flex-direction: row;
+    justify-content: flex-start;
   }
 }
 </style>

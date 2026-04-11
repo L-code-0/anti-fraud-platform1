@@ -144,13 +144,23 @@
     >
       <el-form :model="reportForm" label-position="top" class="report-form">
         <el-form-item label="诈骗类型" required>
-          <el-select v-model="reportForm.type" placeholder="请选择诈骗类型" class="w-full">
-            <el-option label="电话诈骗" value="phone" />
-            <el-option label="网络诈骗" value="online" />
-            <el-option label="短信诈骗" value="sms" />
-            <el-option label="社交诈骗" value="social" />
-            <el-option label="其他" value="other" />
-          </el-select>
+          <div class="type-selection">
+            <el-select v-model="reportForm.type" placeholder="请选择诈骗类型" class="w-full">
+              <el-option label="电话诈骗" value="phone" />
+              <el-option label="网络诈骗" value="online" />
+              <el-option label="短信诈骗" value="sms" />
+              <el-option label="社交诈骗" value="social" />
+              <el-option label="其他" value="other" />
+            </el-select>
+            <el-button type="primary" text @click="autoClassify" style="margin-top: 8px;">
+              <el-icon><MagicStick /></el-icon>
+              智能分类
+            </el-button>
+          </div>
+          <div v-if="autoClassifyResult" class="auto-classify-result" :class="autoClassifyResult.confidence > 0.7 ? 'high-confidence' : 'low-confidence'">
+            <el-icon><Check /></el-icon>
+            <span>智能分类结果：{{ autoClassifyResult.type }} (置信度：{{ Math.round(autoClassifyResult.confidence * 100) }}%)</span>
+          </div>
         </el-form-item>
 
         <el-form-item label="诈骗方式" required>
@@ -224,7 +234,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Warning, Bell, ArrowRight, View, Plus, Upload,
-  Phone, Monitor, Message, WarnTriangleFilled
+  WarnTriangleFilled, MagicStick, Check
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -238,6 +248,8 @@ const reportForm = reactive({
   description: '',
   agreeTerms: false
 })
+
+const autoClassifyResult = ref<any>(null)
 
 const warnings = ref([
   {
@@ -274,31 +286,31 @@ const warnings = ref([
 
 const reportHistory = ref([
   {
-    id: 'RPT20240115001',
+    id: 'RPT20260115001',
     type: '电话诈骗',
     typeId: 'phone',
     content: '收到冒充银行客服的电话...',
     status: '处理中',
     statusId: 'processing',
-    time: '2024-01-15'
+    time: '2026-01-15'
   },
   {
-    id: 'RPT20240110002',
+    id: 'RPT20260110002',
     type: '网络诈骗',
     typeId: 'online',
     content: '发现虚假购物网站...',
     status: '已处理',
     statusId: 'resolved',
-    time: '2024-01-10'
+    time: '2026-01-10'
   },
   {
-    id: 'RPT20240105003',
+    id: 'RPT20260105003',
     type: '短信诈骗',
     typeId: 'sms',
     content: '收到假冒银行积分兑换短信...',
     status: '已处理',
     statusId: 'resolved',
-    time: '2024-01-05'
+    time: '2026-01-05'
   }
 ])
 
@@ -313,6 +325,52 @@ const reportFraud = (warning: any) => {
   reportForm.type = warning.type
   reportForm.method = ''
   showReportDialog.value = true
+}
+
+const autoClassify = () => {
+  if (!reportForm.description) {
+    ElMessage.warning('请先填写详细描述')
+    return
+  }
+
+  // 模拟智能分类
+  const description = reportForm.description.toLowerCase()
+  let type = 'other'
+  let confidence = 0.5
+
+  // 基于关键词的简单分类
+  if (description.includes('电话') || description.includes('来电') || description.includes('客服')) {
+    type = 'phone'
+    confidence = 0.85
+  } else if (description.includes('网站') || description.includes('app') || description.includes('网购') || description.includes('投资')) {
+    type = 'online'
+    confidence = 0.9
+  } else if (description.includes('短信') || description.includes('验证码') || description.includes('链接')) {
+    type = 'sms'
+    confidence = 0.8
+  } else if (description.includes('微信') || description.includes('QQ') || description.includes('交友') || description.includes('聊天')) {
+    type = 'social'
+    confidence = 0.75
+  }
+
+  // 映射类型到中文
+  const typeMap: Record<string, string> = {
+    phone: '电话诈骗',
+    online: '网络诈骗',
+    sms: '短信诈骗',
+    social: '社交诈骗',
+    other: '其他'
+  }
+
+  autoClassifyResult.value = {
+    type: typeMap[type],
+    confidence
+  }
+
+  // 自动填充类型
+  reportForm.type = type
+
+  ElMessage.success('智能分类完成')
 }
 
 const submitReport = () => {
@@ -653,6 +711,30 @@ const submitReport = () => {
   font-size: var(--font-size-xs);
   color: var(--text-muted);
   margin-top: var(--spacing-2);
+}
+
+.type-selection {
+  position: relative;
+}
+
+.auto-classify-result {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-2);
+}
+
+.auto-classify-result.high-confidence {
+  background: var(--success-bg);
+  color: var(--success-color);
+}
+
+.auto-classify-result.low-confidence {
+  background: var(--warning-bg);
+  color: var(--warning-color);
 }
 
 /* 响应式 */

@@ -1,69 +1,70 @@
 package com.anti.fraud.modules.test.controller;
 
 import com.anti.fraud.common.result.Result;
-import com.anti.fraud.modules.test.dto.AnswerSubmitDTO;
 import com.anti.fraud.modules.test.service.TestService;
-import com.anti.fraud.modules.test.vo.PaperVO;
-import com.anti.fraud.modules.test.vo.QuestionVO;
-import com.anti.fraud.modules.test.vo.TestResultVO;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+import java.util.HashMap;
 
-import java.util.List;
-
-@Tag(name = "测试考试", description = "测试考试相关接口")
 @RestController
-@RequestMapping("/test")
-@RequiredArgsConstructor
+@RequestMapping("/api/test")
 public class TestController {
 
-    private final TestService testService;
+    @Autowired
+    private TestService testService;
 
-    @Operation(summary = "获取可用试卷列表", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/papers")
-    public Result<List<PaperVO>> getAvailablePapers() {
-        return Result.success(testService.getAvailablePapers());
+    /**
+     * 获取用户能力水平
+     */
+    @GetMapping("/ability/{userId}")
+    public Result<?> getUserAbility(@PathVariable Long userId) {
+        return Result.success(testService.getUserAbility(userId));
     }
 
-    @Operation(summary = "获取试卷题目", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/papers/{paperId}/questions")
-    public Result<List<QuestionVO>> getPaperQuestions(@PathVariable Long paperId) {
-        return Result.success(testService.getPaperQuestions(paperId));
+    /**
+     * 自适应测试组卷
+     */
+    @PostMapping("/adaptive")
+    public Result<?> adaptiveTest(@RequestBody Map<String, Object> params) {
+        Long userId = Long.valueOf(params.get("userId").toString());
+        Integer questionCount = Integer.valueOf(params.get("questionCount").toString());
+        return Result.success(testService.adaptiveTest(userId, questionCount));
     }
 
-    @Operation(summary = "开始测试", security = @SecurityRequirement(name = "Bearer"))
-    @PostMapping("/papers/{paperId}/start")
-    public Result<Long> startTest(@PathVariable Long paperId) {
-        return Result.success(testService.startTest(paperId));
-    }
-
-    @Operation(summary = "提交答案", security = @SecurityRequirement(name = "Bearer"))
+    /**
+     * 提交测试答案
+     */
     @PostMapping("/submit")
-    public Result<TestResultVO> submitAnswers(@RequestBody AnswerSubmitDTO submitDTO) {
-        return Result.success(testService.submitAnswers(submitDTO));
+    public Result<?> submitTest(@RequestBody Map<String, Object> params) {
+        Long userId = Long.valueOf(params.get("userId").toString());
+        Long paperId = Long.valueOf(params.get("paperId").toString());
+        Object answersObj = params.get("answers");
+        Map<String, Object> answers = answersObj instanceof Map ? (Map<String, Object>) answersObj : new HashMap<>();
+        return Result.success(testService.submitTest(userId, paperId, answers));
     }
 
-    @Operation(summary = "获取测试结果", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/records/{recordId}")
-    public Result<TestResultVO> getTestResult(@PathVariable Long recordId) {
-        return Result.success(testService.getTestResult(recordId));
+    /**
+     * 生成测试报告
+     */
+    @GetMapping("/report/{userId}/{testId}")
+    public Result<?> generateTestReport(@PathVariable Long userId, @PathVariable Long testId) {
+        return Result.success(testService.generateTestReport(userId, testId));
     }
 
-    @Operation(summary = "获取我的测试记录", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/my-records")
-    public Result<Page<TestResultVO>> getMyTestRecords(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        return Result.success(testService.getMyTestRecords(page, size));
+    /**
+     * 分析学习薄弱点
+     */
+    @GetMapping("/weaknesses/{userId}")
+    public Result<?> analyzeWeaknesses(@PathVariable Long userId) {
+        return Result.success(testService.analyzeWeaknesses(userId));
     }
 
-    @Operation(summary = "获取排行榜", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/papers/{paperId}/ranking")
-    public Result<List<TestResultVO>> getRankingList(@PathVariable Long paperId) {
-        return Result.success(testService.getRankingList(paperId));
+    /**
+     * 推荐学习内容
+     */
+    @GetMapping("/recommend/{userId}")
+    public Result<?> recommendLearningContent(@PathVariable Long userId) {
+        return Result.success(testService.recommendLearningContent(userId));
     }
 }

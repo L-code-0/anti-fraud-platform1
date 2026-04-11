@@ -185,9 +185,9 @@ const loadActivities = async () => {
     total.value = res.data?.total || 0
   } catch (e) {
     activityList.value = [
-      { id: 1, activityName: '反诈知识竞赛', activityType: 1, startTime: '2024-01-20 09:00:00', endTime: '2024-01-20 12:00:00', registrationCount: 156, maxParticipants: 200, status: 0 },
-      { id: 2, activityName: '反诈宣传讲座', activityType: 2, startTime: '2024-01-18 14:00:00', endTime: '2024-01-18 16:00:00', registrationCount: 80, maxParticipants: 100, status: 1 },
-      { id: 3, activityName: '防诈骗主题班会', activityType: 2, startTime: '2024-01-15 10:00:00', endTime: '2024-01-15 11:30:00', registrationCount: 50, maxParticipants: 50, status: 2 }
+      { id: 1, activityName: '反诈知识竞赛', activityType: 1, startTime: '2026-01-20 09:00:00', endTime: '2026-01-20 12:00:00', registrationCount: 156, maxParticipants: 200, status: 0 },
+      { id: 2, activityName: '反诈宣传讲座', activityType: 2, startTime: '2026-01-18 14:00:00', endTime: '2026-01-18 16:00:00', registrationCount: 80, maxParticipants: 100, status: 1 },
+      { id: 3, activityName: '防诈骗主题班会', activityType: 2, startTime: '2026-01-15 10:00:00', endTime: '2026-01-15 11:30:00', registrationCount: 50, maxParticipants: 50, status: 2 }
     ]
     total.value = 3
   }
@@ -248,9 +248,9 @@ const submitForm = async () => {
 
 const viewRegistrations = (row: any) => {
   registrationList.value = [
-    { userName: '张三', userPhone: '13800138001', department: '计算机学院', registrationTime: '2024-01-16 10:30:00', status: 0 },
-    { userName: '李四', userPhone: '13800138002', department: '经济学院', registrationTime: '2024-01-16 11:20:00', status: 1 },
-    { userName: '王五', userPhone: '13800138003', department: '法学院', registrationTime: '2024-01-16 14:15:00', status: 0 }
+    { userName: '张三', userPhone: '13800138001', department: '计算机学院', registrationTime: '2026-01-16 10:30:00', status: 0 },
+    { userName: '李四', userPhone: '13800138002', department: '经济学院', registrationTime: '2026-01-16 11:20:00', status: 1 },
+    { userName: '王五', userPhone: '13800138003', department: '法学院', registrationTime: '2026-01-16 14:15:00', status: 0 }
   ]
   registrationVisible.value = true
 }

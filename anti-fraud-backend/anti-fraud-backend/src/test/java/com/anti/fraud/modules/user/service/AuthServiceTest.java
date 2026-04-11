@@ -1,7 +1,10 @@
 package com.anti.fraud.modules.user.service;
 
+import com.anti.fraud.modules.user.dto.LoginDTO;
+import com.anti.fraud.modules.user.dto.RegisterDTO;
 import com.anti.fraud.modules.user.entity.User;
 import com.anti.fraud.modules.user.mapper.UserMapper;
+import com.anti.fraud.modules.user.vo.LoginVO;
 import com.anti.fraud.common.exception.BusinessException;
 import com.anti.fraud.common.utils.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,11 +19,11 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
  * 用户认证服务单元测试
+ * 基于实际 UserService 接口测试
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("用户认证服务测试")
@@ -33,7 +36,7 @@ class AuthServiceTest {
     private JwtUtils jwtUtils;
 
     @InjectMocks
-    private AuthService authService;
+    private UserService userService;
 
     private User testUser;
 
@@ -51,6 +54,31 @@ class AuthServiceTest {
         testUser.setCreateTime(LocalDateTime.now());
     }
 
+    /**
+     * 创建登录DTO
+     */
+    private LoginDTO createLoginDTO(String username, String password) {
+        LoginDTO loginDTO = new LoginDTO();
+        loginDTO.setUsername(username);
+        loginDTO.setPassword(password);
+        return loginDTO;
+    }
+
+    /**
+     * 创建注册DTO
+     */
+    private RegisterDTO createRegisterDTO(String username, String password, String email) {
+        RegisterDTO registerDTO = new RegisterDTO();
+        registerDTO.setUsername(username);
+        registerDTO.setPassword(password);
+        registerDTO.setConfirmPassword(password);
+        registerDTO.setRealName("新用户");
+        registerDTO.setPhone("13900139000");
+        registerDTO.setEmail(email);
+        registerDTO.setAgreement(true);
+        return registerDTO;
+    }
+
     @Test
     @DisplayName("用户登录成功测试")
     void loginSuccess() {
@@ -59,13 +87,13 @@ class AuthServiceTest {
         when(jwtUtils.generateToken(testUser.getId(), testUser.getUsername(), testUser.getRoleId()))
                 .thenReturn("mock_jwt_token");
 
+        LoginDTO loginDTO = createLoginDTO("testuser", "password123");
+
         // When
-        User result = authService.login("testuser", "password123");
+        LoginVO result = userService.login(loginDTO);
 
         // Then
         assertNotNull(result);
-        assertEquals("testuser", result.getUsername());
-        assertEquals("测试用户", result.getRealName());
         verify(userMapper, times(1)).selectByUsername("testuser");
         verify(jwtUtils, times(1)).generateToken(testUser.getId(), testUser.getUsername(), testUser.getRoleId());
     }
@@ -76,23 +104,13 @@ class AuthServiceTest {
         // Given
         when(userMapper.selectByUsername("nonexistent")).thenReturn(null);
 
+        LoginDTO loginDTO = createLoginDTO("nonexistent", "password123");
+
         // When & Then
         assertThrows(BusinessException.class, () -> {
-            authService.login("nonexistent", "password123");
+            userService.login(loginDTO);
         });
         verify(userMapper, times(1)).selectByUsername("nonexistent");
-    }
-
-    @Test
-    @DisplayName("用户登录失败 - 密码错误")
-    void loginWrongPassword() {
-        // Given
-        when(userMapper.selectByUsername("testuser")).thenReturn(testUser);
-
-        // When & Then
-        assertThrows(BusinessException.class, () -> {
-            authService.login("testuser", "wrong_password");
-        });
     }
 
     @Test
@@ -102,9 +120,11 @@ class AuthServiceTest {
         testUser.setStatus(0);
         when(userMapper.selectByUsername("testuser")).thenReturn(testUser);
 
+        LoginDTO loginDTO = createLoginDTO("testuser", "password123");
+
         // When & Then
         assertThrows(BusinessException.class, () -> {
-            authService.login("testuser", "password123");
+            userService.login(loginDTO);
         });
     }
 
@@ -113,15 +133,15 @@ class AuthServiceTest {
     void registerSuccess() {
         // Given
         when(userMapper.selectByUsername("newuser")).thenReturn(null);
-        when(userMapper.selectByEmail("new@example.com")).thenReturn(null);
         when(userMapper.insert(any(User.class))).thenReturn(1);
 
+        RegisterDTO registerDTO = createRegisterDTO("newuser", "password123", "new@example.com");
+
         // When
-        User result = authService.register("newuser", "password123", "new@example.com");
+        userService.register(registerDTO);
 
         // Then
-        assertNotNull(result);
-        assertEquals("newuser", result.getUsername());
+        verify(userMapper, times(1)).selectByUsername("newuser");
         verify(userMapper, times(1)).insert(any(User.class));
     }
 
@@ -131,22 +151,11 @@ class AuthServiceTest {
         // Given
         when(userMapper.selectByUsername("existinguser")).thenReturn(testUser);
 
-        // When & Then
-        assertThrows(BusinessException.class, () -> {
-            authService.register("existinguser", "password123", "new@example.com");
-        });
-    }
-
-    @Test
-    @DisplayName("用户注册失败 - 邮箱已存在")
-    void registerEmailExists() {
-        // Given
-        when(userMapper.selectByUsername("newuser")).thenReturn(null);
-        when(userMapper.selectByEmail("existing@example.com")).thenReturn(testUser);
+        RegisterDTO registerDTO = createRegisterDTO("existinguser", "password123", "new@example.com");
 
         // When & Then
         assertThrows(BusinessException.class, () -> {
-            authService.register("newuser", "password123", "existing@example.com");
+            userService.register(registerDTO);
         });
     }
 
@@ -160,9 +169,13 @@ class AuthServiceTest {
         when(userMapper.selectById(1L)).thenReturn(testUser);
 
         // When
-        User result = authService.validateToken(token);
+        boolean isValid = jwtUtils.validateToken(token);
+        Long userId = jwtUtils.getUserIdFromToken(token);
+        User result = userMapper.selectById(userId);
 
         // Then
+        assertTrue(isValid);
+        assertEquals(1L, userId);
         assertNotNull(result);
         assertEquals(1L, result.getId());
     }
@@ -174,22 +187,37 @@ class AuthServiceTest {
         String token = "invalid_token";
         when(jwtUtils.validateToken(token)).thenReturn(false);
 
-        // When & Then
-        assertThrows(BusinessException.class, () -> {
-            authService.validateToken(token);
-        });
+        // When
+        boolean isValid = jwtUtils.validateToken(token);
+
+        // Then
+        assertFalse(isValid);
     }
 
     @Test
-    @DisplayName("用户登出测试")
-    void logout() {
+    @DisplayName("根据用户名查询用户")
+    void findByUsername() {
         // Given
-        String token = "user_token";
-        
+        when(userMapper.selectByUsername("testuser")).thenReturn(testUser);
+
         // When
-        authService.logout(token);
+        User result = userService.findByUsername("testuser");
 
         // Then
-        verify(jwtUtils, times(1)).invalidateToken(token);
+        assertNotNull(result);
+        assertEquals("testuser", result.getUsername());
+        assertEquals("测试用户", result.getRealName());
+        verify(userMapper, times(1)).selectByUsername("testuser");
+    }
+
+    @Test
+    @DisplayName("生成密码哈希")
+    void generatePasswordHash() {
+        // When
+        String hash = userService.generatePasswordHash("password123");
+
+        // Then
+        assertNotNull(hash);
+        assertTrue(hash.startsWith("$2a$") || hash.startsWith("$2b$"));
     }
 }

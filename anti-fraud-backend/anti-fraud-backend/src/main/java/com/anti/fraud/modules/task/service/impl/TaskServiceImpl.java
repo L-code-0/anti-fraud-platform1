@@ -261,4 +261,76 @@ public class TaskServiceImpl implements TaskService {
             default: return "未知";
         }
     }
+
+    @Override
+    @Transactional
+    public void setTaskReminder(Long taskId, Integer remindType, Integer remindDays) {
+        ClassTask task = taskMapper.selectById(taskId);
+        if (task == null) {
+            throw new BusinessException("任务不存在");
+        }
+
+        task.setRemindType(remindType);
+        task.setRemindDays(remindDays);
+        task.setRemindStatus(0);
+
+        // 计算提醒时间
+        if (remindType == 1 || remindType == 3) {
+            // 开始前提醒
+            task.setRemindTime(task.getStartTime().minusDays(remindDays));
+        } else if (remindType == 2) {
+            // 结束前提醒
+            task.setRemindTime(task.getEndTime().minusDays(remindDays));
+        }
+
+        taskMapper.updateById(task);
+    }
+
+    @Override
+    @Transactional
+    public void triggerTaskReminders() {
+        List<ClassTask> tasks = getTasksToRemind();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (ClassTask task : tasks) {
+            // 检查提醒时间是否已到
+            if (task.getRemindTime() != null && now.isAfter(task.getRemindTime())) {
+                // 这里可以添加发送提醒的逻辑，如发送邮件、短信或系统通知
+                System.out.println("发送任务提醒: " + task.getTaskName());
+
+                // 更新提醒状态
+                task.setRemindStatus(1);
+                taskMapper.updateById(task);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void autoAssignTask(Long taskId, Integer strategy) {
+        ClassTask task = taskMapper.selectById(taskId);
+        if (task == null) {
+            throw new BusinessException("任务不存在");
+        }
+
+        // 这里简化实现，实际应该根据策略自动分配任务给学生
+        // 1-随机分配, 2-按成绩分配, 3-按学习时长分配
+        task.setAutoAssign(1);
+        task.setAssignStrategy(strategy);
+        taskMapper.updateById(task);
+
+        // 这里可以添加具体的分配逻辑
+        System.out.println("自动分配任务: " + task.getTaskName() + "，策略: " + strategy);
+    }
+
+    @Override
+    public List<ClassTask> getTasksToRemind() {
+        LocalDateTime now = LocalDateTime.now();
+        return taskMapper.selectList(
+                new LambdaQueryWrapper<ClassTask>()
+                        .ne(ClassTask::getRemindType, 0)
+                        .eq(ClassTask::getRemindStatus, 0)
+                        .le(ClassTask::getRemindTime, now)
+        );
+    }
 }
