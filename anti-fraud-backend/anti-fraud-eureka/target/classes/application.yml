@@ -9,8 +9,8 @@ spring:
 spring:
   security:
     user:
-      name: admin
-      password: admin123
+      name: ${SECURITY_USERNAME:admin}
+      password: ${SECURITY_PASSWORD}
 
 # Eureka配置
 eureka:

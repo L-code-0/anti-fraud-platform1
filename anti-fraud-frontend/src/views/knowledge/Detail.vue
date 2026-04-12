@@ -38,6 +38,36 @@
             </div>
           </template>
           
+          <!-- 多媒体播放器 -->
+          <div class="media-player" v-if="knowledge.videoUrl || knowledge.audioUrl">
+            <div v-if="knowledge.videoUrl" class="video-player">
+              <video 
+                controls 
+                :src="knowledge.videoUrl" 
+                :duration="knowledge.videoDuration"
+                class="video-element"
+              >
+                您的浏览器不支持视频播放
+              </video>
+              <div class="media-info" v-if="knowledge.videoDuration">
+                <span class="duration"><el-icon><Timer /></el-icon> {{ formatDuration(knowledge.videoDuration) }}</span>
+              </div>
+            </div>
+            <div v-else-if="knowledge.audioUrl" class="audio-player">
+              <audio 
+                controls 
+                :src="knowledge.audioUrl" 
+                :duration="knowledge.audioDuration"
+                class="audio-element"
+              >
+                您的浏览器不支持音频播放
+              </audio>
+              <div class="media-info" v-if="knowledge.audioDuration">
+                <span class="duration"><el-icon><Timer /></el-icon> {{ formatDuration(knowledge.audioDuration) }}</span>
+              </div>
+            </div>
+          </div>
+          
           <div class="content" v-html="knowledge.content"></div>
           
           <el-divider />
@@ -180,6 +210,11 @@
           </div>
         </el-card>
         
+        <!-- 知识图谱 -->
+        <el-card class="graph-card" style="margin-bottom: 20px">
+          <KnowledgeGraph :knowledge-id="knowledge?.id" />
+        </el-card>
+        
         <!-- 相关推荐 -->
         <el-card class="related-card">
           <template #header>
@@ -252,8 +287,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { get, post } from '@/utils/request'
 import { ElMessage } from 'element-plus'
-import { User, Calendar, View, Star, Share, ChatLineSquare, Delete, CircleCheck, Warning } from '@element-plus/icons-vue'
+import { User, Calendar, View, Star, Share, ChatLineSquare, Delete, CircleCheck, Warning, Timer } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import KnowledgeGraph from '@/components/knowledge/KnowledgeGraph.vue'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -570,6 +606,14 @@ onMounted(() => {
   ]
 })
 
+// 格式化时长（秒）
+const formatDuration = (seconds: number): string => {
+  if (!seconds) return '00:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
 onUnmounted(() => {
   if (readTimer) clearInterval(readTimer)
 })
@@ -656,6 +700,47 @@ onUnmounted(() => {
 
 .content :deep(li) {
   margin-bottom: 8px;
+}
+
+/* 多媒体播放器 */
+.media-player {
+  margin-bottom: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background: var(--color-bg-page);
+  padding: var(--spacing-md);
+}
+
+.video-player,
+.audio-player {
+  width: 100%;
+}
+
+.video-element {
+  width: 100%;
+  height: 400px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.audio-element {
+  width: 100%;
+  margin: var(--spacing-md) 0;
+}
+
+.media-info {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.media-info .duration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* 学习进度 */

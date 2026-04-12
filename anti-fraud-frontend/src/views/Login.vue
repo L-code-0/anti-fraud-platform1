@@ -181,25 +181,7 @@
           </div>
           
           <!-- 第三方登录 -->
-          <div class="social-login">
-            <el-tooltip content="企业微信" placement="top">
-              <el-button circle size="large" class="social-btn wechat">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                  <path d="M8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm5 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm5.5 4.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3-4a7 7 0 0 1-6.5 7h-2a5.5 5.5 0 0 1-5-5.5 4.5 4.5 0 0 1 .5-2.5 6.5 6.5 0 0 0 4-4.5H9.5a5.5 5.5 0 0 0-5 5.5c0 2.15 1.24 4.03 3.08 5.08A10.94 10.94 0 0 1 12 17.5a11 11 0 0 1-1.5-10.98 12 12 0 0 1 10.5-6.5 12 12 0 0 1 5 22h-2a10 10 0 0 1-5.5-19z"/>
-                </svg>
-              </el-button>
-            </el-tooltip>
-            <el-tooltip content="钉钉" placement="top">
-              <el-button circle size="large" class="social-btn dingtalk">
-                <el-icon :size="20"><ChatDotRound /></el-icon>
-              </el-button>
-            </el-tooltip>
-            <el-tooltip content="企业邮箱" placement="top">
-              <el-button circle size="large" class="social-btn mail">
-                <el-icon :size="20"><Message /></el-icon>
-              </el-button>
-            </el-tooltip>
-          </div>
+          <ThirdPartyLogin />
           
           <!-- 注册提示 -->
           <div class="login-footer">
@@ -271,6 +253,7 @@ import {
   validatePasswordFormat,
   getDeviceId
 } from '@/utils/security'
+import ThirdPartyLogin from '@/components/common/ThirdPartyLogin.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

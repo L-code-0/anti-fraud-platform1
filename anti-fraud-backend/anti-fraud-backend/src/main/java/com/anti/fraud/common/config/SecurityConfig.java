@@ -1,10 +1,12 @@
 package com.anti.fraud.common.config;
 
 import com.anti.fraud.security.filter.JwtAuthenticationFilter;
+import com.anti.fraud.security.filter.RateLimitFilter;
 import com.anti.fraud.security.handler.AccessDeniedHandlerImpl;
 import com.anti.fraud.security.handler.AuthenticationEntryPointImpl;
 import com.anti.fraud.common.utils.JwtUtils;
 import com.anti.fraud.common.utils.RedisUtils;
+import com.anti.fraud.security.service.RateLimitService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -39,19 +41,22 @@ public class SecurityConfig {
     private final JwtUtils jwtUtils;
     private final RedisUtils redisUtils;
     private final ObjectMapper objectMapper;
+    private final RateLimitService rateLimitService;
 
     public SecurityConfig(AuthenticationEntryPointImpl authenticationEntryPoint,
                           AccessDeniedHandlerImpl accessDeniedHandler,
                           CorsProperties corsProperties,
                           JwtUtils jwtUtils,
                           RedisUtils redisUtils,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          RateLimitService rateLimitService) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
         this.corsProperties = corsProperties;
         this.jwtUtils = jwtUtils;
         this.redisUtils = redisUtils;
         this.objectMapper = objectMapper;
+        this.rateLimitService = rateLimitService;
     }
 
     @Bean
@@ -68,6 +73,19 @@ public class SecurityConfig {
     public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration() {
         FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(jwtAuthenticationFilter());
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public RateLimitFilter rateLimitFilter() {
+        return new RateLimitFilter(rateLimitService, objectMapper);
+    }
+
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration() {
+        FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(rateLimitFilter());
         registration.setEnabled(false);
         return registration;
     }
@@ -108,6 +126,7 @@ public class SecurityConfig {
                                 "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated())
+                .addFilterBefore(rateLimitFilter(), JwtAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -25,6 +25,19 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -39,9 +52,9 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
-# JWT 配置 - 生产环境必须通过环境变量覆盖
+# JWT 配置 - 必须通过环境变量设置
 jwt:
-  secret: ${JWT_SECRET:dev-only-secret-key-2024-not-for-production-use-min-32-chars}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
   header: Authorization
   prefix: Bearer
@@ -77,3 +90,17 @@ management:
     export:
       prometheus:
         enabled: true
+
+# 文件上传配置
+file:
+  upload:
+    path: ${FILE_UPLOAD_PATH:./uploads}
+    prefix: /api/files
+    max-size: 104857600 # 100MB
+    allowed-types: jpg,png,gif,jpeg,pdf,doc,docx,xls,xlsx,txt
+
+# 短信服务配置
+sms:
+  code:
+    expire-time: 5 # 验证码过期时间（分钟）
+    prefix: sms:code: # Redis存储前缀

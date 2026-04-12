@@ -32,6 +32,10 @@ public class KnowledgeContent implements Serializable {
 
     private Integer videoDuration;
 
+    private String audioUrl;
+
+    private Integer audioDuration;
+
     private String tags;
 
     private Long authorId;

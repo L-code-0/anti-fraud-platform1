@@ -28,8 +28,17 @@
         </el-form-item>
       </el-form>
       
+      <!-- 批量操作 -->
+      <div class="batch-actions" v-if="selectedKnowledge.length > 0">
+        <el-button type="primary" @click="batchPublish">批量上架</el-button>
+        <el-button type="warning" @click="batchUnpublish">批量下架</el-button>
+        <el-button type="danger" @click="batchDelete">批量删除</el-button>
+        <el-button @click="selectedKnowledge = []">取消选择</el-button>
+      </div>
+      
       <!-- 知识列表 -->
-      <el-table :data="knowledgeList" style="width: 100%">
+      <el-table :data="knowledgeList" style="width: 100%" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="title" label="标题" min-width="200">
           <template #default="{ row }">
@@ -139,6 +148,7 @@ const size = ref(10)
 const total = ref(0)
 const dialogVisible = ref(false)
 const editId = ref<number | null>(null)
+const selectedKnowledge = ref<any[]>([])
 
 const searchParams = reactive({
   categoryId: null as number | null,
@@ -258,6 +268,79 @@ const deleteKnowledge = async (row: any) => {
   } catch (e) {}
 }
 
+const handleSelectionChange = (val: any[]) => {
+  selectedKnowledge.value = val
+}
+
+const batchPublish = async () => {
+  if (selectedKnowledge.value.length === 0) {
+    ElMessage.warning('请选择要操作的知识')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要批量上架选中的知识吗？',
+      '提示',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    
+    const ids = selectedKnowledge.value.map(item => item.id)
+    // 模拟批量上架操作
+    setTimeout(() => {
+      ElMessage.success('批量上架成功')
+      selectedKnowledge.value = []
+      loadKnowledge()
+    }, 1000)
+  } catch (e) {}
+}
+
+const batchUnpublish = async () => {
+  if (selectedKnowledge.value.length === 0) {
+    ElMessage.warning('请选择要操作的知识')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要批量下架选中的知识吗？',
+      '提示',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    
+    const ids = selectedKnowledge.value.map(item => item.id)
+    // 模拟批量下架操作
+    setTimeout(() => {
+      ElMessage.success('批量下架成功')
+      selectedKnowledge.value = []
+      loadKnowledge()
+    }, 1000)
+  } catch (e) {}
+}
+
+const batchDelete = async () => {
+  if (selectedKnowledge.value.length === 0) {
+    ElMessage.warning('请选择要操作的知识')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要批量删除选中的知识吗？',
+      '提示',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'danger' }
+    )
+    
+    const ids = selectedKnowledge.value.map(item => item.id)
+    // 模拟批量删除操作
+    setTimeout(() => {
+      ElMessage.success('批量删除成功')
+      selectedKnowledge.value = []
+      loadKnowledge()
+    }, 1000)
+  } catch (e) {}
+}
+
 onMounted(() => {
   loadCategories()
   loadKnowledge()
@@ -278,6 +361,16 @@ onMounted(() => {
 
 .search-form {
   margin-bottom: 20px;
+}
+
+.batch-actions {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .title-cell {

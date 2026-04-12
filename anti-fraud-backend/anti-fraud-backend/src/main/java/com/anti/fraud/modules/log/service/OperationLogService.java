@@ -2,69 +2,65 @@ package com.anti.fraud.modules.log.service;
 
 import com.anti.fraud.modules.log.entity.OperationLog;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * 操作日志服务接口
+ * 操作日志服务
  */
 public interface OperationLogService {
     
     /**
-     * 保存操作日志
-     * @param log 日志信息
+     * 记录操作日志
+     * @param actionType 操作类型
+     * @param module 操作模块
+     * @param description 操作描述
+     * @param params 请求参数
+     * @param result 操作结果
+     * @param success 是否成功
      */
-    void saveLog(OperationLog log);
+    void recordLog(String actionType, String module, String description, 
+                  String params, String result, boolean success);
     
     /**
-     * 异步保存操作日志
-     * @param log 日志信息
+     * 记录操作日志（自动获取请求信息）
+     * @param request HTTP请求
+     * @param actionType 操作类型
+     * @param module 操作模块
+     * @param description 操作描述
+     * @param params 请求参数
+     * @param result 操作结果
+     * @param success 是否成功
      */
-    void saveLogAsync(OperationLog log);
+    void recordLog(HttpServletRequest request, String actionType, String module, 
+                  String description, String params, String result, boolean success);
     
     /**
      * 分页查询操作日志
      * @param page 页码
-     * @param size 每页数量
-     * @param userId 用户ID
-     * @param operationType 操作类型
-     * @param moduleName 模块名称
-     * @param keyword 关键词
+     * @param size 每页大小
+     * @param username 用户名
+     * @param actionType 操作类型
      * @param startTime 开始时间
      * @param endTime 结束时间
-     * @return 日志分页列表
+     * @return 操作日志列表
      */
-    IPage<OperationLog> getLogPage(Integer page, Integer size, Long userId, String operationType,
-                                   String moduleName, String keyword, String startTime, String endTime);
+    IPage<OperationLog> getOperationLogs(int page, int size, String username, 
+                                        String actionType, String startTime, String endTime);
     
     /**
-     * 获取日志详情
+     * 根据ID获取操作日志详情
      * @param id 日志ID
-     * @return 日志详情
+     * @return 操作日志
      */
-    OperationLog getLogById(Long id);
+    OperationLog getOperationLogById(Long id);
     
     /**
-     * 删除日志
-     * @param id 日志ID
-     */
-    void deleteLog(Long id);
-    
-    /**
-     * 批量删除日志
-     * @param ids 日志ID列表
-     */
-    void deleteLogs(Long[] ids);
-    
-    /**
-     * 清理N天前的日志
+     * 清理指定时间之前的操作日志
      * @param days 天数
-     * @return 删除数量
+     * @return 清理的日志数量
      */
     int cleanOldLogs(int days);
-    
-    /**
-     * 获取操作统计
-     * @param days 统计天数
-     * @return 统计数据
-     */
-    Object getOperationStats(int days);
 }

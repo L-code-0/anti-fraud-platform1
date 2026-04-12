@@ -35,14 +35,25 @@ export default defineConfig({
           'vendor': ['vue', 'vue-router', 'pinia'],
           'axios': ['axios']
         },
-        sourcemap: false
+        sourcemap: false,
+        // CDN 配置
+        assetFileNames: 'assets/[hash].[ext]',
+        chunkFileNames: 'chunks/[hash].[ext]',
+        entryFileNames: 'entry/[hash].js'
       }
     },
     outDir: 'dist',
     assetsDir: 'assets',
-    assetsInlineLimit: 4096
+    assetsInlineLimit: 4096,
+    // 图片优化
+    target: 'es2015',
+    cssTarget: 'chrome61',
+    // 启用图片压缩
+    minifyAssets: true
   },
   optimizeDeps: {
     include: ['vue', 'vue-router', 'pinia', 'element-plus', 'axios', 'echarts']
-  }
+  },
+  // 静态资源CDN配置
+  base: process.env.NODE_ENV === 'production' ? 'https://cdn.example.com' : '/'
 })

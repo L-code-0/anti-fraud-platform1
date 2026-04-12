@@ -173,4 +173,55 @@ public class SecurityUtils {
         log.debug("用户不具有任何指定角色");
         return false;
     }
+
+    /**
+     * 获取当前请求对象
+     *
+     * @return HttpServletRequest对象
+     */
+    public static jakarta.servlet.http.HttpServletRequest getCurrentRequest() {
+        try {
+            org.springframework.web.context.request.RequestAttributes requestAttributes = 
+                    org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (requestAttributes instanceof org.springframework.web.context.request.ServletRequestAttributes) {
+                return ((org.springframework.web.context.request.ServletRequestAttributes) requestAttributes).getRequest();
+            }
+        } catch (Exception e) {
+            log.warn("获取当前请求失败: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 获取客户端IP地址
+     *
+     * @param request HttpServletRequest对象
+     * @return 客户端IP地址
+     */
+    public static String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        if (request == null) {
+            return "unknown";
+        }
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // 处理多个IP的情况，只取第一个
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
+    }
 }

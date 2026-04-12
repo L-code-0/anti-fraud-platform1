@@ -37,6 +37,7 @@ public class ReportSubmitDTO {
     private String phoneNumber;
 
     @Pattern(regexp = "^$|^https?://.*", message = "链接格式不正确")
+    @Size(max = 255, message = "链接长度不能超过255个字符")
     @Schema(description = "可疑链接")
     private String linkUrl;
 

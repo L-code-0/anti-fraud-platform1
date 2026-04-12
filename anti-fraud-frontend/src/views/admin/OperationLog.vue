@@ -119,6 +119,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Download, Refresh } from '@element-plus/icons-vue'
+import { getOperationLogList, getOperationLogDetail, exportOperationLogs } from '@/api/log'
 
 const loading = ref(false)
 const detailVisible = ref(false)
@@ -138,37 +139,6 @@ const pagination = reactive({
 
 const logs = ref<any[]>([])
 
-// 模拟数据
-function getMockLogs() {
-  const types = ['create', 'update', 'delete', 'login', 'logout', 'export']
-  const modules = ['用户管理', '知识管理', '题库管理', '试卷管理', '演练管理', '举报管理']
-  const actions = [
-    '创建了新的知识文章',
-    '更新了知识内容',
-    '删除了用户',
-    '登录系统',
-    '导出了数据报表',
-    '审核通过举报信息'
-  ]
-  
-  const mockLogs = []
-  for (let i = 1; i <= 50; i++) {
-    const typeIndex = Math.floor(Math.random() * types.length)
-    mockLogs.push({
-      id: i,
-      username: `admin${i % 5}`,
-      actionType: types[typeIndex],
-      module: modules[Math.floor(Math.random() * modules.length)],
-      description: actions[typeIndex],
-      ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      params: { id: i, name: 'test' },
-      createdAt: new Date(Date.now() - Math.random() * 604800000).toISOString()
-    })
-  }
-  return mockLogs
-}
-
 function getActionTypeColor(type: string): string {
   const colorMap: Record<string, string> = {
     create: 'success',
@@ -176,7 +146,9 @@ function getActionTypeColor(type: string): string {
     delete: 'danger',
     login: 'primary',
     logout: 'info',
-    export: 'primary'
+    export: 'primary',
+    execute: 'info',
+    error: 'danger'
   }
   return colorMap[type] || 'info'
 }
@@ -188,7 +160,9 @@ function getActionTypeText(type: string): string {
     delete: '删除',
     login: '登录',
     logout: '登出',
-    export: '导出'
+    export: '导出',
+    execute: '执行',
+    error: '异常'
   }
   return textMap[type] || type
 }
@@ -198,6 +172,7 @@ function formatTime(timeStr: string): string {
 }
 
 function handleSearch() {
+  pagination.currentPage = 1
   fetchLogs()
 }
 
@@ -205,6 +180,7 @@ function handleReset() {
   filterForm.dateRange = []
   filterForm.actionType = ''
   filterForm.username = ''
+  pagination.currentPage = 1
   fetchLogs()
 }
 
@@ -214,30 +190,60 @@ function handleRefresh() {
 }
 
 function handleExport() {
-  ElMessage.success('日志导出中...')
-  // 实际导出逻辑
+  loading.value = true
+  exportOperationLogs({
+    username: filterForm.username,
+    actionType: filterForm.actionType,
+    startTime: filterForm.dateRange[0] || '',
+    endTime: filterForm.dateRange[1] || ''
+  }).then(() => {
+    ElMessage.success('日志导出成功')
+  }).catch(() => {
+    ElMessage.error('日志导出失败')
+  }).finally(() => {
+    loading.value = false
+  })
 }
 
 function handleViewDetail(row: any) {
-  currentLog.value = row
-  detailVisible.value = true
+  loading.value = true
+  getOperationLogDetail(row.id).then(response => {
+    currentLog.value = response.data
+    detailVisible.value = true
+  }).catch(() => {
+    ElMessage.error('获取日志详情失败')
+  }).finally(() => {
+    loading.value = false
+  })
 }
 
-function handleSizeChange() {
+function handleSizeChange(size: number) {
+  pagination.pageSize = size
   fetchLogs()
 }
 
-function handleCurrentChange() {
+function handleCurrentChange(page: number) {
+  pagination.currentPage = page
   fetchLogs()
 }
 
 function fetchLogs() {
   loading.value = true
-  setTimeout(() => {
-    logs.value = getMockLogs()
-    pagination.total = 50
+  getOperationLogList({
+    page: pagination.currentPage,
+    size: pagination.pageSize,
+    username: filterForm.username,
+    actionType: filterForm.actionType,
+    startTime: filterForm.dateRange[0] || '',
+    endTime: filterForm.dateRange[1] || ''
+  }).then(response => {
+    logs.value = response.data.records
+    pagination.total = response.data.total
+  }).catch(() => {
+    ElMessage.error('获取操作日志失败')
+  }).finally(() => {
     loading.value = false
-  }, 500)
+  })
 }
 
 onMounted(() => {

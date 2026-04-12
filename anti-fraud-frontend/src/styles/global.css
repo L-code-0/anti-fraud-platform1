@@ -111,9 +111,9 @@
   --bg-glass: rgba(255, 255, 255, 0.85);
   
   /* ========== 文字色 ========== */
-  --text-primary: #303133;
-  --text-regular: #606266;
-  --text-secondary: #909399;
+  --text-primary: #2c2c2c;
+  --text-regular: #5a5a5a;
+  --text-secondary: #7a7a7a;
   --text-placeholder: #c0c4cc;
   --text-disabled: #c0c4cc;
   --text-inverse: #ffffff;
@@ -409,6 +409,13 @@ p {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.15);
 }
 
 .btn-primary {
@@ -1129,8 +1136,10 @@ p {
 
 /* 31. Focus Visible 样式 */
 :focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
+  outline: 3px solid var(--primary-color);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+  transition: outline 0.2s ease;
 }
 
 /* 32. 图片适应 */

@@ -71,6 +71,22 @@
               <template #title>数据统计</template>
             </el-menu-item>
             
+            <el-sub-menu index="review">
+              <template #title>
+                <el-icon><Check /></el-icon>
+                <span>内容审核</span>
+              </template>
+              <el-menu-item index="/admin/review">审核工作流</el-menu-item>
+            </el-sub-menu>
+            
+            <el-sub-menu index="notice">
+              <template #title>
+                <el-icon><Bell /></el-icon>
+                <span>系统公告</span>
+              </template>
+              <el-menu-item index="/admin/notice">公告管理</el-menu-item>
+            </el-sub-menu>
+            
             <el-sub-menu index="system">
               <template #title>
                 <el-icon><Setting /></el-icon>
@@ -78,7 +94,7 @@
               </template>
               <el-menu-item index="/admin/operation-log">操作日志</el-menu-item>
               <el-menu-item index="/admin/monitor">系统监控</el-menu-item>
-              <el-menu-item index="/admin/data-export">数据导出</el-menu-item>
+              <el-menu-item index="/admin/export">数据导出</el-menu-item>
               <el-menu-item index="/admin/data-analysis">数据分析</el-menu-item>
             </el-sub-menu>
           </el-menu>

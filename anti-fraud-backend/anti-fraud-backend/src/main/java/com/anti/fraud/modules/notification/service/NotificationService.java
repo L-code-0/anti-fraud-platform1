@@ -1,82 +1,100 @@
 package com.anti.fraud.modules.notification.service;
 
-import com.anti.fraud.modules.notification.dto.SendNotificationDTO;
-import com.anti.fraud.modules.notification.entity.NotificationMessage;
+import com.anti.fraud.modules.notification.entity.Notification;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
+import java.util.Map;
+
 /**
- * 通知服务接口
+ * 通知服务
  */
 public interface NotificationService {
     
     /**
-     * 发送通知
-     * @param dto 通知信息
-     * @return 发送的消息数量
-     */
-    int sendNotification(SendNotificationDTO dto);
-    
-    /**
-     * 发送系统通知
-     * @param title 标题
-     * @param content 内容
-     * @param receiverId 接收者ID
-     */
-    void sendSystemNotification(String title, String content, Long receiverId);
-    
-    /**
-     * 发送活动通知
-     * @param title 标题
-     * @param content 内容
-     * @param activityId 活动ID
-     * @param receiverIds 接收者ID列表
-     */
-    void sendActivityNotification(String title, String content, Long activityId, Long... receiverIds);
-    
-    /**
-     * 发送任务通知
-     * @param title 标题
-     * @param content 内容
-     * @param taskId 任务ID
-     * @param receiverId 接收者ID
-     */
-    void sendTaskNotification(String title, String content, Long taskId, Long receiverId);
-    
-    /**
-     * 获取用户通知分页列表
-     * @param page 页码
-     * @param size 每页数量
+     * 发送通知给指定用户
+     * @param userId 用户ID
      * @param type 通知类型
-     * @param isRead 是否已读
-     * @return 通知分页列表
+     * @param title 通知标题
+     * @param content 通知内容
+     * @param icon 通知图标
+     * @param action 操作链接
+     * @param actionText 操作文本
+     * @param extra 额外信息
+     * @return 通知实体
      */
-    IPage<NotificationMessage> getUserNotifications(Integer page, Integer size, Integer type, Integer isRead);
+    Notification sendNotification(Long userId, String type, String title, 
+                                 String content, String icon, String action, 
+                                 String actionText, String extra);
     
     /**
-     * 获取未读通知数量
+     * 批量发送通知
+     * @param userIds 用户ID列表
+     * @param type 通知类型
+     * @param title 通知标题
+     * @param content 通知内容
+     * @param icon 通知图标
+     * @param action 操作链接
+     * @param actionText 操作文本
+     * @param extra 额外信息
+     * @return 发送成功数量
+     */
+    int sendBatchNotification(Long[] userIds, String type, String title, 
+                             String content, String icon, String action, 
+                             String actionText, String extra);
+    
+    /**
+     * 分页获取用户通知
+     * @param page 页码
+     * @param size 每页大小
+     * @param userId 用户ID
+     * @param type 通知类型
+     * @return 通知列表
+     */
+    IPage<Notification> getUserNotifications(int page, int size, Long userId, String type);
+    
+    /**
+     * 获取用户未读通知数量
+     * @param userId 用户ID
      * @return 未读数量
      */
-    Integer getUnreadCount();
+    int getUnreadCount(Long userId);
     
     /**
      * 标记通知为已读
-     * @param id 通知ID
+     * @param userId 用户ID
+     * @param notificationId 通知ID
+     * @return 是否成功
      */
-    void markAsRead(Long id);
+    boolean markAsRead(Long userId, Long notificationId);
     
     /**
-     * 标记所有通知为已读
+     * 批量标记通知为已读
+     * @param userId 用户ID
+     * @param notificationIds 通知ID列表
+     * @return 成功数量
      */
-    void markAllAsRead();
+    int markBatchAsRead(Long userId, Long[] notificationIds);
     
     /**
      * 删除通知
-     * @param id 通知ID
+     * @param userId 用户ID
+     * @param notificationId 通知ID
+     * @return 是否成功
      */
-    void deleteNotification(Long id);
+    boolean deleteNotification(Long userId, Long notificationId);
     
     /**
-     * 清空已读通知
+     * 批量删除通知
+     * @param userId 用户ID
+     * @param notificationIds 通知ID列表
+     * @return 成功数量
      */
-    void clearReadNotifications();
+    int deleteBatchNotifications(Long userId, Long[] notificationIds);
+    
+    /**
+     * 获取用户通知统计
+     * @param userId 用户ID
+     * @return 统计信息
+     */
+    Map<String, Integer> getNotificationStats(Long userId);
 }

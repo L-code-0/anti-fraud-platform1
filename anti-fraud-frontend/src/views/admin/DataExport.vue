@@ -2,7 +2,58 @@
   <div class="data-export-page">
     <!-- 头部 -->
     <div class="header">
-      <h1>数据导出</h1>
+      <h1>数据导入导出</h1>
+    </div>
+
+    <!-- 导入选项 -->
+    <div class="import-options">
+      <el-card>
+        <template #header>
+          <div class="card-header">
+            <span>数据导入</span>
+          </div>
+        </template>
+        
+        <el-form :model="importForm" label-width="120px">
+          <el-form-item label="导入类型">
+            <el-radio-group v-model="importForm.type">
+              <el-radio value="users">用户数据</el-radio>
+              <el-radio value="knowledge">知识内容</el-radio>
+              <el-radio value="questions">题库数据</el-radio>
+              <el-radio value="reports">举报记录</el-radio>
+              <el-radio value="activities">活动数据</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          
+          <el-form-item label="上传文件">
+            <el-upload
+              class="upload-demo"
+              action=""
+              :auto-upload="false"
+              :on-change="handleFileChange"
+              :limit="1"
+              accept=".xlsx,.xls,.csv"
+            >
+              <el-button type="primary">
+                <el-icon><Upload /></el-icon>
+                选择文件
+              </el-button>
+              <template #tip>
+                <div class="el-upload__tip">
+                  支持 .xlsx, .xls, .csv 格式文件
+                </div>
+              </template>
+            </el-upload>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-button type="primary" @click="handleImport" :loading="importing" :disabled="!importForm.file">
+              <el-icon><Upload /></el-icon>
+              导入数据
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
     </div>
 
     <!-- 导出选项 -->
@@ -67,6 +118,51 @@
       </el-card>
     </div>
 
+    <!-- 导入记录 -->
+    <div class="import-history">
+      <h3>导入记录</h3>
+      <el-table :data="importHistory" stripe>
+        <el-table-column prop="id" label="编号" width="80" />
+        <el-table-column prop="type" label="导入类型" width="120">
+          <template #default="{ row }">
+            {{ getTypeText(row.type) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="fileName" label="文件名" width="200" />
+        <el-table-column prop="fileSize" label="文件大小" width="100" />
+        <el-table-column prop="totalCount" label="总记录" width="80" />
+        <el-table-column prop="successCount" label="成功" width="80">
+          <template #default="{ row }">
+            <span style="color: #67c23a;">{{ row.successCount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="errorCount" label="失败" width="80">
+          <template #default="{ row }">
+            <span style="color: #f56c6c;">{{ row.errorCount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'completed' ? 'success' : 'warning'" size="small">
+              {{ row.status === 'completed' ? '完成' : '处理中' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="导入时间" width="180">
+          <template #default="{ row }">
+            {{ formatTime(row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button text type="danger" size="small" @click="handleDeleteImport(row)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
     <!-- 导出记录 -->
     <div class="export-history">
       <h3>导出记录</h3>
@@ -95,7 +191,7 @@
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button 
-              v-if="row.status === 'completed'" 
+              v-if="row.status === 'completed' " 
               text 
               type="primary" 
               size="small"
@@ -159,9 +255,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Download, Plus } from '@element-plus/icons-vue'
+import { Download, Plus, Upload } from '@element-plus/icons-vue'
 
 const exporting = ref(false)
+const importing = ref(false)
 
 const exportForm = reactive({
   type: 'users',
@@ -170,10 +267,20 @@ const exportForm = reactive({
   fields: ['id', 'username', 'realName', 'createTime']
 })
 
+const importForm = reactive({
+  type: 'users',
+  file: null as any
+})
+
 const exportHistory = ref([
   { id: 1, type: 'users', format: 'xlsx', fileSize: '2.5MB', recordCount: 1250, status: 'completed', createdAt: new Date(Date.now() - 3600000).toISOString() },
   { id: 2, type: 'knowledge', format: 'xlsx', fileSize: '1.8MB', recordCount: 580, status: 'completed', createdAt: new Date(Date.now() - 86400000).toISOString() },
   { id: 3, type: 'testRecords', format: 'csv', fileSize: '856KB', recordCount: 3200, status: 'processing', createdAt: new Date().toISOString() }
+])
+
+const importHistory = ref([
+  { id: 1, type: 'users', fileName: 'users.xlsx', fileSize: '1.2MB', totalCount: 500, successCount: 498, errorCount: 2, status: 'completed', createdAt: new Date(Date.now() - 7200000).toISOString() },
+  { id: 2, type: 'knowledge', fileName: 'knowledge.xlsx', fileSize: '850KB', totalCount: 200, successCount: 200, errorCount: 0, status: 'completed', createdAt: new Date(Date.now() - 14400000).toISOString() }
 ])
 
 const scheduledExports = ref([
@@ -189,7 +296,8 @@ function getTypeText(type: string): string {
     questions: '题库数据',
     testRecords: '考试记录',
     reports: '举报记录',
-    statistics: '统计报表'
+    statistics: '统计报表',
+    activities: '活动数据'
   }
   return textMap[type] || type
 }
@@ -248,6 +356,45 @@ function handleDeleteSchedule(row: any) {
 function handleAddSchedule() {
   ElMessage.info('添加定时任务')
 }
+
+function handleFileChange(file: any) {
+  importForm.file = file.raw
+}
+
+async function handleImport() {
+  if (!importForm.file) {
+    ElMessage.warning('请选择要导入的文件')
+    return
+  }
+  
+  importing.value = true
+  ElMessage.info('正在导入数据，请稍候...')
+  
+  setTimeout(() => {
+    importing.value = false
+    ElMessage.success('导入成功！')
+    importHistory.value.unshift({
+      id: Date.now(),
+      type: importForm.type,
+      fileName: importForm.file.name,
+      fileSize: (importForm.file.size / 1024 / 1024).toFixed(2) + 'MB',
+      totalCount: 500,
+      successCount: 498,
+      errorCount: 2,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    })
+    importForm.file = null
+  }, 2000)
+}
+
+function handleDeleteImport(row: any) {
+  const index = importHistory.value.findIndex(item => item.id === row.id)
+  if (index > -1) {
+    importHistory.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }
+}
 </script>
 
 <style scoped>
@@ -264,6 +411,7 @@ function handleAddSchedule() {
   font-size: 24px;
 }
 
+.import-options,
 .export-options {
   margin-bottom: 32px;
 }
@@ -272,6 +420,7 @@ function handleAddSchedule() {
   font-weight: 600;
 }
 
+.import-history,
 .export-history,
 .batch-export {
   background: white;

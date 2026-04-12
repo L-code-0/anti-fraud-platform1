@@ -47,4 +47,91 @@
   /* 阴影 */
   --box-shadow-base: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   --box-shadow-light: 0 2px 6px 0 rgba(0, 0, 0, 0.06);
+  
+  /* 按钮主题变量 */
+  --btn-primary-color: #FFFFFF;
+  --btn-primary-bg: var(--color-primary);
+  --btn-primary-border: var(--color-primary);
+  --btn-primary-hover-color: #FFFFFF;
+  --btn-primary-hover-bg: var(--color-primary-light);
+  --btn-primary-hover-border: var(--color-primary-light);
+  --btn-primary-active-color: #FFFFFF;
+  --btn-primary-active-bg: #337ECC;
+  --btn-primary-active-border: #337ECC;
+  
+  --btn-success-color: #FFFFFF;
+  --btn-success-bg: var(--color-success);
+  --btn-success-border: var(--color-success);
+  --btn-success-hover-color: #FFFFFF;
+  --btn-success-hover-bg: #85ce61;
+  --btn-success-hover-border: #85ce61;
+  --btn-success-active-color: #FFFFFF;
+  --btn-success-active-bg: #529b2e;
+  --btn-success-active-border: #529b2e;
+  
+  --btn-warning-color: #FFFFFF;
+  --btn-warning-bg: var(--color-warning);
+  --btn-warning-border: var(--color-warning);
+  --btn-warning-hover-color: #FFFFFF;
+  --btn-warning-hover-bg: #ebb563;
+  --btn-warning-hover-border: #ebb563;
+  --btn-warning-active-color: #FFFFFF;
+  --btn-warning-active-bg: #cf9236;
+  --btn-warning-active-border: #cf9236;
+  
+  --btn-danger-color: #FFFFFF;
+  --btn-danger-bg: var(--color-danger);
+  --btn-danger-border: var(--color-danger);
+  --btn-danger-hover-color: #FFFFFF;
+  --btn-danger-hover-bg: #f78989;
+  --btn-danger-hover-border: #f78989;
+  --btn-danger-active-color: #FFFFFF;
+  --btn-danger-active-bg: #c04c4c;
+  --btn-danger-active-border: #c04c4c;
+  
+  --btn-info-color: #FFFFFF;
+  --btn-info-bg: var(--color-info);
+  --btn-info-border: var(--color-info);
+  --btn-info-hover-color: #FFFFFF;
+  --btn-info-hover-bg: #a6a9ad;
+  --btn-info-hover-border: #a6a9ad;
+  --btn-info-active-color: #FFFFFF;
+  --btn-info-active-bg: #73767a;
+  --btn-info-active-border: #73767a;
+  
+  --btn-default-color: var(--color-text-regular);
+  --btn-default-bg: #FFFFFF;
+  --btn-default-border: var(--color-border-base);
+  --btn-default-hover-color: var(--color-text-primary);
+  --btn-default-hover-bg: #ECF5FF;
+  --btn-default-hover-border: var(--color-primary);
+  --btn-default-active-color: var(--color-text-primary);
+  --btn-default-active-bg: #ECF5FF;
+  --btn-default-active-border: var(--color-primary);
+  
+  /* 按钮尺寸 */
+  --btn-size-small-height: 28px;
+  --btn-size-small-padding: 0 12px;
+  --btn-size-small-font-size: var(--font-size-small);
+  
+  --btn-size-base-height: 36px;
+  --btn-size-base-padding: 0 16px;
+  --btn-size-base-font-size: var(--font-size-base);
+  
+  --btn-size-large-height: 44px;
+  --btn-size-large-padding: 0 20px;
+  --btn-size-large-font-size: var(--font-size-large);
+  
+  /* 按钮圆角 */
+  --btn-border-radius: var(--border-radius-base);
+  --btn-border-radius-round: 20px;
+  --btn-border-radius-circle: 50%;
+  
+  /* 按钮阴影 */
+  --btn-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --btn-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --btn-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.2);
+  
+  /* 按钮过渡 */
+  --btn-transition: all 0.3s ease;
 }

@@ -39,4 +39,28 @@ public interface UserService {
      * @return 用户信息
      */
     UserVO getCurrentUserInfo();
+
+    /**
+     * 账号合并
+     *
+     * @param sourceUserId 源用户ID
+     * @param targetUserId 目标用户ID
+     * @param password 目标用户密码
+     */
+    void mergeAccounts(Long sourceUserId, Long targetUserId, String password);
+
+    /**
+     * 注销账号
+     *
+     * @param userId 用户ID
+     * @param password 用户密码
+     */
+    void deleteAccount(Long userId, String password);
+
+    /**
+     * 软删除用户（标记为已删除）
+     *
+     * @param userId 用户ID
+     */
+    void softDeleteUser(Long userId);
 }

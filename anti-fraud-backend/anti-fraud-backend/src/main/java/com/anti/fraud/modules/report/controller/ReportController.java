@@ -1,140 +1,257 @@
 package com.anti.fraud.modules.report.controller;
 
 import com.anti.fraud.common.result.Result;
-import com.anti.fraud.modules.report.dto.ReportSubmitDTO;
+import com.anti.fraud.modules.report.entity.Report;
+import com.anti.fraud.modules.report.entity.ReportProgress;
 import com.anti.fraud.modules.report.service.ReportService;
-import com.anti.fraud.modules.report.vo.ReportVO;
-import com.anti.fraud.modules.report.vo.WarningVO;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.anti.fraud.utils.SecurityUtils;
+import io.swagger.v3.oas.annotations.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
-/**
- * 举报预警控制器
- * <p>
- * 提供举报管理和预警信息相关的RESTful API接口。
- * 举报功能允许用户提交诈骗举报，预警功能展示系统发布的各类诈骗预警信息。
- * </p>
- *
- * @author Anti-Fraud Platform Team
- * @version 1.0
- * @since 2024-01-01
- */
-@Tag(name = "举报预警", description = "举报预警相关接口")
 @RestController
 @RequestMapping("/report")
 @RequiredArgsConstructor
 @Slf4j
+@Api(tags = "举报管理")
 public class ReportController {
 
     private final ReportService reportService;
 
-    /**
-     * 提交举报
-     * <p>
-     * 用户可以提交诈骗举报信息。系统会根据举报内容自动评估风险等级。
-     * 举报信息会生成唯一的举报编号，用户可以凭此编号查询处理进度。
-     * </p>
-     *
-     * @param submitDTO 举报提交信息
-     * @return 操作结果
-     */
-    @Operation(summary = "提交举报", description = "提交诈骗举报信息，系统自动评估风险等级")
-    @PostMapping("/submit")
-    public Result<Void> submitReport(
-            @Parameter(description = "举报信息") @RequestBody ReportSubmitDTO submitDTO) {
-        log.info("用户提交举报: type={}, fraudType={}", submitDTO.getReportType(), submitDTO.getFraudType());
-        reportService.submitReport(submitDTO);
-        return Result.successMsg("举报提交成功，感谢您的参与");
+    @Operation(summary = "创建举报")
+    @PostMapping("/create")
+    public Result<Void> createReport(@RequestBody Report report) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("请先登录");
+        }
+
+        report.setUserId(userId);
+        report.setUserName(SecurityUtils.getCurrentUserName());
+        report.setCreatedBy(SecurityUtils.getCurrentUserName());
+        report.setUpdatedBy(SecurityUtils.getCurrentUserName());
+
+        try {
+            boolean success = reportService.createReport(report);
+            if (success) {
+                return Result.successMsg("创建举报成功");
+            } else {
+                return Result.fail("创建举报失败");
+            }
+        } catch (Exception e) {
+            log.error("创建举报失败: {}", e.getMessage(), e);
+            return Result.fail("创建举报失败");
+        }
     }
 
-    /**
-     * 获取我的举报记录
-     * <p>
-     * 分页查询当前用户的举报历史记录。
-     * </p>
-     *
-     * @param page 页码，默认1
-     * @param size 每页数量，默认10
-     * @return 举报分页列表
-     */
-    @Operation(summary = "获取我的举报记录", description = "分页查询当前用户的举报历史")
-    @GetMapping("/my-reports")
-    public Result<Page<ReportVO>> getMyReports(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
-            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") Integer size) {
-        log.debug("查询用户举报记录: page={}, size={}", page, size);
-        return Result.success(reportService.getMyReports(page, size));
+    @Operation(summary = "更新举报")
+    @PostMapping("/update")
+    public Result<Void> updateReport(@RequestBody Report report) {
+        report.setUpdatedBy(SecurityUtils.getCurrentUserName());
+
+        try {
+            boolean success = reportService.updateReport(report);
+            if (success) {
+                return Result.successMsg("更新举报成功");
+            } else {
+                return Result.fail("更新举报失败");
+            }
+        } catch (Exception e) {
+            log.error("更新举报失败: {}", e.getMessage(), e);
+            return Result.fail("更新举报失败");
+        }
     }
 
-    /**
-     * 获取举报详情
-     * <p>
-     * 根据举报ID获取详细信息。用户只能查看自己提交的举报信息。
-     * </p>
-     *
-     * @param id 举报ID
-     * @return 举报详情
-     */
-    @Operation(summary = "获取举报详情", description = "获取指定举报的详细信息")
-    @GetMapping("/{id}")
-    public Result<ReportVO> getReportDetail(
-            @Parameter(description = "举报ID") @PathVariable Long id) {
-        log.debug("查询举报详情: id={}", id);
-        return Result.success(reportService.getReportDetail(id));
+    @Operation(summary = "删除举报")
+    @PostMapping("/delete/{id}")
+    public Result<Void> deleteReport(@PathVariable Long id) {
+        try {
+            boolean success = reportService.deleteReport(id);
+            if (success) {
+                return Result.successMsg("删除举报成功");
+            } else {
+                return Result.fail("删除举报失败");
+            }
+        } catch (Exception e) {
+            log.error("删除举报失败: {}", e.getMessage(), e);
+            return Result.fail("删除举报失败");
+        }
     }
 
-    /**
-     * 获取预警列表
-     * <p>
-     * 获取所有生效的预警信息，按预警等级和发布时间排序，最多返回20条。
-     * </p>
-     *
-     * @return 预警列表
-     */
-    @Operation(summary = "获取预警列表", description = "获取所有生效的诈骗预警信息")
-    @GetMapping("/warnings")
-    public Result<List<WarningVO>> getWarningList() {
-        log.debug("查询预警列表");
-        return Result.success(reportService.getWarningList());
+    @Operation(summary = "获取举报详情")
+    @GetMapping("/detail/{id}")
+    public Result<Report> getReportById(@PathVariable Long id) {
+        try {
+            Report report = reportService.getReportById(id);
+            if (report != null) {
+                return Result.success("获取举报详情成功", report);
+            } else {
+                return Result.fail("举报不存在");
+            }
+        } catch (Exception e) {
+            log.error("获取举报详情失败: {}", e.getMessage(), e);
+            return Result.fail("获取举报详情失败");
+        }
     }
 
-    /**
-     * 获取预警详情
-     * <p>
-     * 根据预警ID获取详细信息，同时更新预警的浏览次数。
-     * </p>
-     *
-     * @param id 预警ID
-     * @return 预警详情
-     */
-    @Operation(summary = "获取预警详情", description = "获取指定预警的详细信息")
-    @GetMapping("/warnings/{id}")
-    public Result<WarningVO> getWarningDetail(
-            @Parameter(description = "预警ID") @PathVariable Long id) {
-        log.debug("查询预警详情: id={}", id);
-        return Result.success(reportService.getWarningDetail(id));
+    @Operation(summary = "获取举报列表")
+    @GetMapping("/list")
+    public Result<List<Report>> getReportList(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String reportType,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            List<Report> reports = reportService.getReportList(status, reportType, page, size);
+            return Result.success("获取举报列表成功", reports);
+        } catch (Exception e) {
+            log.error("获取举报列表失败: {}", e.getMessage(), e);
+            return Result.fail("获取举报列表失败");
+        }
     }
 
-    /**
-     * 获取最新预警
-     * <p>
-     * 获取最近发布的5条预警信息。
-     * </p>
-     *
-     * @return 最新预警列表
-     */
-    @Operation(summary = "获取最新预警", description = "获取最近发布的预警信息")
-    @GetMapping("/warnings/latest")
-    public Result<List<WarningVO>> getLatestWarnings() {
-        log.debug("查询最新预警");
-        return Result.success(reportService.getLatestWarnings());
+    @Operation(summary = "获取用户举报历史")
+    @GetMapping("/history")
+    public Result<List<Report>> getUserReportHistory(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("请先登录");
+        }
+
+        try {
+            List<Report> reports = reportService.getUserReportHistory(userId, page, size);
+            return Result.success("获取用户举报历史成功", reports);
+        } catch (Exception e) {
+            log.error("获取用户举报历史失败: {}", e.getMessage(), e);
+            return Result.fail("获取用户举报历史失败");
+        }
+    }
+
+    @Operation(summary = "处理举报")
+    @PostMapping("/handle")
+    public Result<Void> handleReport(@RequestBody Map<String, Object> data) {
+        Long id = Long.valueOf(data.get("id").toString());
+        String status = (String) data.get("status");
+        String feedback = (String) data.get("feedback");
+        Long handlerId = SecurityUtils.getCurrentUserId();
+        String handlerName = SecurityUtils.getCurrentUserName();
+
+        try {
+            boolean success = reportService.handleReport(id, status, feedback, handlerId, handlerName);
+            if (success) {
+                return Result.successMsg("处理举报成功");
+            } else {
+                return Result.fail("处理举报失败");
+            }
+        } catch (Exception e) {
+            log.error("处理举报失败: {}", e.getMessage(), e);
+            return Result.fail("处理举报失败");
+        }
+    }
+
+    @Operation(summary = "获取举报进度")
+    @GetMapping("/progress/{reportId}")
+    public Result<List<ReportProgress>> getReportProgress(@PathVariable Long reportId) {
+        try {
+            List<ReportProgress> progress = reportService.getReportProgress(reportId);
+            return Result.success("获取举报进度成功", progress);
+        } catch (Exception e) {
+            log.error("获取举报进度失败: {}", e.getMessage(), e);
+            return Result.fail("获取举报进度失败");
+        }
+    }
+
+    @Operation(summary = "添加举报进度")
+    @PostMapping("/progress/add")
+    public Result<Void> addReportProgress(@RequestBody ReportProgress progress) {
+        progress.setHandlerId(SecurityUtils.getCurrentUserId());
+        progress.setHandlerName(SecurityUtils.getCurrentUserName());
+
+        try {
+            boolean success = reportService.addReportProgress(progress);
+            if (success) {
+                return Result.successMsg("添加举报进度成功");
+            } else {
+                return Result.fail("添加举报进度失败");
+            }
+        } catch (Exception e) {
+            log.error("添加举报进度失败: {}", e.getMessage(), e);
+            return Result.fail("添加举报进度失败");
+        }
+    }
+
+    @Operation(summary = "获取用户举报积分")
+    @GetMapping("/points")
+    public Result<Map<String, Object>> getUserReportPoints() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("请先登录");
+        }
+
+        try {
+            Map<String, Object> points = reportService.getUserReportPoints(userId);
+            return Result.success("获取用户举报积分成功", points);
+        } catch (Exception e) {
+            log.error("获取用户举报积分失败: {}", e.getMessage(), e);
+            return Result.fail("获取用户举报积分失败");
+        }
+    }
+
+    @Operation(summary = "获取举报数据分析")
+    @GetMapping("/analysis")
+    public Result<Map<String, Object>> getReportAnalysis(
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime,
+            @RequestParam(required = false) String reportType) {
+        try {
+            Map<String, Object> analysis = reportService.getReportAnalysis(startTime, endTime, reportType);
+            return Result.success("获取举报数据分析成功", analysis);
+        } catch (Exception e) {
+            log.error("获取举报数据分析失败: {}", e.getMessage(), e);
+            return Result.fail("获取举报数据分析失败");
+        }
+    }
+
+    @Operation(summary = "搜索举报")
+    @GetMapping("/search")
+    public Result<List<Report>> searchReports(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            List<Report> reports = reportService.searchReports(keyword, page, size);
+            return Result.success("搜索举报成功", reports);
+        } catch (Exception e) {
+            log.error("搜索举报失败: {}", e.getMessage(), e);
+            return Result.fail("搜索举报失败");
+        }
+    }
+
+    @Operation(summary = "批量处理举报")
+    @PostMapping("/batch-handle")
+    public Result<Map<String, Object>> batchHandleReports(@RequestBody Map<String, Object> data) {
+        List<Long> ids = (List<Long>) data.get("ids");
+        String status = (String) data.get("status");
+        String feedback = (String) data.get("feedback");
+        Long handlerId = SecurityUtils.getCurrentUserId();
+        String handlerName = SecurityUtils.getCurrentUserName();
+
+        try {
+            Map<String, Object> result = reportService.batchHandleReports(ids, status, feedback, handlerId, handlerName);
+            if ((boolean) result.get("success")) {
+                return Result.success("批量处理举报成功", result);
+            } else {
+                return Result.fail((String) result.get("message"));
+            }
+        } catch (Exception e) {
+            log.error("批量处理举报失败: {}", e.getMessage(), e);
+            return Result.fail("批量处理举报失败");
+        }
     }
 }

@@ -66,4 +66,23 @@ public class UserController {
         userService.updateUserStatus(userId, status);
         return Result.successMsg("操作成功");
     }
+
+    @Operation(summary = "账号合并", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/merge")
+    public Result<Void> mergeAccounts(
+            @RequestParam Long sourceUserId,
+            @RequestParam Long targetUserId,
+            @RequestParam String password) {
+        userService.mergeAccounts(sourceUserId, targetUserId, password);
+        return Result.successMsg("账号合并成功");
+    }
+
+    @Operation(summary = "注销账号", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/delete")
+    public Result<Void> deleteAccount(
+            @RequestParam String password) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        userService.deleteAccount(userId, password);
+        return Result.successMsg("账号注销成功");
+    }
 }

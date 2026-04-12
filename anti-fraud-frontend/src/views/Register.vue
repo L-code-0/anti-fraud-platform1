@@ -233,7 +233,13 @@
 
               <!-- 密码强度 -->
               <div class="password-strength" v-if="form.password">
-                <div class="strength-label">密码强度：</div>
+                <div class="strength-header">
+                  <div class="strength-label">密码强度：</div>
+                  <div class="strength-text" :class="'text-' + passwordStrength.level">
+                    <el-icon v-if="checkingPassword" class="is-loading"><Loading /></el-icon>
+                    <span v-else>{{ passwordStrength.text }}</span>
+                  </div>
+                </div>
                 <div class="strength-bar">
                   <div
                     class="strength-fill"
@@ -241,8 +247,18 @@
                     :class="'level-' + passwordStrength.level"
                   ></div>
                 </div>
-                <div class="strength-text" :class="'text-' + passwordStrength.level">
-                  {{ passwordStrength.text }}
+                <div class="strength-checks" v-if="passwordStrength.checks.length > 0">
+                  <div
+                    v-for="(check, index) in passwordStrength.checks"
+                    :key="index"
+                    class="check-item"
+                    :class="{ 'passed': check.passed, 'failed': !check.passed }"
+                  >
+                    <el-icon :class="check.passed ? 'check-icon' : 'cross-icon'">
+                      {{ check.passed ? 'CircleCheck' : 'CircleClose' }}
+                    </el-icon>
+                    <span>{{ check.message }}</span>
+                  </div>
                 </div>
               </div>
 
@@ -284,7 +300,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -360,31 +376,58 @@ const rules = {
   ]
 }
 
-const passwordStrength = computed(() => {
-  const password = form.password
-  if (!password) return { level: 0, text: '' }
+import { checkPasswordStrength as checkPasswordStrengthApi } from '@/api/auth'
 
-  let level = 0
-  const checks = {
-    length: password.length >= 8,
-    lowercase: /[a-z]/.test(password),
-    uppercase: /[A-Z]/.test(password),
-    number: /\d/.test(password),
-    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+const passwordStrength = ref({
+  level: 0,
+  text: '',
+  color: '',
+  checks: [] as Array<{ passed: boolean; message: string }>
+})
+
+const checkingPassword = ref(false)
+
+// 实时检查密码强度
+const checkPasswordStrength = async () => {
+  const password = form.password
+  if (!password) {
+    passwordStrength.value = {
+      level: 0,
+      text: '',
+      color: '',
+      checks: []
+    }
+    return
   }
 
-  if (checks.length) level++
-  if (checks.lowercase && checks.uppercase) level++
-  if (checks.number) level++
-  if (checks.special) level++
+  checkingPassword.value = true
+  try {
+    const res = await checkPasswordStrengthApi(password, form.username)
+    if (res.code === 200 && res.data) {
+      const data = res.data
+      passwordStrength.value = {
+        level: data.strength || 0,
+        text: data.strengthText || '',
+        color: data.strengthColor || '',
+        checks: data.checks || []
+      }
+    }
+  } catch (error) {
+    console.error('检查密码强度失败:', error)
+  } finally {
+    checkingPassword.value = false
+  }
+}
 
-  const texts = ['', '弱', '中等', '强', '非常强']
-  const colors = ['', 'text-danger', 'text-warning', 'text-success', 'text-success']
+// 监听密码输入
+watch(() => form.password, () => {
+  checkPasswordStrength()
+}, { debounce: 300 })
 
-  return {
-    level,
-    text: texts[level],
-    color: colors[level]
+// 监听用户名变化，重新检查密码强度
+watch(() => form.username, () => {
+  if (form.password) {
+    checkPasswordStrength()
   }
 })
 
@@ -827,13 +870,17 @@ const handleRegister = async () => {
 
 /* 密码强度 */
 .password-strength {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
   margin-bottom: var(--spacing-4);
-  padding: var(--spacing-3);
+  padding: var(--spacing-4);
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
+}
+
+.strength-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
 }
 
 .strength-label {
@@ -842,12 +889,24 @@ const handleRegister = async () => {
   white-space: nowrap;
 }
 
+.strength-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.strength-text.text-1 { color: var(--danger-color); }
+.strength-text.text-2 { color: var(--warning-color); }
+.strength-text.text-3, .strength-text.text-4 { color: var(--success-color); }
+
 .strength-bar {
-  flex: 1;
-  height: 6px;
+  height: 8px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-full);
   overflow: hidden;
+  margin-bottom: var(--spacing-3);
 }
 
 .strength-fill {
@@ -861,16 +920,36 @@ const handleRegister = async () => {
 .strength-fill.level-3 { background: var(--success-color); }
 .strength-fill.level-4 { background: var(--success-color); }
 
-.strength-text {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  min-width: 50px;
-  text-align: right;
+.strength-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
 }
 
-.strength-text.text-1 { color: var(--danger-color); }
-.strength-text.text-2 { color: var(--warning-color); }
-.strength-text.text-3, .strength-text.text-4 { color: var(--success-color); }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.check-item.passed {
+  color: var(--success-color);
+}
+
+.check-item.failed {
+  color: var(--danger-color);
+}
+
+.check-icon {
+  color: var(--success-color);
+}
+
+.cross-icon {
+  color: var(--danger-color);
+}
 
 /* 步骤按钮 */
 .step-btn {

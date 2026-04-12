@@ -27,7 +27,121 @@ const routes: RouteRecordRaw[] = [
     path: '/knowledge',
     name: 'Knowledge',
     component: () => import('@/views/knowledge/Index.vue'),
-    meta: { title: '知识学习', requiresAuth: true }
+    meta: { title: '反诈知识' }
+  },
+  {
+    path: '/note',
+    name: 'Note',
+    component: () => import('@/views/Note.vue'),
+    meta: { title: '学习笔记' }
+  },
+  {
+    path: '/checkin',
+    name: 'Checkin',
+    component: () => import('@/views/Checkin.vue'),
+    meta: { title: '学习打卡' }
+  },
+  {
+    path: '/offline',
+    name: 'OfflineDownload',
+    component: () => import('@/views/OfflineDownload.vue'),
+    meta: { title: '离线下载' }
+  },
+  {
+    path: '/questions',
+    name: 'QuestionManagement',
+    component: () => import('@/views/QuestionManagement.vue'),
+    meta: { title: '题目管理' }
+  },
+  {
+    path: '/adaptive-test',
+    name: 'AdaptiveTest',
+    component: () => import('@/views/AdaptiveTest.vue'),
+    meta: { title: '自适应测试' }
+  },
+  {
+    path: '/test-report',
+    name: 'TestReport',
+    component: () => import('@/views/TestReport.vue'),
+    meta: { title: '测试报告' }
+  },
+  {
+    path: '/challenge',
+    name: 'Challenge',
+    component: () => import('@/views/Challenge.vue'),
+    meta: { title: '挑战赛' }
+  },
+  {
+    path: '/case',
+    name: 'CaseView',
+    component: () => import('@/views/CaseView.vue'),
+    meta: { title: '真实案例回放' }
+  },
+  {
+    path: '/roleplay',
+    name: 'RolePlay',
+    component: () => import('@/views/RolePlay.vue'),
+    meta: { title: '角色扮演' }
+  },
+  {
+    path: '/analysis',
+    name: 'Analysis',
+    component: () => import('@/views/Analysis.vue'),
+    meta: { title: '演练对比分析' }
+  },
+  {
+    path: '/team',
+    name: 'Team',
+    component: () => import('@/views/Team.vue'),
+    meta: { title: '团队协作演练' }
+  },
+  {
+    path: '/vr-drill',
+    name: 'VrDrill',
+    component: () => import('@/views/VrDrill.vue'),
+    meta: { title: 'VR/沉浸式演练' }
+  },
+  {
+    path: '/report',
+    name: 'Report',
+    component: () => import('@/views/Report.vue'),
+    meta: { title: '举报中心' }
+  },
+  {
+    path: '/report-analysis',
+    name: 'ReportAnalysis',
+    component: () => import('@/views/ReportAnalysis.vue'),
+    meta: { title: '举报数据分析' }
+  },
+  {
+    path: '/report-points',
+    name: 'ReportPoints',
+    component: () => import('@/views/ReportPoints.vue'),
+    meta: { title: '举报积分奖励' }
+  },
+  {
+    path: '/dashboard',
+    name: 'DataDashboard',
+    component: () => import('@/views/DataDashboard.vue'),
+    meta: { title: '实时数据大屏' }
+  },
+  {
+    path: '/personal-report',
+    name: 'PersonalReport',
+    component: () => import('@/views/PersonalReport.vue'),
+    meta: { title: '个性化报告' }
+  },
+  {
+    path: '/risk-assessment',
+    name: 'RiskAssessment',
+    component: () => import('@/views/RiskAssessment.vue'),
+    meta: { title: '风险评估模型' }
+  },
+  {
+    path: '/prediction-analysis',
+    name: 'PredictionAnalysis',
+    component: () => import('@/views/PredictionAnalysis.vue'),
+    meta: { title: '预测分析' }
   },
   {
     path: '/knowledge/:id',
@@ -170,6 +284,43 @@ const routes: RouteRecordRaw[] = [
     name: 'Feedback',
     component: () => import('@/views/Feedback.vue'),
     meta: { title: '意见反馈', requiresAuth: true }
+  },
+  // 特色功能
+  {
+    path: '/ai-assistant',
+    name: 'AIAssistant',
+    component: () => import('@/views/AIAssistant.vue'),
+    meta: { title: 'AI智能问答', requiresAuth: true }
+  },
+  {
+    path: '/adaptive-learning',
+    name: 'AdaptiveLearning',
+    component: () => import('@/views/AdaptiveLearning.vue'),
+    meta: { title: '自适应学习路径', requiresAuth: true }
+  },
+  {
+    path: '/scenario-replay',
+    name: 'ScenarioReplay',
+    component: () => import('@/views/ScenarioReplay.vue'),
+    meta: { title: '情景沉浸回放', requiresAuth: true }
+  },
+  {
+    path: '/community',
+    name: 'Community',
+    component: () => import('@/views/Community.vue'),
+    meta: { title: '社区互助反诈', requiresAuth: true }
+  },
+  {
+    path: '/vr-training',
+    name: 'VRTraining',
+    component: () => import('@/views/VRTraining.vue'),
+    meta: { title: 'VR演练体验', requiresAuth: true }
+  },
+  {
+    path: '/risk-profile',
+    name: 'RiskProfile',
+    component: () => import('@/views/RiskProfile.vue'),
+    meta: { title: '智能风险画像', requiresAuth: true }
   },
   // 班级管理 - 教师和管理员可访问
   {

@@ -419,7 +419,7 @@ const knowledgeList = [
     time: '2026-01-15',
     views: '2.3k',
     likes: 328,
-    cover: 'https://picsum.photos/seed/knowledge1/400/250'
+    cover: '/src/assets/images/hero.png'
   },
   {
     id: 2,
@@ -429,7 +429,7 @@ const knowledgeList = [
     time: '2026-01-14',
     views: '1.8k',
     likes: 256,
-    cover: 'https://picsum.photos/seed/knowledge2/400/250'
+    cover: '/src/assets/images/hero.png'
   },
   {
     id: 3,
@@ -439,7 +439,7 @@ const knowledgeList = [
     time: '2026-01-13',
     views: '3.1k',
     likes: 456,
-    cover: 'https://picsum.photos/seed/knowledge3/400/250'
+    cover: '/src/assets/images/hero.png'
   },
   {
     id: 4,
@@ -449,7 +449,7 @@ const knowledgeList = [
     time: '2026-01-12',
     views: '1.5k',
     likes: 198,
-    cover: 'https://picsum.photos/seed/knowledge4/400/250'
+    cover: '/src/assets/images/hero.png'
   }
 ]
 

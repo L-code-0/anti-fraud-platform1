@@ -44,16 +44,10 @@ service.interceptors.request.use(
       config.headers['X-CSRF-Token'] = csrfToken
     }
     
-    // 确保localStorage可用
-    if (typeof localStorage !== 'undefined') {
-      const token = localStorage.getItem('token')
-      console.log('请求拦截器 - token:', token)
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-        console.log('请求拦截器 - 添加token到请求头')
-      }
-    } else {
-      console.error('请求拦截器 - localStorage不可用')
+    // 使用secureStorage获取token
+    const token = secureStorage.getItem<string>('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
@@ -61,6 +55,23 @@ service.interceptors.request.use(
     return Promise.reject(error)
   }
 )
+
+// 请求重试配置
+interface RetryConfig {
+  retry: number
+  delay: number
+  maxDelay: number
+  retryableStatusCodes: number[]
+  retryableErrorCodes: string[]
+}
+
+const defaultRetryConfig: RetryConfig = {
+  retry: 3, // 最大重试次数
+  delay: 1000, // 初始重试延迟（毫秒）
+  maxDelay: 5000, // 最大重试延迟（毫秒）
+  retryableStatusCodes: [429, 500, 502, 503, 504], // 可重试的状态码
+  retryableErrorCodes: ['ECONNABORTED', 'ETIMEDOUT', 'ENOTFOUND', 'NETWORK_ERROR'] // 可重试的错误码
+}
 
 // 响应拦截器
 service.interceptors.response.use(
@@ -77,8 +88,8 @@ service.interceptors.response.use(
           break
         case 401:
           ElMessage.error('登录已过期，请重新登录')
-          localStorage.removeItem('token')
-          localStorage.removeItem('userInfo')
+          secureStorage.removeItem('token')
+          secureStorage.removeItem('userInfo')
           secureStorage.removeItem('csrfToken')
           // 延迟跳转，让用户看到提示
           setTimeout(() => {
@@ -103,7 +114,7 @@ service.interceptors.response.use(
     
     return res
   },
-  (error) => {
+  async (error) => {
     // 细化网络错误提示
     let errorMessage = '网络错误'
     
@@ -120,8 +131,8 @@ service.interceptors.response.use(
           break
         case 401:
           errorMessage = '登录已过期，请重新登录'
-          localStorage.removeItem('token')
-          localStorage.removeItem('userInfo')
+          secureStorage.removeItem('token')
+          secureStorage.removeItem('userInfo')
           secureStorage.removeItem('csrfToken')
           setTimeout(() => {
             window.location.href = '/login'
@@ -150,9 +161,58 @@ service.interceptors.response.use(
       }
     }
     
-    ElMessage.error(errorMessage)
-    console.error('[API Error]', error)
-    return Promise.reject(error)
+    // 实现请求重试
+    const config = error.config
+    if (!config) {
+      ElMessage.error(errorMessage)
+      return Promise.reject(error)
+    }
+    
+    // 初始化重试配置
+    const retryConfig = {
+      ...defaultRetryConfig,
+      ...(config.retry || {})
+    }
+    
+    // 检查是否已达到最大重试次数
+    if (!config.__retryCount) {
+      config.__retryCount = 0
+    }
+    
+    if (config.__retryCount >= retryConfig.retry) {
+      // 达到最大重试次数，不再重试
+      ElMessage.error(errorMessage)
+      return Promise.reject(error)
+    }
+    
+    // 检查是否是可重试的错误
+    const isRetryable = (
+      // 检查错误码
+      (error.code && retryConfig.retryableErrorCodes.includes(error.code)) ||
+      // 检查状态码
+      (error.response && retryConfig.retryableStatusCodes.includes(error.response.status))
+    )
+    
+    if (!isRetryable) {
+      ElMessage.error(errorMessage)
+      return Promise.reject(error)
+    }
+    
+    // 增加重试计数
+    config.__retryCount++
+    
+    // 计算重试延迟（指数退避）
+    const delay = Math.min(
+      retryConfig.delay * Math.pow(2, config.__retryCount - 1),
+      retryConfig.maxDelay
+    )
+    
+    // 延迟后重新发送请求
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(service(config))
+      }, delay)
+    })
   }
 )
 

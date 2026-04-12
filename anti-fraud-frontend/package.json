@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,vue,css,scss,json,html}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,vue,css,scss,json,html}\"",
-    "lint": "vue-tsc --noEmit"
+    "lint": "vue-tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

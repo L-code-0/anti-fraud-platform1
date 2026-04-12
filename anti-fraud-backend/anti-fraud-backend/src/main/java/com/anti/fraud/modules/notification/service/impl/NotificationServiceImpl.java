@@ -1,209 +1,135 @@
 package com.anti.fraud.modules.notification.service.impl;
 
-import com.anti.fraud.common.exception.BusinessException;
-import com.anti.fraud.common.utils.SecurityUtils;
-import com.anti.fraud.modules.notification.dto.SendNotificationDTO;
-import com.anti.fraud.modules.notification.entity.NotificationMessage;
-import com.anti.fraud.modules.notification.mapper.NotificationMessageMapper;
+import com.anti.fraud.modules.notification.entity.Notification;
+import com.anti.fraud.modules.notification.mapper.NotificationMapper;
 import com.anti.fraud.modules.notification.service.NotificationService;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 通知服务实现类
+ * 通知服务实现
  */
-@Slf4j
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
     
-    private final NotificationMessageMapper notificationMapper;
-    
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final NotificationMapper notificationMapper;
     
     @Override
-    @Transactional
-    public int sendNotification(SendNotificationDTO dto) {
-        List<Long> receiverIds;
+    public Notification sendNotification(Long userId, String type, String title, 
+                                       String content, String icon, String action, 
+                                       String actionText, String extra) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setType(type);
+        notification.setTitle(title);
+        notification.setContent(content);
+        notification.setIcon(icon);
+        notification.setAction(action);
+        notification.setActionText(actionText);
+        notification.setExtra(extra);
         
-        if (dto.getReceiverId() != null) {
-            receiverIds = List.of(dto.getReceiverId());
-        } else if (dto.getReceiverIds() != null && !dto.getReceiverIds().isEmpty()) {
-            receiverIds = dto.getReceiverIds();
-        } else {
-            throw new BusinessException("请指定接收者");
+        int result = notificationMapper.insert(notification);
+        if (result > 0) {
+            log.info("发送通知成功: userId={}, title={}", userId, title);
+            return notification;
         }
         
-        Long senderId = SecurityUtils.getCurrentUserId();
-        String senderName = SecurityUtils.getCurrentUserName();
-        if (senderName == null) {
-            senderName = "系统";
-        }
+        log.error("发送通知失败: userId={}, title={}", userId, title);
+        return null;
+    }
+    
+    @Override
+    public int sendBatchNotification(Long[] userIds, String type, String title, 
+                                   String content, String icon, String action, 
+                                   String actionText, String extra) {
+        int successCount = 0;
         
-        int count = 0;
-        for (Long receiverId : receiverIds) {
-            NotificationMessage message = new NotificationMessage();
-            message.setType(dto.getType());
-            message.setTitle(dto.getTitle());
-            message.setContent(dto.getContent());
-            message.setSenderId(senderId);
-            message.setSenderName(senderName);
-            message.setReceiverId(receiverId);
-            message.setBizType(dto.getBizType());
-            message.setBizId(dto.getBizId());
-            message.setPriority(dto.getPriority() != null ? dto.getPriority() : 2);
-            message.setIsRead(0);
-            message.setStatus(1);
-            message.setSendTime(LocalDateTime.now());
-            message.setCreateTime(LocalDateTime.now());
-            message.setUpdateTime(LocalDateTime.now());
-            
-            if (dto.getExpireTime() != null && !dto.getExpireTime().isEmpty()) {
-                message.setExpireTime(LocalDateTime.parse(dto.getExpireTime(), FORMATTER));
+        for (Long userId : userIds) {
+            Notification notification = sendNotification(userId, type, title, content, 
+                                                     icon, action, actionText, extra);
+            if (notification != null) {
+                successCount++;
             }
-            
-            notificationMapper.insert(message);
-            count++;
         }
         
-        log.info("发送通知成功，类型: {}, 数量: {}", dto.getType(), count);
-        return count;
+        log.info("批量发送通知完成: 总数={}, 成功={}", userIds.length, successCount);
+        return successCount;
     }
     
     @Override
-    @Async
-    public void sendSystemNotification(String title, String content, Long receiverId) {
-        SendNotificationDTO dto = new SendNotificationDTO();
-        dto.setType(1);
-        dto.setTitle(title);
-        dto.setContent(content);
-        dto.setReceiverId(receiverId);
-        dto.setPriority(2);
-        sendNotification(dto);
+    public IPage<Notification> getUserNotifications(int page, int size, Long userId, String type) {
+        IPage<Notification> pageInfo = new Page<>(page, size);
+        return notificationMapper.selectUserNotifications(pageInfo, userId, type);
     }
     
     @Override
-    @Async
-    public void sendActivityNotification(String title, String content, Long activityId, Long... receiverIds) {
-        SendNotificationDTO dto = new SendNotificationDTO();
-        dto.setType(2);
-        dto.setTitle(title);
-        dto.setContent(content);
-        dto.setBizType("activity");
-        dto.setBizId(activityId);
-        dto.setReceiverIds(Arrays.asList(receiverIds));
-        dto.setPriority(2);
-        sendNotification(dto);
+    public int getUnreadCount(Long userId) {
+        return notificationMapper.countUnreadNotifications(userId);
     }
     
     @Override
-    @Async
-    public void sendTaskNotification(String title, String content, Long taskId, Long receiverId) {
-        SendNotificationDTO dto = new SendNotificationDTO();
-        dto.setType(3);
-        dto.setTitle(title);
-        dto.setContent(content);
-        dto.setReceiverId(receiverId);
-        dto.setBizType("task");
-        dto.setBizId(taskId);
-        dto.setPriority(3);
-        sendNotification(dto);
+    public boolean markAsRead(Long userId, Long notificationId) {
+        Notification notification = notificationMapper.selectById(notificationId);
+        if (notification == null || !notification.getUserId().equals(userId)) {
+            return false;
+        }
+        
+        notification.setRead(true);
+        int result = notificationMapper.updateById(notification);
+        return result > 0;
     }
     
     @Override
-    public IPage<NotificationMessage> getUserNotifications(Integer page, Integer size, Integer type, Integer isRead) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
-        }
-        
-        Page<NotificationMessage> pageParam = new Page<>(page, size);
-        return notificationMapper.selectUserNotifications(pageParam, userId, type, isRead);
+    public int markBatchAsRead(Long userId, Long[] notificationIds) {
+        return notificationMapper.markAsRead(userId, notificationIds);
     }
     
     @Override
-    public Integer getUnreadCount() {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            return 0;
+    public boolean deleteNotification(Long userId, Long notificationId) {
+        Notification notification = notificationMapper.selectById(notificationId);
+        if (notification == null || !notification.getUserId().equals(userId)) {
+            return false;
         }
-        return notificationMapper.countUnread(userId);
+        
+        notification.setDeleted(true);
+        int result = notificationMapper.updateById(notification);
+        return result > 0;
     }
     
     @Override
-    @Transactional
-    public void markAsRead(Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        NotificationMessage message = notificationMapper.selectById(id);
+    public int deleteBatchNotifications(Long userId, Long[] notificationIds) {
+        int successCount = 0;
         
-        if (message == null) {
-            throw new BusinessException("通知不存在");
+        for (Long id : notificationIds) {
+            if (deleteNotification(userId, id)) {
+                successCount++;
+            }
         }
         
-        if (!message.getReceiverId().equals(userId)) {
-            throw new BusinessException("无权操作此通知");
-        }
-        
-        if (message.getIsRead() == 0) {
-            message.setIsRead(1);
-            message.setReadTime(LocalDateTime.now());
-            notificationMapper.updateById(message);
-        }
+        return successCount;
     }
     
     @Override
-    @Transactional
-    public void markAllAsRead() {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
-        }
-        notificationMapper.markAllAsRead(userId);
-        log.info("用户 {} 标记所有通知为已读", userId);
-    }
-    
-    @Override
-    @Transactional
-    public void deleteNotification(Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        NotificationMessage message = notificationMapper.selectById(id);
+    public Map<String, Integer> getNotificationStats(Long userId) {
+        Map<String, Integer> stats = new HashMap<>();
         
-        if (message == null) {
-            throw new BusinessException("通知不存在");
-        }
+        // 这里可以通过查询数据库获取各类型通知的数量
+        // 暂时返回模拟数据
+        stats.put("all", 24);
+        stats.put("system", 5);
+        stats.put("learning", 12);
+        stats.put("interaction", 7);
+        stats.put("activity", 3);
+        stats.put("unread", getUnreadCount(userId));
         
-        if (!message.getReceiverId().equals(userId)) {
-            throw new BusinessException("无权删除他人通知");
-        }
-        
-        notificationMapper.deleteById(id);
-        log.info("用户 {} 删除通知 {}", userId, id);
-    }
-    
-    @Override
-    @Transactional
-    public void clearReadNotifications() {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
-        }
-        
-        LambdaQueryWrapper<NotificationMessage> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(NotificationMessage::getReceiverId, userId)
-               .eq(NotificationMessage::getIsRead, 1);
-        
-        notificationMapper.delete(wrapper);
-        log.info("用户 {} 清空已读通知", userId);
+        return stats;
     }
 }

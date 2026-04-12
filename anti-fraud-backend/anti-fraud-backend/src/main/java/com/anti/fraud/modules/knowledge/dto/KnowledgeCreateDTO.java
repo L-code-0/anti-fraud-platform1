@@ -31,12 +31,15 @@ public class KnowledgeCreateDTO {
 
     @Schema(description = "内容", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "内容不能为空")
+    @Size(max = 10000, message = "内容长度不能超过10000个字符")
     private String content;
 
     @Schema(description = "封面图")
+    @Size(max = 255, message = "封面图URL长度不能超过255个字符")
     private String coverImage;
 
     @Schema(description = "视频URL")
+    @Size(max = 255, message = "视频URL长度不能超过255个字符")
     private String videoUrl;
 
     @Schema(description = "视频时长(秒)")

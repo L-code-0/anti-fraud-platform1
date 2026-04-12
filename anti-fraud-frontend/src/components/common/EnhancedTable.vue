@@ -38,7 +38,7 @@
       :default-expand-all="defaultExpandAll"
       :tree-props="treeProps"
       @selection-change="handleSelectionChange"
-      @sort-change="handleSortChange"
+      @sort-change="handleSort"
       @row-click="handleRowClick"
       class="data-table"
     >
@@ -141,7 +141,7 @@ const emit = defineEmits<{
   'refresh': []
   'export': []
   'selection-change': [value: any[]]
-  'sort-change': [value: any]
+  'sort': [value: any]
   'row-click': [value: any]
 }>()
 
@@ -181,8 +181,8 @@ const handleSelectionChange = (selection: any[]) => {
 }
 
 // 排序变化
-const handleSortChange = (sort: any) => {
-  emit('sort-change', sort)
+const handleSort = (sort: any) => {
+  emit('sort', sort)
 }
 
 // 行点击

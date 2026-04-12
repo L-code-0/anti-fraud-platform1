@@ -35,18 +35,11 @@ interface RegisterParams {
 
 export const useUserStore = defineStore('user', {
   state: () => {
-    const storedUserInfo = localStorage.getItem('userInfo')
-    let userInfo: User = {} as User
-    if (storedUserInfo && storedUserInfo !== 'undefined' && storedUserInfo !== 'null') {
-      try {
-        userInfo = JSON.parse(storedUserInfo) as User
-      } catch {
-        userInfo = {} as User
-      }
-    }
+    const storedUserInfo = secureStorage.getItem<User>('userInfo')
+    const storedToken = secureStorage.getItem<string>('token')
     return {
-      token: localStorage.getItem('token') || '',
-      userInfo
+      token: storedToken || '',
+      userInfo: storedUserInfo || {} as User
     }
   },
   
@@ -139,18 +132,14 @@ export const useUserStore = defineStore('user', {
       console.log('保存的用户信息:', this.userInfo)
       console.log('保存的token:', this.token)
       
-      // 确保localStorage可用
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('token', this.token)
-        localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
-        console.log('Token和用户信息已保存到localStorage')
-        
-        // 生成并存储 CSRF token
-        setCsrfToken()
-        console.log('CSRF token已生成并存储')
-      } else {
-        console.error('localStorage不可用')
-      }
+      // 使用secureStorage存储token和用户信息
+      secureStorage.setItem('token', this.token)
+      secureStorage.setItem('userInfo', this.userInfo)
+      console.log('Token和用户信息已保存到secureStorage')
+      
+      // 生成并存储 CSRF token
+      setCsrfToken()
+      console.log('CSRF token已生成并存储')
       
       return res
     },
@@ -167,7 +156,7 @@ export const useUserStore = defineStore('user', {
         ...res.data,
         permissions: res.data.permissions || getDefaultPermissionsByRole()
       }
-      localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+      secureStorage.setItem('userInfo', this.userInfo)
       return res
     },
     
@@ -180,7 +169,7 @@ export const useUserStore = defineStore('user', {
         if (res.data) {
           this.userInfo.permissions = res.data.permissions
           this.userInfo.menus = res.data.menus
-          localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+          secureStorage.setItem('userInfo', this.userInfo)
         }
       } catch (error) {
         console.error('获取权限失败，使用默认权限', error)
@@ -194,7 +183,7 @@ export const useUserStore = defineStore('user', {
      */
     setPermissions(permissions: string[]) {
       this.userInfo.permissions = permissions
-      localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+      secureStorage.setItem('userInfo', this.userInfo)
     },
     
     /**
@@ -202,7 +191,7 @@ export const useUserStore = defineStore('user', {
      */
     setMenus(menus: any[]) {
       this.userInfo.menus = menus
-      localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+      secureStorage.setItem('userInfo', this.userInfo)
     },
     
     /**
@@ -210,9 +199,7 @@ export const useUserStore = defineStore('user', {
      */
     setToken(token: string) {
       this.token = token
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('token', token)
-      }
+      secureStorage.setItem('token', token)
     },
     
     /**
@@ -223,9 +210,7 @@ export const useUserStore = defineStore('user', {
         ...this.userInfo,
         ...userInfo
       }
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
-      }
+      secureStorage.setItem('userInfo', this.userInfo)
     },
     
     logout() {
@@ -235,10 +220,10 @@ export const useUserStore = defineStore('user', {
         userInfo: {} as User
       })
       
-      // 确保 localStorage 操作在 try-catch 中
+      // 清除secureStorage中的数据
       try {
-        localStorage.removeItem('token')
-        localStorage.removeItem('userInfo')
+        secureStorage.removeItem('token')
+        secureStorage.removeItem('userInfo')
         secureStorage.removeItem('csrfToken')
         console.log('已清除本地存储的 token、用户信息和 CSRF token')
       } catch (error) {

@@ -60,17 +60,23 @@ const menuRouteMap: Record<string, Partial<RouteRecordRaw>> = {
   },
   
   // 举报中心
-  'REPORT_SUBMIT': {
-    path: '/report/submit',
-    name: 'ReportSubmit',
-    component: () => import('@/views/report/Submit.vue'),
-    meta: { title: '提交举报' }
-  },
-  'REPORT_LIST': {
+  'REPORT': {
     path: '/report',
     name: 'Report',
-    component: () => import('@/views/report/Index.vue'),
-    meta: { title: '举报列表' }
+    component: () => import('@/views/Report.vue'),
+    meta: { title: '举报中心' }
+  },
+  'REPORT_ANALYSIS': {
+    path: '/report-analysis',
+    name: 'ReportAnalysis',
+    component: () => import('@/views/ReportAnalysis.vue'),
+    meta: { title: '举报数据分析' }
+  },
+  'REPORT_POINTS': {
+    path: '/report-points',
+    name: 'ReportPoints',
+    component: () => import('@/views/ReportPoints.vue'),
+    meta: { title: '举报积分奖励' }
   },
   
   // 活动中心
@@ -113,6 +119,51 @@ const menuRouteMap: Record<string, Partial<RouteRecordRaw>> = {
     meta: { title: '专家中心', requiresExpert: true }
   },
   
+  // 数据中心
+  'DASHBOARD': {
+    path: '/dashboard',
+    name: 'DataDashboard',
+    component: () => import('@/views/DataDashboard.vue'),
+    meta: { title: '实时数据大屏' }
+  },
+  'PERSONAL_REPORT': {
+    path: '/personal-report',
+    name: 'PersonalReport',
+    component: () => import('@/views/PersonalReport.vue'),
+    meta: { title: '个性化报告' }
+  },
+  'RISK_ASSESSMENT': {
+    path: '/risk-assessment',
+    name: 'RiskAssessment',
+    component: () => import('@/views/RiskAssessment.vue'),
+    meta: { title: '风险评估模型' }
+  },
+  'PREDICTION_ANALYSIS': {
+    path: '/prediction-analysis',
+    name: 'PredictionAnalysis',
+    component: () => import('@/views/PredictionAnalysis.vue'),
+    meta: { title: '预测分析' }
+  },
+  // 管理员功能
+  'ADMIN_EXPORT': {
+    path: '/admin/export',
+    name: 'AdminExport',
+    component: () => import('@/views/admin/DataExport.vue'),
+    meta: { title: '数据导出', requiresAdmin: true }
+  },
+  'ADMIN_REVIEW': {
+    path: '/admin/review',
+    name: 'AdminReview',
+    component: () => import('@/views/admin/ContentReview.vue'),
+    meta: { title: '内容审核', requiresAdmin: true }
+  },
+  'ADMIN_NOTICE': {
+    path: '/admin/notice',
+    name: 'AdminNotice',
+    component: () => import('@/views/admin/Notice.vue'),
+    meta: { title: '系统公告', requiresAdmin: true }
+  },
+  
   // 个人中心
   'PROFILE_INFO': {
     path: '/profile',
@@ -149,6 +200,43 @@ const menuRouteMap: Record<string, Partial<RouteRecordRaw>> = {
     name: 'Feedback',
     component: () => import('@/views/Feedback.vue'),
     meta: { title: '意见反馈' }
+  },
+  // 特色功能
+  'FEATURE_AI_ASSISTANT': {
+    path: '/ai-assistant',
+    name: 'AIAssistant',
+    component: () => import('@/views/AIAssistant.vue'),
+    meta: { title: 'AI智能问答' }
+  },
+  'FEATURE_ADAPTIVE_LEARNING': {
+    path: '/adaptive-learning',
+    name: 'AdaptiveLearning',
+    component: () => import('@/views/AdaptiveLearning.vue'),
+    meta: { title: '自适应学习路径' }
+  },
+  'FEATURE_SCENARIO_REPLAY': {
+    path: '/scenario-replay',
+    name: 'ScenarioReplay',
+    component: () => import('@/views/ScenarioReplay.vue'),
+    meta: { title: '情景沉浸回放' }
+  },
+  'FEATURE_COMMUNITY': {
+    path: '/community',
+    name: 'Community',
+    component: () => import('@/views/Community.vue'),
+    meta: { title: '社区互助反诈' }
+  },
+  'FEATURE_VR_TRAINING': {
+    path: '/vr-training',
+    name: 'VRTraining',
+    component: () => import('@/views/VRTraining.vue'),
+    meta: { title: 'VR演练体验' }
+  },
+  'FEATURE_RISK_PROFILE': {
+    path: '/risk-profile',
+    name: 'RiskProfile',
+    component: () => import('@/views/RiskProfile.vue'),
+    meta: { title: '智能风险画像' }
   }
 }
 
@@ -198,7 +286,9 @@ export function getDefaultPermissionsByRole(): string[] {
     'REPORT', 'REPORT_SUBMIT',
     'ACTIVITY', 'ACTIVITY_LIST',
     'QA', 'QA_LIST',
-    'PROFILE', 'PROFILE_INFO', 'PROFILE_POINTS', 'PROFILE_RANK', 'PROFILE_ACHIEVEMENT', 'PROFILE_MESSAGE', 'PROFILE_FEEDBACK'
+    'DASHBOARD', 'PERSONAL_REPORT', 'RISK_ASSESSMENT', 'PREDICTION_ANALYSIS',
+    'PROFILE', 'PROFILE_INFO', 'PROFILE_POINTS', 'PROFILE_RANK', 'PROFILE_ACHIEVEMENT', 'PROFILE_MESSAGE', 'PROFILE_FEEDBACK',
+    'FEATURE_AI_ASSISTANT', 'FEATURE_ADAPTIVE_LEARNING', 'FEATURE_SCENARIO_REPLAY', 'FEATURE_COMMUNITY', 'FEATURE_VR_TRAINING', 'FEATURE_RISK_PROFILE'
   ]
   
   // 教师权限
@@ -212,7 +302,7 @@ export function getDefaultPermissionsByRole(): string[] {
   const adminPermissions = [
     'ADMIN', 'ADMIN_DASHBOARD', 'ADMIN_USER', 'ADMIN_KNOWLEDGE', 'ADMIN_QUESTION',
     'ADMIN_PAPER', 'ADMIN_SCENE', 'ADMIN_REPORT', 'ADMIN_ACTIVITY', 'ADMIN_TASK',
-    'ADMIN_WORK', 'ADMIN_STATS', 'ADMIN_LOG', 'ADMIN_MONITOR'
+    'ADMIN_WORK', 'ADMIN_STATS', 'ADMIN_LOG', 'ADMIN_MONITOR', 'ADMIN_EXPORT', 'ADMIN_REVIEW', 'ADMIN_NOTICE'
   ]
   
   // 专家权限

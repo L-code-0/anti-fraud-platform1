@@ -128,6 +128,23 @@ public class GlobalExceptionHandler {
     public Result<?> handleException(Exception e) {
         // 记录异常堆栈信息用于问题排查，但不暴露给客户端
         log.error("系统异常: type={}, message={}", e.getClass().getName(), e.getMessage(), e);
-        return Result.fail("系统繁忙，请稍后再试");
+        
+        // 根据异常类型返回更具体的错误信息
+        String errorMessage = "系统繁忙，请稍后再试";
+        
+        // 数据库相关异常
+        if (e instanceof org.springframework.jdbc.BadSqlGrammarException) {
+            errorMessage = "数据库操作失败，请检查SQL语句";
+        } else if (e instanceof org.springframework.dao.DataIntegrityViolationException) {
+            errorMessage = "数据完整性错误，可能存在重复数据";
+        } else if (e instanceof org.springframework.data.redis.RedisConnectionFailureException) {
+            errorMessage = "缓存服务异常，请稍后再试";
+        } else if (e instanceof java.net.SocketTimeoutException) {
+            errorMessage = "网络连接超时，请检查网络设置";
+        } else if (e instanceof java.io.IOException) {
+            errorMessage = "IO操作失败，请检查文件或网络";
+        }
+        
+        return Result.fail(500, errorMessage);
     }
 }

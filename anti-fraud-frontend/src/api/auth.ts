@@ -134,3 +134,74 @@ export function verifyEmailCode(email: string, code: string) {
 export function checkPasswordStrength(password: string, username?: string) {
   return post('/auth/check-password', { password, username })
 }
+
+// ============================================
+// 第三方登录
+// ============================================
+
+/**
+ * 微信登录
+ */
+export function wechatLogin(code: string) {
+  return post('/auth/login/wechat', { code })
+}
+
+/**
+ * 钉钉登录
+ */
+export function dingTalkLogin(code: string) {
+  return post('/auth/login/dingtalk', { code })
+}
+
+/**
+ * 获取微信登录二维码
+ */
+export function getWechatQrCode() {
+  return get('/auth/login/wechat/qrcode')
+}
+
+/**
+ * 获取钉钉登录二维码
+ */
+export function getDingTalkQrCode() {
+  return get('/auth/login/dingtalk/qrcode')
+}
+
+/**
+ * 绑定第三方账号
+ */
+export function bindThirdPartyAccount(platform: string, openId: string) {
+  return post('/auth/third-party/bind', { platform, openId })
+}
+
+/**
+ * 解绑第三方账号
+ */
+export function unbindThirdPartyAccount(platform: string) {
+  return post('/auth/third-party/unbind', { platform })
+}
+
+/**
+ * 获取已绑定的第三方账号
+ */
+export function getBoundThirdPartyAccounts() {
+  return get('/auth/third-party/bound')
+}
+
+// ============================================
+// 异常设备处理
+// ============================================
+
+/**
+ * 获取异常设备列表
+ */
+export function getAnomalyDevices() {
+  return get('/auth/devices/anomaly')
+}
+
+/**
+ * 处理异常设备
+ */
+export function handleAnomalyDevice(deviceId: string, action: string) {
+  return post('/auth/devices/anomaly/handle', { deviceId, action })
+}

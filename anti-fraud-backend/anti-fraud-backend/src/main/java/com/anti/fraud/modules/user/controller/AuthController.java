@@ -3,11 +3,17 @@ package com.anti.fraud.modules.user.controller;
 import com.anti.fraud.common.exception.BusinessException;
 import com.anti.fraud.common.result.Result;
 import com.anti.fraud.common.utils.RedisUtils;
+import com.anti.fraud.common.utils.SecurityUtils;
 import com.anti.fraud.common.utils.security.InputSecurityUtil;
 import com.anti.fraud.common.utils.security.PasswordStrengthUtil;
 import com.anti.fraud.modules.user.dto.LoginDTO;
 import com.anti.fraud.modules.user.dto.RegisterDTO;
+import com.anti.fraud.modules.user.entity.LoginDevice;
 import com.anti.fraud.modules.user.entity.User;
+import com.anti.fraud.modules.user.service.BiometricLoginService;
+import com.anti.fraud.modules.user.service.LoginDeviceService;
+import com.anti.fraud.modules.user.service.SSOService;
+import com.anti.fraud.modules.user.service.ThirdPartyLoginService;
 import com.anti.fraud.modules.user.service.UserService;
 import com.anti.fraud.modules.user.vo.LoginVO;
 import com.anti.fraud.modules.user.vo.UserVO;
@@ -23,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -45,6 +52,10 @@ public class AuthController {
     private final TokenSecurityService tokenSecurityService;
     private final CaptchaService captchaService;
     private final RateLimitService rateLimitService;
+    private final ThirdPartyLoginService thirdPartyLoginService;
+    private final LoginDeviceService loginDeviceService;
+    private final BiometricLoginService biometricLoginService;
+    private final SSOService ssoService;
 
     // Redis Key 前缀
     private static final String CAPTCHA_KEY_PREFIX = "captcha:";
@@ -98,7 +109,7 @@ public class AuthController {
             LoginVO loginVO = userService.login(loginDTO);
 
             // 5. 登录成功后的安全处理
-            handleLoginSuccess(request, loginVO, clientIp, deviceId, deviceInfo);
+            boolean isAnomaly = handleLoginSuccess(request, loginVO, clientIp, deviceId, deviceInfo);
 
             // 6. 记录登录日志
             loginSecurityService.recordLoginLog(
@@ -114,8 +125,9 @@ public class AuthController {
             Map<String, Object> result = new HashMap<>();
             result.put("user", loginVO);
             result.put("deviceId", deviceId);
+            result.put("isAnomaly", isAnomaly);
 
-            return Result.success("登录成功", loginVO);
+            return Result.success("登录成功", result);
 
         } catch (BusinessException e) {
             // 登录失败处理
@@ -435,9 +447,498 @@ public class AuthController {
         return Result.successMsg("已强制所有设备登出");
     }
 
+    @Operation(summary = "微信登录")
+    @PostMapping("/login/wechat")
+    public Result<LoginVO> wechatLogin(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        String code = params.get("code");
+        if (code == null || code.isEmpty()) {
+            return Result.fail("微信授权码不能为空");
+        }
+
+        try {
+            LoginVO loginVO = thirdPartyLoginService.wechatLogin(code);
+            return Result.success("微信登录成功", loginVO);
+        } catch (Exception e) {
+            log.error("微信登录失败: {}", e.getMessage(), e);
+            return Result.fail("微信登录失败");
+        }
+    }
+
+    @Operation(summary = "钉钉登录")
+    @PostMapping("/login/dingtalk")
+    public Result<LoginVO> dingTalkLogin(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        String code = params.get("code");
+        if (code == null || code.isEmpty()) {
+            return Result.fail("钉钉授权码不能为空");
+        }
+
+        try {
+            LoginVO loginVO = thirdPartyLoginService.dingTalkLogin(code);
+            return Result.success("钉钉登录成功", loginVO);
+        } catch (Exception e) {
+            log.error("钉钉登录失败: {}", e.getMessage(), e);
+            return Result.fail("钉钉登录失败");
+        }
+    }
+
+    @Operation(summary = "获取微信登录二维码")
+    @GetMapping("/login/wechat/qrcode")
+    public Result<Map<String, String>> getWechatQrCode() {
+        try {
+            Map<String, String> qrCode = thirdPartyLoginService.getWechatQrCode();
+            return Result.success(qrCode);
+        } catch (Exception e) {
+            log.error("获取微信二维码失败: {}", e.getMessage(), e);
+            return Result.fail("获取微信二维码失败");
+        }
+    }
+
+    @Operation(summary = "获取钉钉登录二维码")
+    @GetMapping("/login/dingtalk/qrcode")
+    public Result<Map<String, String>> getDingTalkQrCode() {
+        try {
+            Map<String, String> qrCode = thirdPartyLoginService.getDingTalkQrCode();
+            return Result.success(qrCode);
+        } catch (Exception e) {
+            log.error("获取钉钉二维码失败: {}", e.getMessage(), e);
+            return Result.fail("获取钉钉二维码失败");
+        }
+    }
+
+    @Operation(summary = "绑定第三方账号", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/third-party/bind")
+    public Result<Void> bindThirdPartyAccount(@RequestBody Map<String, String> params, @RequestHeader(value = "Authorization") String authHeader) {
+        String platform = params.get("platform");
+        String openId = params.get("openId");
+
+        if (platform == null || openId == null) {
+            return Result.fail("平台和OpenID不能为空");
+        }
+
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        boolean success = thirdPartyLoginService.bindThirdPartyAccount(userId, platform, openId);
+        if (success) {
+            return Result.successMsg("绑定成功");
+        } else {
+            return Result.fail("绑定失败");
+        }
+    }
+
+    @Operation(summary = "解绑第三方账号", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/third-party/unbind")
+    public Result<Void> unbindThirdPartyAccount(@RequestBody Map<String, String> params, @RequestHeader(value = "Authorization") String authHeader) {
+        String platform = params.get("platform");
+
+        if (platform == null) {
+            return Result.fail("平台不能为空");
+        }
+
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        boolean success = thirdPartyLoginService.unbindThirdPartyAccount(userId, platform);
+        if (success) {
+            return Result.successMsg("解绑成功");
+        } else {
+            return Result.fail("解绑失败");
+        }
+    }
+
+    @Operation(summary = "获取绑定的第三方账号", security = @SecurityRequirement(name = "Bearer"))
+    @GetMapping("/third-party/accounts")
+    public Result<Map<String, String>> getBoundThirdPartyAccounts(@RequestHeader(value = "Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        Map<String, String> accounts = thirdPartyLoginService.getBoundThirdPartyAccounts(userId);
+        return Result.success(accounts);
+    }
+
+    @Operation(summary = "获取用户登录设备列表", security = @SecurityRequirement(name = "Bearer"))
+    @GetMapping("/devices")
+    public Result<List<LoginDevice>> getUserDevices(@RequestHeader(value = "Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        List<LoginDevice> devices = loginDeviceService.getUserDevices(userId);
+        return Result.success(devices);
+    }
+
+    @Operation(summary = "标记设备为可信", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/devices/{deviceId}/trust")
+    public Result<Void> markDeviceAsTrusted(@RequestHeader(value = "Authorization") String authHeader, 
+                                           @PathVariable String deviceId) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        boolean success = loginDeviceService.markDeviceAsTrusted(userId, deviceId);
+        if (success) {
+            return Result.successMsg("标记设备为可信成功");
+        } else {
+            return Result.fail("标记设备为可信失败");
+        }
+    }
+
+    @Operation(summary = "标记设备为不可信", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/devices/{deviceId}/untrust")
+    public Result<Void> markDeviceAsUntrusted(@RequestHeader(value = "Authorization") String authHeader, 
+                                             @PathVariable String deviceId) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        boolean success = loginDeviceService.markDeviceAsUntrusted(userId, deviceId);
+        if (success) {
+            return Result.successMsg("标记设备为不可信成功");
+        } else {
+            return Result.fail("标记设备为不可信失败");
+        }
+    }
+
+    @Operation(summary = "禁用设备", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/devices/{deviceId}/disable")
+    public Result<Void> disableDevice(@RequestHeader(value = "Authorization") String authHeader, 
+                                     @PathVariable String deviceId) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        boolean success = loginDeviceService.disableDevice(userId, deviceId);
+        if (success) {
+            return Result.successMsg("禁用设备成功");
+        } else {
+            return Result.fail("禁用设备失败");
+        }
+    }
+
+    @Operation(summary = "启用设备", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/devices/{deviceId}/enable")
+    public Result<Void> enableDevice(@RequestHeader(value = "Authorization") String authHeader, 
+                                    @PathVariable String deviceId) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        boolean success = loginDeviceService.enableDevice(userId, deviceId);
+        if (success) {
+            return Result.successMsg("启用设备成功");
+        } else {
+            return Result.fail("启用设备失败");
+        }
+    }
+
+    @Operation(summary = "移除设备", security = @SecurityRequirement(name = "Bearer"))
+    @DeleteMapping("/devices/{deviceId}")
+    public Result<Void> removeDevice(@RequestHeader(value = "Authorization") String authHeader, 
+                                    @PathVariable String deviceId) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        boolean success = loginDeviceService.removeDevice(userId, deviceId);
+        if (success) {
+            return Result.successMsg("移除设备成功");
+        } else {
+            return Result.fail("移除设备失败");
+        }
+    }
+
+    @Operation(summary = "获取设备详情", security = @SecurityRequirement(name = "Bearer"))
+    @GetMapping("/devices/{deviceId}")
+    public Result<LoginDevice> getDeviceDetail(@RequestHeader(value = "Authorization") String authHeader, 
+                                              @PathVariable String deviceId) {
+        String token = authHeader.substring(7);
+        Long userId = extractUserIdFromToken(token);
+
+        if (userId == null) {
+            return Result.fail("Token无效");
+        }
+
+        LoginDevice device = loginDeviceService.getDeviceDetail(userId, deviceId);
+        if (device != null) {
+            return Result.success(device);
+        } else {
+            return Result.fail("设备不存在");
+        }
+    }
+
+    @Operation(summary = "注册生物识别", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/biometric/register")
+    public Result<Void> registerBiometric(@RequestBody Map<String, String> params, 
+                                          @RequestHeader(value = "Authorization") String authHeader) {
+        String deviceId = params.get("deviceId");
+        String biometricData = params.get("biometricData");
+
+        if (deviceId == null || biometricData == null) {
+            return Result.fail("设备ID和生物识别数据不能为空");
+        }
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        boolean success = biometricLoginService.registerBiometric(userId, deviceId, biometricData);
+        if (success) {
+            return Result.successMsg("生物识别注册成功");
+        } else {
+            return Result.fail("生物识别注册失败");
+        }
+    }
+
+    @Operation(summary = "生物识别登录")
+    @PostMapping("/biometric/login")
+    public Result<LoginVO> biometricLogin(@RequestBody Map<String, String> params) {
+        String deviceId = params.get("deviceId");
+        String biometricData = params.get("biometricData");
+
+        if (deviceId == null || biometricData == null) {
+            return Result.fail("设备ID和生物识别数据不能为空");
+        }
+
+        try {
+            LoginVO loginVO = biometricLoginService.biometricLogin(deviceId, biometricData);
+            return Result.success("生物识别登录成功", loginVO);
+        } catch (Exception e) {
+            log.error("生物识别登录失败: {}", e.getMessage(), e);
+            return Result.fail("生物识别登录失败");
+        }
+    }
+
+    @Operation(summary = "验证生物识别", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/biometric/verify")
+    public Result<Map<String, Boolean>> verifyBiometric(@RequestBody Map<String, String> params, 
+                                                       @RequestHeader(value = "Authorization") String authHeader) {
+        String deviceId = params.get("deviceId");
+        String biometricData = params.get("biometricData");
+
+        if (deviceId == null || biometricData == null) {
+            return Result.fail("设备ID和生物识别数据不能为空");
+        }
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        boolean verified = biometricLoginService.verifyBiometric(userId, deviceId, biometricData);
+        Map<String, Boolean> result = new HashMap<>();
+        result.put("verified", verified);
+        return Result.success(result);
+    }
+
+    @Operation(summary = "取消生物识别注册", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/biometric/unregister")
+    public Result<Void> unregisterBiometric(@RequestBody Map<String, String> params, 
+                                            @RequestHeader(value = "Authorization") String authHeader) {
+        String deviceId = params.get("deviceId");
+
+        if (deviceId == null) {
+            return Result.fail("设备ID不能为空");
+        }
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        boolean success = biometricLoginService.unregisterBiometric(userId, deviceId);
+        if (success) {
+            return Result.successMsg("生物识别注销成功");
+        } else {
+            return Result.fail("生物识别注销失败");
+        }
+    }
+
+    @Operation(summary = "检查设备是否已注册生物识别", security = @SecurityRequirement(name = "Bearer"))
+    @GetMapping("/biometric/check")
+    public Result<Map<String, Boolean>> checkBiometric(@RequestParam String deviceId, 
+                                                      @RequestHeader(value = "Authorization") String authHeader) {
+        if (deviceId == null) {
+            return Result.fail("设备ID不能为空");
+        }
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        boolean registered = biometricLoginService.isBiometricRegistered(userId, deviceId);
+        Map<String, Boolean> result = new HashMap<>();
+        result.put("registered", registered);
+        return Result.success(result);
+    }
+
+    @Operation(summary = "获取已注册生物识别的设备列表", security = @SecurityRequirement(name = "Bearer"))
+    @GetMapping("/biometric/devices")
+    public Result<Map<String, String>> getRegisteredBiometricDevices(@RequestHeader(value = "Authorization") String authHeader) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        Map<String, String> devices = biometricLoginService.getRegisteredDevices(userId);
+        return Result.success(devices);
+    }
+
+    @Operation(summary = "获取异常设备列表", security = @SecurityRequirement(name = "Bearer"))
+    @GetMapping("/devices/anomaly")
+    public Result<List<LoginDevice>> getAnomalyDevices(@RequestHeader(value = "Authorization") String authHeader) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        List<LoginDevice> devices = loginDeviceService.getAnomalyDevices(userId);
+        return Result.success(devices);
+    }
+
+    @Operation(summary = "处理异常设备", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/devices/anomaly/handle")
+    public Result<Void> handleAnomalyDevice(@RequestBody Map<String, String> params, 
+                                           @RequestHeader(value = "Authorization") String authHeader) {
+        String deviceId = params.get("deviceId");
+        String action = params.get("action");
+
+        if (deviceId == null || action == null) {
+            return Result.fail("设备ID和处理动作不能为空");
+        }
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        boolean success = loginDeviceService.handleAnomalyDevice(userId, deviceId, action);
+        if (success) {
+            return Result.successMsg("处理成功");
+        } else {
+            return Result.fail("处理失败");
+        }
+    }
+
+    @Operation(summary = "生成SSO登录URL")
+    @GetMapping("/sso/login-url")
+    public Result<Map<String, String>> generateSSOLoginUrl(@RequestParam String redirectUri, 
+                                                          @RequestParam(required = false) String state) {
+        if (redirectUri == null) {
+            return Result.fail("回调地址不能为空");
+        }
+
+        String ssoLoginUrl = ssoService.generateSSOLoginUrl(redirectUri, state);
+        Map<String, String> result = new HashMap<>();
+        result.put("loginUrl", ssoLoginUrl);
+        return Result.success(result);
+    }
+
+    @Operation(summary = "处理SSO回调")
+    @GetMapping("/sso/callback")
+    public Result<LoginVO> handleSSOCallback(@RequestParam String code, 
+                                             @RequestParam(required = false) String state) {
+        if (code == null) {
+            return Result.fail("授权码不能为空");
+        }
+
+        try {
+            LoginVO loginVO = ssoService.handleSSOCallback(code, state);
+            return Result.success("SSO登录成功", loginVO);
+        } catch (Exception e) {
+            log.error("处理SSO回调失败: {}", e.getMessage(), e);
+            return Result.fail("处理SSO回调失败");
+        }
+    }
+
+    @Operation(summary = "验证SSO令牌")
+    @PostMapping("/sso/validate")
+    public Result<Map<String, Object>> validateSSOToken(@RequestBody Map<String, String> params) {
+        String token = params.get("token");
+        if (token == null) {
+            return Result.fail("令牌不能为空");
+        }
+
+        try {
+            Map<String, Object> tokenInfo = ssoService.validateSSOToken(token);
+            return Result.success(tokenInfo);
+        } catch (Exception e) {
+            log.error("验证SSO令牌失败: {}", e.getMessage(), e);
+            return Result.fail("验证SSO令牌失败");
+        }
+    }
+
+    @Operation(summary = "生成SSO令牌", security = @SecurityRequirement(name = "Bearer"))
+    @PostMapping("/sso/generate-token")
+    public Result<Map<String, String>> generateSSOToken(@RequestHeader(value = "Authorization") String authHeader) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail("未登录");
+        }
+
+        String ssoToken = ssoService.generateSSOToken(userId);
+        Map<String, String> result = new HashMap<>();
+        result.put("token", ssoToken);
+        return Result.success(result);
+    }
+
+    @Operation(summary = "注销SSO会话")
+    @PostMapping("/sso/logout")
+    public Result<Void> logoutSSO(@RequestBody Map<String, String> params) {
+        String token = params.get("token");
+        if (token == null) {
+            return Result.fail("令牌不能为空");
+        }
+
+        boolean success = ssoService.logoutSSO(token);
+        if (success) {
+            return Result.successMsg("SSO会话注销成功");
+        } else {
+            return Result.fail("SSO会话注销失败");
+        }
+    }
+
+    @Operation(summary = "获取SSO配置信息")
+    @GetMapping("/sso/config")
+    public Result<Map<String, String>> getSSOConfig() {
+        Map<String, String> config = ssoService.getSSOConfig();
+        return Result.success(config);
+    }
+
     // ========== 私有方法 ==========
 
-    private void handleLoginSuccess(HttpServletRequest request, LoginVO loginVO,
+    private boolean handleLoginSuccess(HttpServletRequest request, LoginVO loginVO,
                                     String clientIp, String deviceId, String deviceInfo) {
         // 清理登录失败记录
         loginSecurityService.onLoginSuccess(loginVO.getUsername());
@@ -463,8 +964,25 @@ public class AuthController {
                     loginVO.getUserId(), clientIp, location);
         }
 
+        // 检测设备异常
+        LoginDevice device = new LoginDevice();
+        device.setUserId(loginVO.getUserId());
+        device.setDeviceId(deviceId);
+        device.setIpAddress(clientIp);
+        device.setLocation(location);
+        device.setDeviceInfo(deviceInfo);
+        device.setLastLoginTime(java.time.LocalDateTime.now());
+        
+        boolean isAnomaly = loginDeviceService.detectDeviceAnomaly(device);
+        if (isAnomaly) {
+            log.warn("检测到异常设备登录: userId={}, deviceId={}, ip={}",
+                    loginVO.getUserId(), deviceId, clientIp);
+        }
+
         // 更新Token版本
         incrementTokenVersion(loginVO.getUserId());
+        
+        return isAnomaly;
     }
 
     private void handleLoginFailure(String username, String clientIp, String reason) {

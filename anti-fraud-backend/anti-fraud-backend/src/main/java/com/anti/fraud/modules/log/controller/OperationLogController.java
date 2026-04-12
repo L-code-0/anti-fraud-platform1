@@ -10,78 +10,48 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 /**
  * 操作日志控制器
  */
-@Tag(name = "操作日志", description = "系统操作日志相关接口")
+@Tag(name = "操作日志管理", description = "操作日志相关操作")
 @RestController
-@RequestMapping("/api/log")
+@RequestMapping("/api/log/operation")
 @RequiredArgsConstructor
 public class OperationLogController {
     
     private final OperationLogService operationLogService;
     
-    @Operation(summary = "分页查询操作日志")
+    @Operation(summary = "获取操作日志列表")
     @GetMapping("/list")
-    public Result<IPage<OperationLog>> getLogPage(
+    public Result<IPage<OperationLog>> getOperationLogList(
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String operationType,
-            @RequestParam(required = false) String moduleName,
-            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "20") Integer size,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String actionType,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime
     ) {
-        IPage<OperationLog> result = operationLogService.getLogPage(page, size, userId, operationType,
-                moduleName, keyword, startTime, endTime);
+        IPage<OperationLog> result = operationLogService.getOperationLogs(
+                page, size, username, actionType, startTime, endTime
+        );
         return Result.success(result);
     }
     
-    @Operation(summary = "获取日志详情")
+    @Operation(summary = "获取操作日志详情")
     @GetMapping("/{id}")
-    public Result<OperationLog> getLogById(
+    public Result<OperationLog> getOperationLogDetail(
             @Parameter(description = "日志ID") @PathVariable Long id
     ) {
-        OperationLog log = operationLogService.getLogById(id);
+        OperationLog log = operationLogService.getOperationLogById(id);
         return Result.success(log);
-    }
-    
-    @Operation(summary = "删除日志")
-    @DeleteMapping("/{id}")
-    public Result<Void> deleteLog(
-            @Parameter(description = "日志ID") @PathVariable Long id
-    ) {
-        operationLogService.deleteLog(id);
-        return Result.success();
-    }
-    
-    @Operation(summary = "批量删除日志")
-    @DeleteMapping("/batch")
-    public Result<Void> deleteLogs(
-            @RequestBody Long[] ids
-    ) {
-        operationLogService.deleteLogs(ids);
-        return Result.success();
     }
     
     @Operation(summary = "清理旧日志")
     @DeleteMapping("/clean")
-    public Result<Map<String, Object>> cleanOldLogs(
-            @Parameter(description = "保留天数") @RequestParam(defaultValue = "30") int days
+    public Result<Integer> cleanOldLogs(
+            @RequestParam(defaultValue = "30") Integer days
     ) {
         int count = operationLogService.cleanOldLogs(days);
-        return Result.success(Map.of("count", count, "message", "清理成功"));
-    }
-    
-    @Operation(summary = "获取操作统计")
-    @GetMapping("/stats")
-    public Result<Object> getOperationStats(
-            @Parameter(description = "统计天数") @RequestParam(defaultValue = "7") int days
-    ) {
-        Object stats = operationLogService.getOperationStats(days);
-        return Result.success(stats);
+        return Result.success(count);
     }
 }

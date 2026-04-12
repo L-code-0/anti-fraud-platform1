@@ -307,4 +307,81 @@ public class UserServiceImpl implements UserService {
         vo.setStatus(user.getStatus());
         return vo;
     }
+
+    @Override
+    @Transactional
+    public void mergeAccounts(Long sourceUserId, Long targetUserId, String password) {
+        // 1. 验证源用户和目标用户存在
+        User sourceUser = userMapper.selectById(sourceUserId);
+        User targetUser = userMapper.selectById(targetUserId);
+        
+        if (sourceUser == null) {
+            throw new BusinessException("源用户不存在");
+        }
+        
+        if (targetUser == null) {
+            throw new BusinessException("目标用户不存在");
+        }
+        
+        // 2. 验证目标用户密码
+        if (!passwordEncoder.matches(password, targetUser.getPassword())) {
+            throw new BusinessException("目标用户密码错误");
+        }
+        
+        // 3. 合并用户数据（这里简化处理，实际需要合并积分、学习记录等）
+        // 例如：合并积分
+        targetUser.setPoints(targetUser.getPoints() + sourceUser.getPoints());
+        
+        // 4. 更新目标用户
+        userMapper.updateById(targetUser);
+        
+        // 5. 软删除源用户
+        softDeleteUser(sourceUserId);
+        
+        log.info("账号合并成功: sourceUserId={}, targetUserId={}", sourceUserId, targetUserId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAccount(Long userId, String password) {
+        // 1. 验证用户存在
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 2. 验证密码
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BusinessException("密码错误");
+        }
+        
+        // 3. 软删除用户
+        softDeleteUser(userId);
+        
+        log.info("账号注销成功: userId={}", userId);
+    }
+
+    @Override
+    @Transactional
+    public void softDeleteUser(Long userId) {
+        // 1. 获取用户
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 2. 标记为已删除（这里假设User实体有deleted字段）
+        // 如果没有deleted字段，可以修改status为0（禁用）
+        user.setStatus(0); // 禁用用户
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.updateById(user);
+        
+        // 3. 清理相关数据
+        // 清理Token
+        redisUtils.delete("token:*" + userId);
+        // 清理Refresh Token
+        redisUtils.delete("refresh:" + userId);
+        
+        log.info("用户已软删除: userId={}", userId);
+    }
 }

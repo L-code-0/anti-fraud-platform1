@@ -29,8 +29,17 @@
         </el-form-item>
       </el-form>
       
+      <!-- 批量操作 -->
+      <div class="batch-actions" v-if="selectedUsers.length > 0">
+        <el-button type="primary" @click="batchEnable">批量启用</el-button>
+        <el-button type="danger" @click="batchDisable">批量禁用</el-button>
+        <el-button @click="batchDelete">批量删除</el-button>
+        <el-button @click="selectedUsers = []">取消选择</el-button>
+      </div>
+      
       <!-- 用户列表 -->
-      <el-table :data="userList" style="width: 100%">
+      <el-table :data="userList" style="width: 100%" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="realName" label="姓名" width="100" />
@@ -90,6 +99,7 @@ const page = ref(1)
 const size = ref(10)
 const total = ref(0)
 const showDialog = ref(false)
+const selectedUsers = ref<any[]>([])
 
 const searchParams = reactive({
   keyword: '',
@@ -159,6 +169,79 @@ const toggleStatus = async (row: any) => {
   } catch (e) {}
 }
 
+const handleSelectionChange = (val: any[]) => {
+  selectedUsers.value = val
+}
+
+const batchEnable = async () => {
+  if (selectedUsers.value.length === 0) {
+    ElMessage.warning('请选择要操作的用户')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要批量启用选中的用户吗？',
+      '提示',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    
+    const ids = selectedUsers.value.map(user => user.id)
+    // 模拟批量启用操作
+    setTimeout(() => {
+      ElMessage.success('批量启用成功')
+      selectedUsers.value = []
+      loadUsers()
+    }, 1000)
+  } catch (e) {}
+}
+
+const batchDisable = async () => {
+  if (selectedUsers.value.length === 0) {
+    ElMessage.warning('请选择要操作的用户')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要批量禁用选中的用户吗？',
+      '提示',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    
+    const ids = selectedUsers.value.map(user => user.id)
+    // 模拟批量禁用操作
+    setTimeout(() => {
+      ElMessage.success('批量禁用成功')
+      selectedUsers.value = []
+      loadUsers()
+    }, 1000)
+  } catch (e) {}
+}
+
+const batchDelete = async () => {
+  if (selectedUsers.value.length === 0) {
+    ElMessage.warning('请选择要操作的用户')
+    return
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要批量删除选中的用户吗？',
+      '提示',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'danger' }
+    )
+    
+    const ids = selectedUsers.value.map(user => user.id)
+    // 模拟批量删除操作
+    setTimeout(() => {
+      ElMessage.success('批量删除成功')
+      selectedUsers.value = []
+      loadUsers()
+    }, 1000)
+  } catch (e) {}
+}
+
 onMounted(() => {
   loadUsers()
 })
@@ -178,6 +261,16 @@ onMounted(() => {
 
 .search-form {
   margin-bottom: 20px;
+}
+
+.batch-actions {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .pagination {
