@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,39 +17,55 @@ public class FraudCase implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    private String title;
+    @TableField("case_title")
+    private String caseTitle;
 
-    private String description;
-
-    private String category;
-
-    private String difficulty;
-
+    @TableField("case_type")
     private String caseType;
 
-    private String videoUrl;
+    @TableField("occur_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime occurTime;
 
-    private String audioUrl;
+    @TableField("victim_profile")
+    private String victimProfile;
 
-    private String imageUrl;
+    @TableField("fraud_process")
+    private String fraudProcess;
 
-    private String caseData;
+    @TableField("loss_amount")
+    private BigDecimal lossAmount;
 
-    private Integer duration;
+    @TableField("recovery_amount")
+    private BigDecimal recoveryAmount;
 
+    @TableField("case_status")
+    private String caseStatus;
+
+    @TableField("police_info")
+    private String policeInfo;
+
+    @TableField("warning_level")
+    private Integer warningLevel;
+
+    @TableField("prevention_advice")
+    private String preventionAdvice;
+
+    private String source;
+
+    @TableField("is_anonymous")
+    private Integer isAnonymous;
+
+    @TableField("is_verified")
+    private Integer isVerified;
+
+    @TableField("view_count")
     private Integer viewCount;
 
-    private Integer likeCount;
-
-    private Integer commentCount;
-
-    private String keywords;
+    @TableField("share_count")
+    private Integer shareCount;
 
     private Integer status;
-
-    private String createdBy;
-
-    private String updatedBy;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @TableField(fill = FieldFill.INSERT)

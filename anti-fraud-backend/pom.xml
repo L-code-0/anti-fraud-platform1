@@ -175,24 +175,12 @@
                 <version>${quartz.version}</version>
             </dependency>
 
-            <!-- Test -->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-test</artifactId>
-                <scope>test</scope>
-            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
     <modules>
         <module>anti-fraud-backend</module>
-        <module>anti-fraud-gateway</module>
-        <module>anti-fraud-eureka</module>
-        <module>anti-fraud-user-service</module>
-        <module>anti-fraud-knowledge-service</module>
-        <module>anti-fraud-test-service</module>
-        <module>anti-fraud-report-service</module>
-        <module>anti-fraud-drill-service</module>
         <module>anti-fraud-common</module>
     </modules>
 

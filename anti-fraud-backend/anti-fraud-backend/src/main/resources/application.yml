@@ -104,3 +104,16 @@ sms:
   code:
     expire-time: 5 # 验证码过期时间（分钟）
     prefix: sms:code: # Redis存储前缀
+
+# 第三方登录配置
+third-party:
+  wechat:
+    app-id: ${WECHAT_APP_ID}
+    app-secret: ${WECHAT_APP_SECRET}
+    redirect-uri: ${WECHAT_REDIRECT_URI:http://localhost:8080/api/auth/login/wechat/callback}
+    scope: snsapi_login
+  dingtalk:
+    app-id: ${DINGTALK_APP_ID}
+    app-secret: ${DINGTALK_APP_SECRET}
+    redirect-uri: ${DINGTALK_REDIRECT_URI:http://localhost:8080/api/auth/login/dingtalk/callback}
+    scope: snsapi_login

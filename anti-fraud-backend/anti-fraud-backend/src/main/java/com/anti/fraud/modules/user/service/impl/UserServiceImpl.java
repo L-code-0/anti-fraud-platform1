@@ -9,6 +9,7 @@ import com.anti.fraud.modules.user.dto.LoginDTO;
 import com.anti.fraud.modules.user.dto.RegisterDTO;
 import com.anti.fraud.modules.user.entity.User;
 import com.anti.fraud.modules.user.mapper.UserMapper;
+import com.anti.fraud.modules.user.service.LoginDeviceService;
 import com.anti.fraud.modules.user.service.UserService;
 import com.anti.fraud.modules.user.vo.LoginVO;
 import com.anti.fraud.modules.user.vo.UserVO;
@@ -19,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final JwtUtils jwtUtils;
     private final RedisUtils redisUtils;
     private final PasswordStrengthUtil passwordStrengthUtil;
+    private final LoginDeviceService loginDeviceService;
 
     // Token相关配置
     private static final int TOKEN_EXPIRE_HOURS = 24;
@@ -86,6 +90,9 @@ public class UserServiceImpl implements UserService {
         // 更新登录信息
         user.setLastLoginTime(LocalDateTime.now());
         userMapper.updateById(user);
+
+        // 记录登录设备信息
+        recordLoginDeviceInfo(user.getId());
 
         log.info("用户登录成功: userId={}, username={}", user.getId(), user.getUsername());
         return loginVO;
@@ -383,5 +390,49 @@ public class UserServiceImpl implements UserService {
         redisUtils.delete("refresh:" + userId);
         
         log.info("用户已软删除: userId={}", userId);
+    }
+
+    /**
+     * 记录登录设备信息
+     * @param userId 用户ID
+     */
+    private void recordLoginDeviceInfo(Long userId) {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                javax.servlet.http.HttpServletRequest request = attributes.getRequest();
+                
+                // 获取设备信息（实际项目中可能需要从请求头或参数中获取）
+                String deviceId = request.getHeader("X-Device-Id") != null ? request.getHeader("X-Device-Id") : "unknown";
+                String deviceInfo = request.getHeader("User-Agent") != null ? request.getHeader("User-Agent") : "unknown";
+                String ipAddress = getClientIpAddress(request);
+                String location = "未知"; // 实际项目中可以通过IP地址解析位置
+                
+                // 记录登录设备
+                loginDeviceService.recordLoginDevice(userId, deviceId, deviceInfo, ipAddress, location);
+            }
+        } catch (Exception e) {
+            log.error("记录登录设备信息失败: {}", e.getMessage(), e);
+            // 设备记录失败不影响登录流程
+        }
+    }
+
+    /**
+     * 获取客户端IP地址
+     * @param request HTTP请求
+     * @return IP地址
+     */
+    private String getClientIpAddress(javax.servlet.http.HttpServletRequest request) {
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("Proxy-Client-IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getRemoteAddr();
+        }
+        return ipAddress;
     }
 }

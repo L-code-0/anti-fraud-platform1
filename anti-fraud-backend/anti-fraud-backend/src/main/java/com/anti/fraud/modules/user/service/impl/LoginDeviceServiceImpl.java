@@ -3,275 +3,147 @@ package com.anti.fraud.modules.user.service.impl;
 import com.anti.fraud.modules.user.entity.LoginDevice;
 import com.anti.fraud.modules.user.mapper.LoginDeviceMapper;
 import com.anti.fraud.modules.user.service.LoginDeviceService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 登录设备管理服务实现
+ * 登录设备服务实现类
  */
 @Service
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class LoginDeviceServiceImpl implements LoginDeviceService {
-    
+
     private final LoginDeviceMapper loginDeviceMapper;
-    
+
     @Override
-    public List<LoginDevice> getUserDevices(Long userId) {
-        try {
-            log.info("获取用户登录设备列表: userId={}", userId);
-            return loginDeviceMapper.selectByUserId(userId);
-        } catch (Exception e) {
-            log.error("获取用户登录设备列表失败: {}", e.getMessage(), e);
-            return List.of();
+    @Transactional
+    public LoginDevice recordLoginDevice(Long userId, String deviceId, String deviceInfo, String ipAddress, String location) {
+        // 检查设备是否已存在
+        LoginDevice existingDevice = loginDeviceMapper.selectByDeviceId(deviceId);
+        
+        if (existingDevice != null) {
+            // 更新现有设备信息
+            existingDevice.setLastLoginTime(LocalDateTime.now().toString());
+            existingDevice.setIpAddress(ipAddress);
+            existingDevice.setLocation(location);
+            existingDevice.setIsActive(true);
+            existingDevice.setUpdateTime(LocalDateTime.now());
+            loginDeviceMapper.updateById(existingDevice);
+            
+            // 批量更新其他设备为非活跃
+            batchUpdateToInactive(userId, deviceId);
+            
+            log.info("设备登录更新: userId={}, deviceId={}", userId, deviceId);
+            return existingDevice;
+        } else {
+            // 创建新设备记录
+            LoginDevice newDevice = new LoginDevice();
+            newDevice.setUserId(userId);
+            newDevice.setDeviceId(deviceId);
+            newDevice.setDeviceInfo(deviceInfo);
+            newDevice.setIpAddress(ipAddress);
+            newDevice.setLocation(location);
+            newDevice.setLastLoginTime(LocalDateTime.now().toString());
+            newDevice.setIsTrusted(false); // 默认不可信
+            newDevice.setIsActive(true);
+            newDevice.setCreateTime(LocalDateTime.now());
+            newDevice.setUpdateTime(LocalDateTime.now());
+            
+            loginDeviceMapper.insert(newDevice);
+            
+            // 批量更新其他设备为非活跃
+            batchUpdateToInactive(userId, deviceId);
+            
+            log.info("新设备登录: userId={}, deviceId={}", userId, deviceId);
+            return newDevice;
         }
     }
-    
+
     @Override
-    public boolean addLoginDevice(LoginDevice device) {
-        try {
-            log.info("添加登录设备: userId={}, deviceId={}", device.getUserId(), device.getDeviceId());
-            // 检查设备是否已存在
-            LoginDevice existingDevice = loginDeviceMapper.selectByDeviceId(device.getDeviceId());
-            if (existingDevice != null) {
-                // 更新现有设备
-                existingDevice.setLastLoginTime(device.getLastLoginTime());
-                existingDevice.setIpAddress(device.getIpAddress());
-                existingDevice.setLocation(device.getLocation());
-                existingDevice.setDeviceInfo(device.getDeviceInfo());
-                existingDevice.setIsActive(true);
-                loginDeviceMapper.updateById(existingDevice);
-                log.info("更新现有登录设备成功");
-                return true;
-            } else {
-                // 新增设备
-                device.setIsTrusted(false);
-                device.setIsActive(true);
-                loginDeviceMapper.insert(device);
-                log.info("新增登录设备成功");
-                return true;
-            }
-        } catch (Exception e) {
-            log.error("添加登录设备失败: {}", e.getMessage(), e);
-            return false;
-        }
+    public List<LoginDevice> getLoginDevices(Long userId) {
+        return loginDeviceMapper.selectByUserId(userId);
     }
-    
+
     @Override
-    public boolean updateLoginDevice(LoginDevice device) {
-        try {
-            log.info("更新登录设备: userId={}, deviceId={}", device.getUserId(), device.getDeviceId());
-            int rows = loginDeviceMapper.updateById(device);
-            boolean success = rows > 0;
-            log.info("更新登录设备{}", success ? "成功" : "失败");
-            return success;
-        } catch (Exception e) {
-            log.error("更新登录设备失败: {}", e.getMessage(), e);
-            return false;
-        }
-    }
-    
-    @Override
+    @Transactional
     public boolean markDeviceAsTrusted(Long userId, String deviceId) {
-        try {
-            log.info("标记设备为可信: userId={}, deviceId={}", userId, deviceId);
-            int rows = loginDeviceMapper.updateDeviceStatus(userId, deviceId, true, true);
-            boolean success = rows > 0;
-            log.info("标记设备为可信{}", success ? "成功" : "失败");
-            return success;
-        } catch (Exception e) {
-            log.error("标记设备为可信失败: {}", e.getMessage(), e);
-            return false;
-        }
+        return updateDeviceStatus(userId, deviceId, true, true);
     }
-    
+
     @Override
+    @Transactional
     public boolean markDeviceAsUntrusted(Long userId, String deviceId) {
-        try {
-            log.info("标记设备为不可信: userId={}, deviceId={}", userId, deviceId);
-            int rows = loginDeviceMapper.updateDeviceStatus(userId, deviceId, false, true);
-            boolean success = rows > 0;
-            log.info("标记设备为不可信{}", success ? "成功" : "失败");
-            return success;
-        } catch (Exception e) {
-            log.error("标记设备为不可信失败: {}", e.getMessage(), e);
-            return false;
-        }
+        return updateDeviceStatus(userId, deviceId, false, true);
     }
-    
+
     @Override
+    @Transactional
     public boolean disableDevice(Long userId, String deviceId) {
-        try {
-            log.info("禁用设备: userId={}, deviceId={}", userId, deviceId);
-            int rows = loginDeviceMapper.updateDeviceStatus(userId, deviceId, false, false);
-            boolean success = rows > 0;
-            log.info("禁用设备{}", success ? "成功" : "失败");
-            return success;
-        } catch (Exception e) {
-            log.error("禁用设备失败: {}", e.getMessage(), e);
-            return false;
-        }
+        return updateDeviceStatus(userId, deviceId, false, false);
     }
-    
+
     @Override
+    @Transactional
     public boolean enableDevice(Long userId, String deviceId) {
-        try {
-            log.info("启用设备: userId={}, deviceId={}", userId, deviceId);
-            int rows = loginDeviceMapper.updateDeviceStatus(userId, deviceId, false, true);
-            boolean success = rows > 0;
-            log.info("启用设备{}", success ? "成功" : "失败");
-            return success;
-        } catch (Exception e) {
-            log.error("启用设备失败: {}", e.getMessage(), e);
-            return false;
-        }
-    }
-    
-    @Override
-    public boolean removeDevice(Long userId, String deviceId) {
-        try {
-            log.info("移除设备: userId={}, deviceId={}", userId, deviceId);
-            LoginDevice device = loginDeviceMapper.selectByDeviceId(deviceId);
-            if (device != null && device.getUserId().equals(userId)) {
-                loginDeviceMapper.deleteById(device.getId());
-                log.info("移除设备成功");
-                return true;
-            }
-            log.info("设备不存在或不属于当前用户");
-            return false;
-        } catch (Exception e) {
-            log.error("移除设备失败: {}", e.getMessage(), e);
-            return false;
-        }
-    }
-    
-    @Override
-    public boolean isDeviceTrusted(Long userId, String deviceId) {
-        try {
-            log.info("检查设备是否可信: userId={}, deviceId={}", userId, deviceId);
-            LoginDevice device = loginDeviceMapper.selectByDeviceId(deviceId);
-            boolean trusted = device != null && device.getUserId().equals(userId) && device.getIsTrusted() != null && device.getIsTrusted();
-            log.info("设备{}可信", trusted ? "是" : "否");
-            return trusted;
-        } catch (Exception e) {
-            log.error("检查设备是否可信失败: {}", e.getMessage(), e);
-            return false;
-        }
-    }
-    
-    @Override
-    public LoginDevice getDeviceDetail(Long userId, String deviceId) {
-        try {
-            log.info("获取设备详情: userId={}, deviceId={}", userId, deviceId);
-            LoginDevice device = loginDeviceMapper.selectByDeviceId(deviceId);
-            if (device != null && device.getUserId().equals(userId)) {
-                log.info("获取设备详情成功");
-                return device;
-            }
-            log.info("设备不存在或不属于当前用户");
-            return null;
-        } catch (Exception e) {
-            log.error("获取设备详情失败: {}", e.getMessage(), e);
-            return null;
-        }
+        return updateDeviceStatus(userId, deviceId, false, true);
     }
 
     @Override
-    public boolean detectDeviceAnomaly(LoginDevice device) {
-        try {
-            log.info("检测设备异常: userId={}, deviceId={}", device.getUserId(), device.getDeviceId());
-            
-            // 检查设备是否首次登录
-            LoginDevice existingDevice = loginDeviceMapper.selectByDeviceId(device.getDeviceId());
-            if (existingDevice == null) {
-                log.info("设备首次登录，标记为异常");
-                return true;
-            }
-            
-            // 检查IP地址是否异常
-            if (!device.getIpAddress().equals(existingDevice.getIpAddress())) {
-                log.info("IP地址异常: 新IP={}, 旧IP={}", device.getIpAddress(), existingDevice.getIpAddress());
-                return true;
-            }
-            
-            // 检查设备信息是否异常
-            if (!device.getDeviceInfo().equals(existingDevice.getDeviceInfo())) {
-                log.info("设备信息异常: 新设备信息={}, 旧设备信息={}", device.getDeviceInfo(), existingDevice.getDeviceInfo());
-                return true;
-            }
-            
-            // 检查登录时间是否异常（简单实现：如果是凌晨登录，视为异常）
-            int hour = device.getLastLoginTime().getHour();
-            if (hour >= 0 && hour <= 6) {
-                log.info("登录时间异常: 登录时间={}", device.getLastLoginTime());
-                return true;
-            }
-            
-            log.info("设备无异常");
-            return false;
-        } catch (Exception e) {
-            log.error("检测设备异常失败: {}", e.getMessage(), e);
-            return false;
+    @Transactional
+    public boolean deleteDevice(Long userId, String deviceId) {
+        LambdaQueryWrapper<LoginDevice> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(LoginDevice::getUserId, userId)
+                .eq(LoginDevice::getDeviceId, deviceId);
+        
+        int result = loginDeviceMapper.delete(queryWrapper);
+        boolean success = result > 0;
+        
+        if (success) {
+            log.info("设备删除成功: userId={}, deviceId={}", userId, deviceId);
+        } else {
+            log.warn("设备删除失败: userId={}, deviceId={}", userId, deviceId);
         }
+        
+        return success;
     }
 
     @Override
-    public List<LoginDevice> getAnomalyDevices(Long userId) {
-        try {
-            log.info("获取异常设备列表: userId={}", userId);
-            List<LoginDevice> devices = loginDeviceMapper.selectByUserId(userId);
-            // 筛选异常设备（这里简单实现：未标记为可信的设备视为异常）
-            return devices.stream()
-                    .filter(device -> device.getIsTrusted() == null || !device.getIsTrusted())
-                    .toList();
-        } catch (Exception e) {
-            log.error("获取异常设备列表失败: {}", e.getMessage(), e);
-            return List.of();
-        }
+    public LoginDevice getDeviceById(Long userId, String deviceId) {
+        LambdaQueryWrapper<LoginDevice> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(LoginDevice::getUserId, userId)
+                .eq(LoginDevice::getDeviceId, deviceId);
+        return loginDeviceMapper.selectOne(queryWrapper);
     }
 
     @Override
-    public boolean handleAnomalyDevice(Long userId, String deviceId, String action) {
-        try {
-            log.info("处理异常设备: userId={}, deviceId={}, action={}", userId, deviceId, action);
-            
-            LoginDevice device = loginDeviceMapper.selectByDeviceId(deviceId);
-            if (device == null || !device.getUserId().equals(userId)) {
-                log.info("设备不存在或不属于当前用户");
-                return false;
-            }
-            
-            switch (action) {
-                case "block":
-                    // 禁用设备
-                    device.setIsActive(false);
-                    device.setIsTrusted(false);
-                    loginDeviceMapper.updateById(device);
-                    log.info("设备已被阻止");
-                    break;
-                case "verify":
-                    // 标记为可信
-                    device.setIsTrusted(true);
-                    device.setIsActive(true);
-                    loginDeviceMapper.updateById(device);
-                    log.info("设备已被验证为可信");
-                    break;
-                case "ignore":
-                    // 忽略异常，保持设备状态不变
-                    log.info("设备异常已被忽略");
-                    break;
-                default:
-                    log.warn("未知的处理动作: {}", action);
-                    return false;
-            }
-            
-            return true;
-        } catch (Exception e) {
-            log.error("处理异常设备失败: {}", e.getMessage(), e);
-            return false;
+    @Transactional
+    public int batchUpdateToInactive(Long userId, String excludeDeviceId) {
+        int result = loginDeviceMapper.batchUpdateToInactive(userId, excludeDeviceId);
+        log.info("批量更新设备为非活跃: userId={}, excludeDeviceId={}, 影响行数={}", userId, excludeDeviceId, result);
+        return result;
+    }
+
+    /**
+     * 更新设备状态
+     */
+    private boolean updateDeviceStatus(Long userId, String deviceId, Boolean isTrusted, Boolean isActive) {
+        int result = loginDeviceMapper.updateDeviceStatus(userId, deviceId, isTrusted, isActive);
+        boolean success = result > 0;
+        
+        if (success) {
+            log.info("设备状态更新: userId={}, deviceId={}, isTrusted={}, isActive={}", 
+                    userId, deviceId, isTrusted, isActive);
+        } else {
+            log.warn("设备状态更新失败: userId={}, deviceId={}", userId, deviceId);
         }
+        
+        return success;
     }
 }

@@ -1,267 +1,457 @@
 package com.anti.fraud.modules.offline.service.impl;
 
-import com.anti.fraud.modules.knowledge.entity.KnowledgeContent;
-import com.anti.fraud.modules.knowledge.mapper.KnowledgeContentMapper;
 import com.anti.fraud.modules.offline.entity.OfflineDownload;
 import com.anti.fraud.modules.offline.mapper.OfflineDownloadMapper;
 import com.anti.fraud.modules.offline.service.OfflineDownloadService;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * 离线下载服务实现类
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class OfflineDownloadServiceImpl implements OfflineDownloadService {
+public class OfflineDownloadServiceImpl extends ServiceImpl<OfflineDownloadMapper, OfflineDownload> implements OfflineDownloadService {
 
     private final OfflineDownloadMapper offlineDownloadMapper;
-    private final KnowledgeContentMapper knowledgeContentMapper;
 
-    private static final String DOWNLOAD_DIR = "d:/anti-fraud-downloads";
+    // 下载目录
+    private static final String DOWNLOAD_DIR = "D:\\anti-fraud-platform\\downloads\\";
 
     @Override
-    public OfflineDownload startDownload(Long userId, Long contentId, String contentType) {
+    @Transactional
+    public boolean startDownload(OfflineDownload offlineDownload) {
         try {
-            // 创建下载目录
-            createDownloadDir();
-
-            // 获取内容信息
-            KnowledgeContent content = knowledgeContentMapper.selectById(contentId);
-            if (content == null) {
-                throw new Exception("内容不存在");
+            // 检查资源是否已下载
+            if (isResourceDownloaded(offlineDownload.getUserId(), offlineDownload.getResourceId())) {
+                log.info("资源已下载: userId={}, resourceId={}", offlineDownload.getUserId(), offlineDownload.getResourceId());
+                return false;
             }
 
-            // 创建下载任务
-            OfflineDownload download = new OfflineDownload();
-            download.setUserId(userId);
-            download.setUserName("用户" + userId);
-            download.setContentId(contentId);
-            download.setContentTitle(content.getTitle());
-            download.setContentType(contentType);
-            download.setDownloadStatus(1); // 下载中
-            download.setDownloadProgress(0);
-            offlineDownloadMapper.insert(download);
+            // 初始化下载记录
+            offlineDownload.setStatus(1); // 待下载
+            offlineDownload.setProgress(0);
+            offlineDownload.setDownloadedSize(0L);
+            offlineDownload.setDeleted(0);
+            offlineDownload.setCreateTime(LocalDateTime.now());
+            offlineDownload.setUpdateTime(LocalDateTime.now());
 
-            // 模拟下载过程（实际项目中应该使用线程或异步任务）
-            simulateDownload(download);
+            // 生成存储路径
+            String storagePath = generateStoragePath(offlineDownload);
+            offlineDownload.setStoragePath(storagePath);
 
-            return download;
+            boolean success = save(offlineDownload);
+            if (success) {
+                // 异步开始下载
+                new Thread(() -> {
+                    try {
+                        doDownload(offlineDownload.getId());
+                    } catch (Exception e) {
+                        log.error("下载失败: {}", e.getMessage(), e);
+                        markDownloadFailed(offlineDownload.getId(), e.getMessage());
+                    }
+                }).start();
+            }
+            return success;
         } catch (Exception e) {
-            log.error("开始离线下载失败: {}", e.getMessage(), e);
-            // 创建失败的任务记录
-            OfflineDownload download = new OfflineDownload();
-            download.setUserId(userId);
-            download.setUserName("用户" + userId);
-            download.setContentId(contentId);
-            download.setContentType(contentType);
-            download.setDownloadStatus(3); // 下载失败
-            download.setDownloadProgress(0);
-            download.setErrorMessage(e.getMessage());
-            offlineDownloadMapper.insert(download);
-            return download;
+            log.error("开始下载失败: {}", e.getMessage(), e);
+            return false;
         }
     }
 
     @Override
-    public OfflineDownload getDownloadStatus(Long id, Long userId) {
+    @Transactional
+    public boolean pauseDownload(Long id) {
         try {
-            LambdaQueryWrapper<OfflineDownload> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(OfflineDownload::getId, id)
-                    .eq(OfflineDownload::getUserId, userId);
-            return offlineDownloadMapper.selectOne(queryWrapper);
+            OfflineDownload download = getById(id);
+            if (download != null && download.getStatus() == 2) { // 下载中
+                download.setStatus(1); // 待下载
+                download.setUpdateTime(LocalDateTime.now());
+                return updateById(download);
+            }
+            return false;
         } catch (Exception e) {
-            log.error("获取下载任务状态失败: {}", e.getMessage(), e);
+            log.error("暂停下载失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean resumeDownload(Long id) {
+        try {
+            OfflineDownload download = getById(id);
+            if (download != null && download.getStatus() == 1) { // 待下载
+                download.setStatus(2); // 下载中
+                download.setUpdateTime(LocalDateTime.now());
+                boolean success = updateById(download);
+                if (success) {
+                    // 异步继续下载
+                    new Thread(() -> {
+                        try {
+                            doDownload(id);
+                        } catch (Exception e) {
+                            log.error("下载失败: {}", e.getMessage(), e);
+                            markDownloadFailed(id, e.getMessage());
+                        }
+                    }).start();
+                }
+                return success;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("恢复下载失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean cancelDownload(Long id) {
+        try {
+            OfflineDownload download = getById(id);
+            if (download != null && (download.getStatus() == 1 || download.getStatus() == 2)) { // 待下载或下载中
+                download.setStatus(4); // 下载失败
+                download.setFailureReason("用户取消下载");
+                download.setUpdateTime(LocalDateTime.now());
+                boolean success = updateById(download);
+                if (success) {
+                    // 删除已下载的文件
+                    deleteDownloadedFile(download.getStoragePath());
+                }
+                return success;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("取消下载失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteDownload(Long id) {
+        try {
+            OfflineDownload download = getById(id);
+            if (download != null) {
+                download.setDeleted(1);
+                download.setUpdateTime(LocalDateTime.now());
+                boolean success = updateById(download);
+                if (success) {
+                    // 删除已下载的文件
+                    if (download.getStatus() == 3) { // 已完成
+                        deleteDownloadedFile(download.getStoragePath());
+                    }
+                }
+                return success;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("删除下载记录失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public OfflineDownload getDownloadById(Long id) {
+        try {
+            return getById(id);
+        } catch (Exception e) {
+            log.error("获取下载详情失败: {}", e.getMessage(), e);
             return null;
         }
     }
 
     @Override
-    public List<OfflineDownload> getDownloadList(Long userId, Integer status) {
+    public Map<String, Object> getDownloadList(Long userId, Integer status, int page, int size) {
         try {
-            LambdaQueryWrapper<OfflineDownload> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(OfflineDownload::getUserId, userId)
-                    .orderByDesc(OfflineDownload::getCreateTime);
-            
-            if (status != null) {
-                queryWrapper.eq(OfflineDownload::getDownloadStatus, status);
-            }
-            
-            return offlineDownloadMapper.selectList(queryWrapper);
+            int offset = (page - 1) * size;
+            List<OfflineDownload> downloads = offlineDownloadMapper.selectByUserId(userId, status, offset, size);
+            // 计算总数
+            int total = downloads.size();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", downloads);
+            result.put("total", total);
+            return result;
         } catch (Exception e) {
-            log.error("获取下载任务列表失败: {}", e.getMessage(), e);
-            return Collections.emptyList();
+            log.error("查询下载记录列表失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
         }
     }
 
     @Override
-    public boolean cancelDownload(Long id, Long userId) {
+    public List<Map<String, Object>> getStatusStats(Long userId) {
         try {
-            LambdaQueryWrapper<OfflineDownload> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(OfflineDownload::getId, id)
-                    .eq(OfflineDownload::getUserId, userId);
-            
-            OfflineDownload download = offlineDownloadMapper.selectOne(queryWrapper);
-            if (download != null && download.getDownloadStatus() == 1) {
-                download.setDownloadStatus(4); // 已取消
-                offlineDownloadMapper.updateById(download);
-                log.info("取消下载任务成功: id={}, userId={}", id, userId);
-                return true;
-            }
-            return false;
+            return offlineDownloadMapper.selectStatusStats(userId);
         } catch (Exception e) {
-            log.error("取消下载任务失败: {}", e.getMessage(), e);
-            return false;
+            log.error("按状态统计下载记录失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
         }
     }
 
     @Override
-    public boolean deleteDownload(Long id, Long userId) {
+    public List<Map<String, Object>> getResourceTypeStats(Long userId) {
         try {
-            LambdaQueryWrapper<OfflineDownload> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(OfflineDownload::getId, id)
-                    .eq(OfflineDownload::getUserId, userId);
-            
-            OfflineDownload download = offlineDownloadMapper.selectOne(queryWrapper);
-            if (download != null) {
-                // 删除文件
-                if (download.getDownloadPath() != null) {
-                    File file = new File(download.getDownloadPath());
-                    if (file.exists()) {
-                        file.delete();
-                    }
-                }
-                // 删除记录
-                offlineDownloadMapper.deleteById(id);
-                log.info("删除下载任务成功: id={}, userId={}", id, userId);
-                return true;
-            }
-            return false;
+            return offlineDownloadMapper.selectResourceTypeStats(userId);
         } catch (Exception e) {
-            log.error("删除下载任务失败: {}", e.getMessage(), e);
+            log.error("按资源类型统计下载记录失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean updateProgress(Long id, Integer progress, Long downloadedSize) {
+        try {
+            int rows = offlineDownloadMapper.updateProgress(id, progress, downloadedSize);
+            return rows > 0;
+        } catch (Exception e) {
+            log.error("更新下载进度失败: {}", e.getMessage(), e);
             return false;
         }
     }
 
     @Override
-    public int cleanExpiredDownloads(int days) {
+    @Transactional
+    public boolean completeDownload(Long id) {
         try {
-            LocalDateTime cutoffTime = LocalDateTime.now().minus(days, ChronoUnit.DAYS);
-            
-            LambdaQueryWrapper<OfflineDownload> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.lt(OfflineDownload::getCreateTime, cutoffTime);
-            
-            List<OfflineDownload> expiredDownloads = offlineDownloadMapper.selectList(queryWrapper);
-            int count = 0;
-            
-            for (OfflineDownload download : expiredDownloads) {
-                // 删除文件
-                if (download.getDownloadPath() != null) {
-                    File file = new File(download.getDownloadPath());
-                    if (file.exists()) {
-                        file.delete();
-                    }
-                }
-                // 删除记录
-                offlineDownloadMapper.deleteById(download.getId());
-                count++;
-            }
-            
-            log.info("清理过期下载任务: {}个", count);
-            return count;
+            int rows = offlineDownloadMapper.completeDownload(id, 3, 100, LocalDateTime.now());
+            return rows > 0;
         } catch (Exception e) {
-            log.error("清理过期下载任务失败: {}", e.getMessage(), e);
+            log.error("完成下载失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean markDownloadFailed(Long id, String failureReason) {
+        try {
+            int rows = offlineDownloadMapper.markDownloadFailed(id, 4, failureReason);
+            return rows > 0;
+        } catch (Exception e) {
+            log.error("标记下载失败失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public List<OfflineDownload> getPendingDownloads(int limit) {
+        try {
+            return offlineDownloadMapper.selectPendingDownloads(limit);
+        } catch (Exception e) {
+            log.error("获取待下载的记录失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<OfflineDownload> getDownloadingRecords(int limit) {
+        try {
+            return offlineDownloadMapper.selectDownloadingRecords(limit);
+        } catch (Exception e) {
+            log.error("获取下载中的记录失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public Long getTotalDownloadSize(Long userId) {
+        try {
+            return offlineDownloadMapper.selectTotalDownloadSize(userId);
+        } catch (Exception e) {
+            log.error("统计用户下载总量失败: {}", e.getMessage(), e);
+            return 0L;
+        }
+    }
+
+    @Override
+    public Integer getCompletedCount(Long userId) {
+        try {
+            return offlineDownloadMapper.selectCompletedCount(userId);
+        } catch (Exception e) {
+            log.error("统计用户已完成的下载数量失败: {}", e.getMessage(), e);
             return 0;
         }
     }
 
     @Override
-    public Map<String, Object> getDownloadFile(Long id, Long userId) {
+    @Transactional
+    public int cleanExpiredDownloads(int days) {
         try {
-            LambdaQueryWrapper<OfflineDownload> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(OfflineDownload::getId, id)
-                    .eq(OfflineDownload::getUserId, userId);
-            
-            OfflineDownload download = offlineDownloadMapper.selectOne(queryWrapper);
-            if (download == null) {
-                throw new Exception("下载任务不存在");
+            // 这里简化处理，实际应该根据创建时间筛选过期记录
+            // 并删除对应的文件
+            return 0;
+        } catch (Exception e) {
+            log.error("清理过期的下载记录失败: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    @Override
+    @Transactional
+    public int batchStartDownload(List<OfflineDownload> downloads) {
+        try {
+            int successCount = 0;
+            for (OfflineDownload download : downloads) {
+                if (startDownload(download)) {
+                    successCount++;
+                }
             }
-            
-            if (download.getDownloadStatus() != 2) {
-                throw new Exception("下载未完成");
+            return successCount;
+        } catch (Exception e) {
+            log.error("批量开始下载失败: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    @Override
+    public boolean isResourceDownloaded(Long userId, Long resourceId) {
+        try {
+            List<OfflineDownload> downloads = offlineDownloadMapper.selectByResourceId(resourceId, 3);
+            for (OfflineDownload download : downloads) {
+                if (download.getUserId().equals(userId)) {
+                    return true;
+                }
             }
-            
-            File file = new File(download.getDownloadPath());
-            if (!file.exists()) {
-                throw new Exception("文件不存在");
-            }
-            
+            return false;
+        } catch (Exception e) {
+            log.error("检查资源是否已下载失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getDownloadedResources(Long userId, Integer resourceType, int page, int size) {
+        try {
+            // 这里简化处理，实际应该根据资源类型筛选已完成的下载记录
+            List<OfflineDownload> downloads = offlineDownloadMapper.selectByUserId(userId, 3, (page - 1) * size, size);
+            int total = downloads.size();
+
             Map<String, Object> result = new HashMap<>();
-            result.put("filePath", download.getDownloadPath());
-            result.put("fileName", file.getName());
-            result.put("fileSize", download.getFileSize());
-            result.put("contentType", download.getContentType());
-            
+            result.put("list", downloads);
+            result.put("total", total);
             return result;
         } catch (Exception e) {
-            log.error("获取下载文件失败: {}", e.getMessage(), e);
-            throw new RuntimeException(e.getMessage());
+            log.error("获取已下载的资源列表失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
         }
     }
 
-    /**
-     * 创建下载目录
-     */
-    private void createDownloadDir() throws IOException {
-        Path path = Paths.get(DOWNLOAD_DIR);
-        if (!Files.exists(path)) {
-            Files.createDirectories(path);
+    // 执行下载
+    private void doDownload(Long id) throws Exception {
+        OfflineDownload download = getById(id);
+        if (download == null) {
+            throw new Exception("下载记录不存在");
         }
-    }
 
-    /**
-     * 模拟下载过程
-     */
-    private void simulateDownload(OfflineDownload download) {
-        // 模拟下载进度
-        new Thread(() -> {
-            try {
-                for (int i = 0; i <= 100; i += 10) {
-                    Thread.sleep(1000); // 模拟下载延迟
-                    download.setDownloadProgress(i);
-                    offlineDownloadMapper.updateById(download);
+        // 更新状态为下载中
+        download.setStatus(2);
+        download.setStartTime(LocalDateTime.now());
+        updateById(download);
+
+        // 确保下载目录存在
+        File dir = new File(DOWNLOAD_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        // 开始下载
+        URL url = new URL(download.getResourcePath());
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.connect();
+
+        int responseCode = connection.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            throw new Exception("HTTP请求失败: " + responseCode);
+        }
+
+        // 获取文件大小
+        long fileSize = connection.getContentLengthLong();
+        download.setFileSize(fileSize);
+        updateById(download);
+
+        // 读取输入流并写入文件
+        try (InputStream inputStream = connection.getInputStream();
+             OutputStream outputStream = new java.io.FileOutputStream(download.getStoragePath())) {
+
+            byte[] buffer = new byte[1024 * 1024]; // 1MB缓冲区
+            int bytesRead;
+            long totalRead = 0;
+
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+                totalRead += bytesRead;
+
+                // 更新下载进度
+                int progress = (int) (totalRead * 100 / fileSize);
+                updateProgress(id, progress, totalRead);
+
+                // 检查是否被暂停或取消
+                OfflineDownload currentDownload = getById(id);
+                if (currentDownload != null && currentDownload.getStatus() != 2) {
+                    // 下载被暂停或取消
+                    return;
                 }
-                
-                // 模拟下载完成
-                String fileName = "knowledge_" + download.getContentId() + ".html";
-                String filePath = DOWNLOAD_DIR + File.separator + fileName;
-                
-                // 创建模拟文件
-                File file = new File(filePath);
-                file.createNewFile();
-                
-                download.setDownloadPath(filePath);
-                download.setFileSize("1024KB");
-                download.setDownloadStatus(2); // 下载完成
-                download.setDownloadProgress(100);
-                offlineDownloadMapper.updateById(download);
-                
-                log.info("下载任务完成: id={}, contentId={}", download.getId(), download.getContentId());
-            } catch (Exception e) {
-                log.error("模拟下载失败: {}", e.getMessage(), e);
-                download.setDownloadStatus(3); // 下载失败
-                download.setErrorMessage(e.getMessage());
-                offlineDownloadMapper.updateById(download);
             }
-        }).start();
+
+            // 下载完成
+            completeDownload(id);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    // 生成存储路径
+    private String generateStoragePath(OfflineDownload offlineDownload) {
+        // 按用户ID和资源类型创建目录
+        String userDir = DOWNLOAD_DIR + offlineDownload.getUserId() + "/";
+        String typeDir = userDir + offlineDownload.getResourceType() + "/";
+
+        File dir = new File(typeDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        // 生成文件名
+        String fileName = System.currentTimeMillis() + "_" + offlineDownload.getResourceName();
+        return typeDir + fileName;
+    }
+
+    // 删除已下载的文件
+    private void deleteDownloadedFile(String storagePath) {
+        if (storagePath != null) {
+            File file = new File(storagePath);
+            if (file.exists()) {
+                boolean deleted = file.delete();
+                if (!deleted) {
+                    log.warn("删除文件失败: {}", storagePath);
+                }
+            }
+        }
     }
 }

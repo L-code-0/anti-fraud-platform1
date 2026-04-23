@@ -1,57 +1,28 @@
 package com.anti.fraud.modules.report.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 举报实体
+ */
 @Data
 @TableName("report")
-public class Report implements Serializable {
+public class Report {
 
-    private static final long serialVersionUID = 1L;
-
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    private Long userId;
-
-    private String userName;
-
-    private String reportType;
-
-    private String reportContent;
-
+    private String reporterName;
+    private String reporterEmail;
+    private String reporterPhone;
+    private String fraudType;
+    private String description;
     private String evidenceUrl;
-
     private String status;
-
-    private String feedback;
-
-    private Long handlerId;
-
-    private String handlerName;
-
-    private Integer isAnonymous;
-
-    private String ipAddress;
-
-    private String deviceInfo;
-
-    private String createdBy;
-
-    private String updatedBy;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-
-    @TableLogic
-    private Integer deleted;
 }

@@ -24,6 +24,8 @@
               <el-menu-item index="/test">测试考试</el-menu-item>
               <el-menu-item index="/simulation">演练模拟</el-menu-item>
               <el-menu-item index="/report">举报预警</el-menu-item>
+              <el-menu-item index="/case">真实案例</el-menu-item>
+              <el-menu-item index="/fraud-script">诈骗话术库</el-menu-item>
               <el-menu-item index="/class" class="hide-mobile">班级管理</el-menu-item>
               <el-menu-item index="/activity" class="hide-mobile">活动中心</el-menu-item>
               <el-menu-item index="/points" class="hide-mobile">积分中心</el-menu-item>

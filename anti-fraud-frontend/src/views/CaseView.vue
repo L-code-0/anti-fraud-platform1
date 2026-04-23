@@ -123,35 +123,35 @@
             >
               <template #header>
                 <div class="case-header">
-                  <h3>{{ caseItem.title }}</h3>
-                  <el-tag :type="getCategoryType(caseItem.category)">
-                    {{ caseItem.category }}
+                  <h3>{{ caseItem.caseTitle }}</h3>
+                  <el-tag :type="getCategoryType(caseItem.caseType)">
+                    {{ caseItem.caseType }}
                   </el-tag>
                 </div>
               </template>
               <div class="case-content">
-                <p class="case-description">{{ caseItem.description }}</p>
+                <p class="case-description">{{ caseItem.fraudProcess }}</p>
                 <div class="case-info">
                   <div class="info-item">
                     <el-icon><Timer /></el-icon>
-                    <span>时长: {{ caseItem.duration }}分钟</span>
+                    <span>发生时间: {{ caseItem.occurTime }}</span>
                   </div>
                   <div class="info-item">
                     <el-icon><User /></el-icon>
                     <span>浏览: {{ caseItem.viewCount }}次</span>
                   </div>
                   <div class="info-item">
-                    <el-icon><Star /></el-icon>
-                    <span>点赞: {{ caseItem.likeCount }}次</span>
+                    <el-icon><Share /></el-icon>
+                    <span>分享: {{ caseItem.shareCount }}次</span>
                   </div>
                   <div class="info-item">
-                    <el-icon><ChatLineRound /></el-icon>
-                    <span>评论: {{ caseItem.commentCount }}条</span>
+                    <el-icon><Warning /></el-icon>
+                    <span>预警等级: {{ caseItem.warningLevel }}级</span>
                   </div>
                 </div>
                 <div class="case-tags">
-                  <el-tag size="small" effect="plain">{{ caseItem.caseType }}</el-tag>
-                  <el-tag size="small" effect="plain">{{ caseItem.difficulty }}</el-tag>
+                  <el-tag size="small" :type="getWarningType(caseItem.warningLevel)">{{ getWarningText(caseItem.warningLevel) }}</el-tag>
+                  <el-tag size="small" effect="plain">{{ caseItem.caseStatus }}</el-tag>
                 </div>
               </div>
             </el-card>
@@ -220,82 +220,94 @@
       </div>
       
       <div v-else-if="currentCase" class="case-details">
-        <!-- 案例媒体内容 -->
-        <div class="case-media">
-          <div v-if="currentCase.videoUrl" class="video-container">
-            <video
-              :src="currentCase.videoUrl"
-              controls
-              width="100%"
-              height="400px"
-            />
-          </div>
-          <div v-else-if="currentCase.audioUrl" class="audio-container">
-            <audio
-              :src="currentCase.audioUrl"
-              controls
-              width="100%"
-            />
-          </div>
-          <div v-else-if="currentCase.imageUrl" class="image-container">
-            <el-image
-              :src="currentCase.imageUrl"
-              fit="cover"
-              style="width: 100%; height: 400px"
-            />
-          </div>
-          <div v-else class="no-media">
-            <el-empty description="暂无媒体内容" />
-          </div>
-        </div>
-        
         <!-- 案例信息 -->
         <div class="case-info-section">
           <h3>案例信息</h3>
           <div class="info-grid">
             <div class="info-item">
-              <span class="label">分类:</span>
-              <el-tag :type="getCategoryType(currentCase.category)">
-                {{ currentCase.category }}
+              <span class="label">诈骗类型:</span>
+              <el-tag :type="getCategoryType(currentCase.caseType)">
+                {{ currentCase.caseType }}
               </el-tag>
             </div>
             <div class="info-item">
-              <span class="label">类型:</span>
-              <el-tag size="small" effect="plain">{{ currentCase.caseType }}</el-tag>
+              <span class="label">案件状态:</span>
+              <el-tag size="small" effect="plain">{{ currentCase.caseStatus }}</el-tag>
             </div>
             <div class="info-item">
-              <span class="label">难度:</span>
-              <el-tag size="small" effect="plain">{{ currentCase.difficulty }}</el-tag>
+              <span class="label">发生时间:</span>
+              <span class="value">{{ currentCase.occurTime }}</span>
             </div>
             <div class="info-item">
-              <span class="label">时长:</span>
-              <span class="value">{{ currentCase.duration }}分钟</span>
+              <span class="label">预警等级:</span>
+              <el-tag size="small" :type="getWarningType(currentCase.warningLevel)">{{ getWarningText(currentCase.warningLevel) }}</el-tag>
             </div>
             <div class="info-item">
               <span class="label">浏览:</span>
               <span class="value">{{ currentCase.viewCount }}次</span>
             </div>
             <div class="info-item">
-              <span class="label">点赞:</span>
-              <span class="value">{{ currentCase.likeCount }}次</span>
+              <span class="label">分享:</span>
+              <span class="value">{{ currentCase.shareCount }}次</span>
             </div>
             <div class="info-item">
-              <span class="label">评论:</span>
-              <span class="value">{{ currentCase.commentCount }}条</span>
+              <span class="label">信息来源:</span>
+              <span class="value">{{ currentCase.source }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">是否验证:</span>
+              <el-tag size="small" :type="currentCase.isVerified ? 'success' : 'info'">{{ currentCase.isVerified ? '已验证' : '未验证' }}</el-tag>
             </div>
           </div>
         </div>
         
-        <!-- 案例描述 -->
-        <div class="case-description-section">
-          <h3>案例描述</h3>
-          <p>{{ currentCase.description }}</p>
+        <!-- 受害者画像 -->
+        <div v-if="currentCase.victimProfile" class="case-victim-section">
+          <h3>受害者画像</h3>
+          <p>{{ currentCase.victimProfile }}</p>
         </div>
         
-        <!-- 案例数据 -->
-        <div v-if="currentCase.caseData" class="case-data-section">
-          <h3>案例数据</h3>
-          <pre>{{ currentCase.caseData }}</pre>
+        <!-- 诈骗过程 -->
+        <div class="case-process-section">
+          <h3>诈骗过程</h3>
+          <p>{{ currentCase.fraudProcess }}</p>
+        </div>
+        
+        <!-- 损失情况 -->
+        <div class="case-loss-section">
+          <h3>损失情况</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">损失金额:</span>
+              <span class="value">{{ currentCase.lossAmount }}元</span>
+            </div>
+            <div class="info-item">
+              <span class="label">追回金额:</span>
+              <span class="value">{{ currentCase.recoveryAmount }}元</span>
+            </div>
+            <div class="info-item">
+              <span class="label">净损失:</span>
+              <span class="value">{{ (currentCase.lossAmount - currentCase.recoveryAmount) }}元</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 警方信息 -->
+        <div v-if="currentCase.policeInfo" class="case-police-section">
+          <h3>警方信息</h3>
+          <p>{{ currentCase.policeInfo }}</p>
+        </div>
+        
+        <!-- 防范建议 -->
+        <div v-if="currentCase.preventionAdvice" class="case-prevention-section">
+          <h3>防范建议</h3>
+          <div class="prevention-content">
+            <el-alert
+              :title="currentCase.preventionAdvice"
+              type="success"
+              :closable="false"
+            />
+          </div>
         </div>
         
         <!-- 案例操作 -->
@@ -385,42 +397,60 @@ const loadCases = async () => {
     cases.value = [
       {
         id: 1,
-        title: '电信诈骗案例：冒充公检法诈骗',
-        description: '本案例讲述了一位市民如何被冒充公检法的诈骗分子骗取了大量财产，通过详细的案例分析，帮助用户了解此类诈骗的作案手法和防范措施。',
-        category: '电信诈骗',
-        caseType: '视频',
-        difficulty: '中等',
-        duration: 15,
+        caseTitle: '冒充公检法诈骗案例',
+        caseType: 'TELEPHONE',
+        occurTime: '2026-03-15 14:30:00',
+        victimProfile: '35岁女性，公司职员，本科学历，首次遭遇诈骗',
+        fraudProcess: '受害者接到自称"公安局"的电话，声称其身份信息被盗用参与洗钱活动，要求将资金转入"安全账户"进行"资金审查"。受害者在对方的威胁下，分3次转账共计15万元。',
+        lossAmount: 150000.00,
+        recoveryAmount: 80000.00,
+        caseStatus: '已破案',
+        policeInfo: '市公安局反诈中心',
+        warningLevel: 3,
+        preventionAdvice: '接到自称公检法的电话时，应挂断后通过官方渠道核实身份，公检法机关不会要求转账到所谓的安全账户。',
+        source: '市公安局反诈中心',
+        isAnonymous: 1,
+        isVerified: 1,
         viewCount: 1256,
-        likeCount: 89,
-        commentCount: 23,
-        videoUrl: 'https://example.com/video1.mp4'
+        shareCount: 89
       },
       {
         id: 2,
-        title: '网络诈骗案例：网络兼职刷单诈骗',
-        description: '本案例讲述了一位大学生如何被网络兼职刷单诈骗，通过真实的聊天记录和转账记录，展示了此类诈骗的完整流程和防范方法。',
-        category: '网络诈骗',
-        caseType: '图文',
-        difficulty: '简单',
-        duration: 10,
+        caseTitle: '网络刷单诈骗案例',
+        caseType: 'NETWORK',
+        occurTime: '2026-03-20 09:15:00',
+        victimProfile: '22岁大学生，无固定收入，网络兼职需求强烈',
+        fraudProcess: '受害者在社交平台看到"刷单兼职"广告，添加对方QQ后，按照对方要求先完成小额刷单并获得返利。随后对方以"任务未完成"为由，要求受害者继续刷单，受害者先后转账共计8万元。',
+        lossAmount: 80000.00,
+        recoveryAmount: 0.00,
+        caseStatus: '调查中',
+        policeInfo: '区公安局',
+        warningLevel: 3,
+        preventionAdvice: '任何要求先垫付资金的兼职都是骗局，不要相信"刷单返利"等天上掉馅饼的好事。',
+        source: '区公安局',
+        isAnonymous: 1,
+        isVerified: 1,
         viewCount: 987,
-        likeCount: 67,
-        commentCount: 18,
-        imageUrl: 'https://example.com/image1.jpg'
+        shareCount: 67
       },
       {
         id: 3,
-        title: '金融诈骗案例：投资理财诈骗',
-        description: '本案例讲述了一位退休老人如何被投资理财诈骗，通过详细的案例分析，帮助用户了解此类诈骗的作案手法和防范措施。',
-        category: '金融诈骗',
-        caseType: '音频',
-        difficulty: '困难',
-        duration: 20,
+        caseTitle: '虚假投资理财诈骗案例',
+        caseType: 'INVESTMENT',
+        occurTime: '2026-03-10 16:45:00',
+        victimProfile: '45岁男性，企业高管，有投资需求',
+        fraudProcess: '受害者在微信群被推荐一个"高收益"投资平台，初期小额投资获得高额返利，随后投入50万元后平台无法提现，最终平台关闭。',
+        lossAmount: 500000.00,
+        recoveryAmount: 0.00,
+        caseStatus: '已报案',
+        policeInfo: '市公安局经侦支队',
+        warningLevel: 3,
+        preventionAdvice: '高收益必然伴随高风险，投资前要核实平台资质，选择正规金融机构。',
+        source: '市公安局经侦支队',
+        isAnonymous: 1,
+        isVerified: 1,
         viewCount: 765,
-        likeCount: 54,
-        commentCount: 15,
-        audioUrl: 'https://example.com/audio1.mp3'
+        shareCount: 54
       }
     ]
   } finally {
@@ -579,14 +609,48 @@ const shareCase = (caseItem: any) => {
 // 获取分类类型
 const getCategoryType = (category: string) => {
   switch (category) {
-    case '电信诈骗':
+    case 'TELEPHONE':
       return 'danger'
-    case '网络诈骗':
+    case 'NETWORK':
       return 'warning'
-    case '金融诈骗':
+    case 'SMS':
       return 'info'
-    default:
+    case 'INVESTMENT':
+      return 'primary'
+    case 'RELATIONSHIP':
       return 'success'
+    case 'FINANCE':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
+// 获取预警类型
+const getWarningType = (level: number) => {
+  switch (level) {
+    case 1:
+      return 'success'
+    case 2:
+      return 'warning'
+    case 3:
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+// 获取预警文本
+const getWarningText = (level: number) => {
+  switch (level) {
+    case 1:
+      return '低风险'
+    case 2:
+      return '中风险'
+    case 3:
+      return '高风险'
+    default:
+      return '未知'
   }
 }
 

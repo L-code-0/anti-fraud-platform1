@@ -1,225 +1,186 @@
 package com.anti.fraud.modules.checkin.service.impl;
 
-import com.anti.fraud.modules.checkin.entity.Checkin;
-import com.anti.fraud.modules.checkin.mapper.CheckinMapper;
+import com.anti.fraud.modules.checkin.entity.CheckinRecord;
+import com.anti.fraud.modules.checkin.mapper.CheckinRecordMapper;
 import com.anti.fraud.modules.checkin.service.CheckinService;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * 打卡服务实现类
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class CheckinServiceImpl implements CheckinService {
+public class CheckinServiceImpl extends ServiceImpl<CheckinRecordMapper, CheckinRecord> implements CheckinService {
 
-    private final CheckinMapper checkinMapper;
+    private final CheckinRecordMapper checkinRecordMapper;
 
     @Override
-    public Map<String, Object> checkin(Long userId, String checkinType) {
-        try {
-            LocalDate today = LocalDate.now();
-            
-            // 检查今日是否已打卡
-            Checkin todayCheckin = getTodayCheckin(userId);
-            if (todayCheckin != null) {
-                Map<String, Object> result = new HashMap<>();
-                result.put("success", false);
-                result.put("message", "今日已打卡");
-                result.put("checkin", todayCheckin);
-                return result;
-            }
+    @Transactional
+    public Map<String, Object> doCheckin(Long userId, String username, Integer checkinType, String location, String ipAddress) {
+        Map<String, Object> result = new HashMap<>();
+        LocalDate today = LocalDate.now();
 
-            // 计算连续打卡天数
-            int continuousDays = calculateContinuousDays(userId);
-            
-            // 计算奖励积分
-            int rewardPoints = calculateRewardPoints(continuousDays);
-            
-            // 创建打卡记录
-            Checkin checkin = new Checkin();
-            checkin.setUserId(userId);
-            checkin.setUserName("用户" + userId);
-            checkin.setCheckinDate(today);
-            checkin.setCheckinStatus(1);
-            checkin.setContinuousDays(continuousDays);
-            checkin.setRewardPoints(rewardPoints);
-            checkin.setCheckinType(checkinType);
-            
-            checkinMapper.insert(checkin);
-            
-            Map<String, Object> result = new HashMap<>();
+        // 1. 检查当天是否已经打卡
+        CheckinRecord existingRecord = checkinRecordMapper.selectTodayCheckin(userId, today, checkinType);
+        if (existingRecord != null) {
+            result.put("success", false);
+            result.put("message", "今日已经打卡，无需重复打卡");
+            result.put("record", existingRecord);
+            return result;
+        }
+
+        // 2. 计算连续打卡天数
+        int consecutiveDays = getConsecutiveDays(userId, checkinType) + 1;
+
+        // 3. 计算获得的积分
+        int points = calculatePoints(consecutiveDays, checkinType);
+
+        // 4. 创建打卡记录
+        CheckinRecord checkinRecord = new CheckinRecord();
+        checkinRecord.setUserId(userId);
+        checkinRecord.setUsername(username);
+        checkinRecord.setCheckinType(checkinType);
+        checkinRecord.setCheckinDate(today.atStartOfDay());
+        checkinRecord.setCheckinTime(LocalDateTime.now());
+        checkinRecord.setStatus(1); // 1-成功
+        checkinRecord.setLocation(location);
+        checkinRecord.setIpAddress(ipAddress);
+        checkinRecord.setConsecutiveDays(consecutiveDays);
+        checkinRecord.setPoints(points);
+
+        // 5. 保存打卡记录
+        boolean saved = save(checkinRecord);
+        if (saved) {
             result.put("success", true);
             result.put("message", "打卡成功");
-            result.put("checkin", checkin);
-            result.put("continuousDays", continuousDays);
-            result.put("rewardPoints", rewardPoints);
-            
-            log.info("用户打卡成功: userId={}, continuousDays={}, rewardPoints={}", 
-                    userId, continuousDays, rewardPoints);
-            
-            return result;
-        } catch (Exception e) {
-            log.error("打卡失败: {}", e.getMessage(), e);
-            Map<String, Object> result = new HashMap<>();
+            result.put("record", checkinRecord);
+            result.put("consecutiveDays", consecutiveDays);
+            result.put("points", points);
+            log.info("用户打卡成功: userId={}, username={}, checkinType={}, consecutiveDays={}, points={}", 
+                    userId, username, checkinType, consecutiveDays, points);
+        } else {
             result.put("success", false);
-            result.put("message", "打卡失败，请稍后再试");
-            return result;
+            result.put("message", "打卡失败，请稍后重试");
+            log.error("用户打卡失败: userId={}, username={}, checkinType={}", userId, username, checkinType);
         }
+
+        return result;
     }
 
     @Override
-    public Checkin getTodayCheckin(Long userId) {
+    public boolean hasCheckedInToday(Long userId, Integer checkinType) {
+        LocalDate today = LocalDate.now();
+        CheckinRecord record = checkinRecordMapper.selectTodayCheckin(userId, today, checkinType);
+        return record != null;
+    }
+
+    @Override
+    public int getConsecutiveDays(Long userId, Integer checkinType) {
         try {
-            LocalDate today = LocalDate.now();
-            LambdaQueryWrapper<Checkin> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Checkin::getUserId, userId)
-                    .eq(Checkin::getCheckinDate, today);
-            return checkinMapper.selectOne(queryWrapper);
-        } catch (Exception e) {
-            log.error("获取今日打卡状态失败: {}", e.getMessage(), e);
-            return null;
-        }
-    }
+            // 从数据库查询连续打卡天数
+            Integer consecutiveDays = checkinRecordMapper.selectConsecutiveDays(userId, checkinType);
+            if (consecutiveDays != null) {
+                return consecutiveDays;
+            }
 
-    @Override
-    public List<Checkin> getCheckinHistory(Long userId, LocalDate startDate, LocalDate endDate) {
-        try {
-            LambdaQueryWrapper<Checkin> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Checkin::getUserId, userId)
-                    .between(Checkin::getCheckinDate, startDate, endDate)
-                    .orderByDesc(Checkin::getCheckinDate);
-            return checkinMapper.selectList(queryWrapper);
+            // 如果数据库没有记录，返回0
+            return 0;
         } catch (Exception e) {
-            log.error("获取打卡历史失败: {}", e.getMessage(), e);
-            return Collections.emptyList();
-        }
-    }
-
-    @Override
-    public Integer getContinuousDays(Long userId) {
-        return calculateContinuousDays(userId);
-    }
-
-    @Override
-    public Integer getTotalCheckinDays(Long userId) {
-        try {
-            LambdaQueryWrapper<Checkin> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Checkin::getUserId, userId);
-            return checkinMapper.selectCount(queryWrapper).intValue();
-        } catch (Exception e) {
-            log.error("获取总打卡天数失败: {}", e.getMessage(), e);
+            log.error("获取连续打卡天数失败: {}", e.getMessage(), e);
             return 0;
         }
     }
 
     @Override
-    public List<Checkin> getMonthCheckin(Long userId, int year, int month) {
+    public List<CheckinRecord> getCheckinRecords(Long userId, Integer checkinType, LocalDate startDate, LocalDate endDate, int page, int size) {
         try {
-            LocalDate startDate = LocalDate.of(year, month, 1);
-            LocalDate endDate = startDate.plusMonths(1).minusDays(1);
-            
-            LambdaQueryWrapper<Checkin> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Checkin::getUserId, userId)
-                    .between(Checkin::getCheckinDate, startDate, endDate)
-                    .orderByAsc(Checkin::getCheckinDate);
-            return checkinMapper.selectList(queryWrapper);
+            return checkinRecordMapper.selectCheckinRecords(userId, checkinType, startDate, endDate, page, size);
         } catch (Exception e) {
-            log.error("获取本月打卡记录失败: {}", e.getMessage(), e);
-            return Collections.emptyList();
+            log.error("获取打卡记录失败: {}", e.getMessage(), e);
+            return List.of();
         }
     }
 
     @Override
-    public Map<String, Object> claimReward(Long userId, int days) {
+    public Map<String, Object> getCheckinStats(Long userId, Integer checkinType, LocalDate startDate, LocalDate endDate) {
         try {
-            // 检查是否符合领取条件
-            int continuousDays = getContinuousDays(userId);
-            if (continuousDays < days) {
-                Map<String, Object> result = new HashMap<>();
-                result.put("success", false);
-                result.put("message", "连续打卡天数不足");
-                return result;
+            Map<String, Object> stats = checkinRecordMapper.selectCheckinStats(userId, checkinType, startDate, endDate);
+            if (stats == null) {
+                stats = new HashMap<>();
+                stats.put("totalCheckins", 0);
+                stats.put("consecutiveDays", 0);
+                stats.put("totalPoints", 0);
             }
-
-            // 计算奖励
-            int rewardPoints = calculateRewardPoints(days);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", true);
-            result.put("message", "领取奖励成功");
-            result.put("rewardPoints", rewardPoints);
-            result.put("continuousDays", days);
-            
-            log.info("用户领取连续打卡奖励: userId={}, days={}, rewardPoints={}", 
-                    userId, days, rewardPoints);
-            
-            return result;
+            return stats;
         } catch (Exception e) {
-            log.error("领取奖励失败: {}", e.getMessage(), e);
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", false);
-            result.put("message", "领取奖励失败，请稍后再试");
-            return result;
+            log.error("获取打卡统计失败: {}", e.getMessage(), e);
+            Map<String, Object> defaultStats = new HashMap<>();
+            defaultStats.put("totalCheckins", 0);
+            defaultStats.put("consecutiveDays", 0);
+            defaultStats.put("totalPoints", 0);
+            return defaultStats;
         }
     }
 
-    /**
-     * 计算连续打卡天数
-     */
-    private int calculateContinuousDays(Long userId) {
+    @Override
+    public List<CheckinRecord> getMonthCheckinRecords(Long userId, Integer checkinType, int year, int month) {
+        try {
+            return checkinRecordMapper.selectMonthCheckinRecords(userId, checkinType, year, month);
+        } catch (Exception e) {
+            log.error("获取当月打卡记录失败: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public int getTodayCheckinCount(Integer checkinType) {
         try {
             LocalDate today = LocalDate.now();
-            int continuousDays = 1; // 当天打卡算1天
-            
-            // 查询最近的打卡记录
-            LambdaQueryWrapper<Checkin> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Checkin::getUserId, userId)
-                    .orderByDesc(Checkin::getCheckinDate);
-            List<Checkin> checkins = checkinMapper.selectList(queryWrapper);
-            
-            if (checkins.isEmpty()) {
-                return 1;
-            }
-            
-            // 从昨天开始检查连续打卡
-            LocalDate checkDate = today.minusDays(1);
-            for (Checkin checkin : checkins) {
-                if (checkin.getCheckinDate().equals(checkDate)) {
-                    continuousDays++;
-                    checkDate = checkDate.minusDays(1);
-                } else if (checkin.getCheckinDate().isBefore(checkDate)) {
-                    break;
-                }
-            }
-            
-            return continuousDays;
+            Integer count = checkinRecordMapper.selectTodayCheckinCount(today, checkinType);
+            return count != null ? count : 0;
         } catch (Exception e) {
-            log.error("计算连续打卡天数失败: {}", e.getMessage(), e);
-            return 1;
+            log.error("获取当日打卡用户数失败: {}", e.getMessage(), e);
+            return 0;
         }
     }
 
-    /**
-     * 计算奖励积分
-     */
-    private int calculateRewardPoints(int continuousDays) {
-        if (continuousDays >= 30) {
-            return 50;
-        } else if (continuousDays >= 21) {
-            return 30;
-        } else if (continuousDays >= 14) {
-            return 20;
-        } else if (continuousDays >= 7) {
-            return 10;
-        } else if (continuousDays >= 3) {
-            return 5;
-        } else {
-            return 1;
+    @Override
+    public List<Map<String, Object>> getCheckinRank(Integer checkinType, LocalDate startDate, LocalDate endDate, int limit) {
+        try {
+            return checkinRecordMapper.selectCheckinRank(checkinType, startDate, endDate, limit);
+        } catch (Exception e) {
+            log.error("获取打卡排行榜失败: {}", e.getMessage(), e);
+            return List.of();
         }
+    }
+
+    @Override
+    public int calculatePoints(int consecutiveDays, Integer checkinType) {
+        // 基础积分
+        int basePoints = checkinType == 1 ? 10 : 15; // 每日打卡10分，学习打卡15分
+
+        // 连续打卡奖励
+        int bonusPoints = 0;
+        if (consecutiveDays >= 7) {
+            bonusPoints = 5; // 连续7天额外5分
+        } else if (consecutiveDays >= 30) {
+            bonusPoints = 15; // 连续30天额外15分
+        } else if (consecutiveDays >= 100) {
+            bonusPoints = 30; // 连续100天额外30分
+        }
+
+        return basePoints + bonusPoints;
     }
 }

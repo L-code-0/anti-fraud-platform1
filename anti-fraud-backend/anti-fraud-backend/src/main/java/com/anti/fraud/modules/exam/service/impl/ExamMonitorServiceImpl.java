@@ -47,6 +47,9 @@ public class ExamMonitorServiceImpl implements ExamMonitorService {
                 if (screenChanges > 5) {
                     riskLevel += 2;
                     riskDescriptions.add("频繁切屏");
+                } else if (screenChanges > 10) {
+                    riskLevel += 3;
+                    riskDescriptions.add("严重切屏");
                 }
             }
             
@@ -56,6 +59,9 @@ public class ExamMonitorServiceImpl implements ExamMonitorService {
                 if (mouseMovements < 10) {
                     riskLevel += 1;
                     riskDescriptions.add("鼠标移动异常");
+                } else if (mouseMovements < 5) {
+                    riskLevel += 2;
+                    riskDescriptions.add("鼠标几乎未移动");
                 }
             }
             
@@ -65,6 +71,12 @@ public class ExamMonitorServiceImpl implements ExamMonitorService {
                 if (answerSpeed < 2) {
                     riskLevel += 2;
                     riskDescriptions.add("答题速度过快");
+                } else if (answerSpeed < 1) {
+                    riskLevel += 3;
+                    riskDescriptions.add("答题速度异常快");
+                } else if (answerSpeed > 60) {
+                    riskLevel += 1;
+                    riskDescriptions.add("答题速度过慢");
                 }
             }
             
@@ -74,6 +86,50 @@ public class ExamMonitorServiceImpl implements ExamMonitorService {
                 if (deviceCount > 1) {
                     riskLevel += 3;
                     riskDescriptions.add("多设备登录");
+                }
+            }
+            
+            // 检测浏览器标签页切换
+            if (data.containsKey("tabSwitches")) {
+                int tabSwitches = (int) data.get("tabSwitches");
+                if (tabSwitches > 10) {
+                    riskLevel += 2;
+                    riskDescriptions.add("频繁切换标签页");
+                } else if (tabSwitches > 20) {
+                    riskLevel += 3;
+                    riskDescriptions.add("严重切换标签页");
+                }
+            }
+            
+            // 检测复制粘贴行为
+            if (data.containsKey("copyPasteCount")) {
+                int copyPasteCount = (int) data.get("copyPasteCount");
+                if (copyPasteCount > 5) {
+                    riskLevel += 2;
+                    riskDescriptions.add("频繁复制粘贴");
+                }
+            }
+            
+            // 检测窗口大小变化
+            if (data.containsKey("windowResizeCount")) {
+                int windowResizeCount = (int) data.get("windowResizeCount");
+                if (windowResizeCount > 10) {
+                    riskLevel += 1;
+                    riskDescriptions.add("频繁调整窗口大小");
+                }
+            }
+            
+            // 检测键盘输入异常
+            if (data.containsKey("keyboardInput")) {
+                Map<String, Object> keyboardData = (Map<String, Object>) data.get("keyboardInput");
+                if (keyboardData != null) {
+                    if (keyboardData.containsKey("typingSpeed") && keyboardData.get("typingSpeed") instanceof Double) {
+                        double typingSpeed = (double) keyboardData.get("typingSpeed");
+                        if (typingSpeed > 200) {
+                            riskLevel += 2;
+                            riskDescriptions.add("打字速度异常");
+                        }
+                    }
                 }
             }
             

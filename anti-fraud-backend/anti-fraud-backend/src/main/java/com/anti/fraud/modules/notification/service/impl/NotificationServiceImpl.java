@@ -3,133 +3,325 @@ package com.anti.fraud.modules.notification.service.impl;
 import com.anti.fraud.modules.notification.entity.Notification;
 import com.anti.fraud.modules.notification.mapper.NotificationMapper;
 import com.anti.fraud.modules.notification.service.NotificationService;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * 通知服务实现
+ * 通知服务实现类
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NotificationServiceImpl implements NotificationService {
-    
+public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Notification> implements NotificationService {
+
     private final NotificationMapper notificationMapper;
-    
+
     @Override
-    public Notification sendNotification(Long userId, String type, String title, 
-                                       String content, String icon, String action, 
-                                       String actionText, String extra) {
-        Notification notification = new Notification();
-        notification.setUserId(userId);
-        notification.setType(type);
-        notification.setTitle(title);
-        notification.setContent(content);
-        notification.setIcon(icon);
-        notification.setAction(action);
-        notification.setActionText(actionText);
-        notification.setExtra(extra);
-        
-        int result = notificationMapper.insert(notification);
-        if (result > 0) {
-            log.info("发送通知成功: userId={}, title={}", userId, title);
-            return notification;
+    @Transactional
+    public boolean sendNotification(Notification notification) {
+        try {
+            notification.setStatus(1); // 待发送
+            notification.setReadStatus(1); // 未读
+            notification.setDeleted(0);
+            notification.setCreateTime(LocalDateTime.now());
+            notification.setUpdateTime(LocalDateTime.now());
+            boolean saved = save(notification);
+            if (saved) {
+                // 根据通知方式发送通知
+                switch (notification.getMethod()) {
+                    case 2: // 短信
+                        // 调用短信发送接口
+                        break;
+                    case 3: // 邮件
+                        // 调用邮件发送接口
+                        break;
+                    case 4: // 微信
+                        // 调用微信发送接口
+                        break;
+                }
+                // 更新发送状态
+                notification.setStatus(2); // 已发送
+                notification.setSendTime(LocalDateTime.now());
+                notification.setUpdateTime(LocalDateTime.now());
+                return updateById(notification);
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("发送通知失败: {}", e.getMessage(), e);
+            // 更新发送状态为失败
+            if (notification.getId() != null) {
+                notification.setStatus(3); // 发送失败
+                notification.setFailureReason(e.getMessage());
+                notification.setUpdateTime(LocalDateTime.now());
+                updateById(notification);
+            }
+            return false;
         }
-        
-        log.error("发送通知失败: userId={}, title={}", userId, title);
-        return null;
     }
-    
+
     @Override
-    public int sendBatchNotification(Long[] userIds, String type, String title, 
-                                   String content, String icon, String action, 
-                                   String actionText, String extra) {
-        int successCount = 0;
-        
-        for (Long userId : userIds) {
-            Notification notification = sendNotification(userId, type, title, content, 
-                                                     icon, action, actionText, extra);
+    @Transactional
+    public List<Notification> batchSendNotifications(List<Notification> notifications) {
+        try {
+            List<Notification> sentNotifications = new ArrayList<>();
+            for (Notification notification : notifications) {
+                if (sendNotification(notification)) {
+                    sentNotifications.add(notification);
+                }
+            }
+            return sentNotifications;
+        } catch (Exception e) {
+            log.error("批量发送通知失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean sendSmsNotification(Long userId, String username, String content) {
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setUsername(username);
+            notification.setType(1); // 系统通知
+            notification.setTitle("系统通知");
+            notification.setContent(content);
+            notification.setMethod(2); // 短信
+            notification.setStatus(1); // 待发送
+            notification.setReadStatus(1); // 未读
+            notification.setDeleted(0);
+            notification.setCreateTime(LocalDateTime.now());
+            notification.setUpdateTime(LocalDateTime.now());
+            boolean saved = save(notification);
+            if (saved) {
+                // 调用短信发送接口
+                // 这里简化处理，实际应该调用真实的短信发送API
+                log.info("发送短信通知: {} - {}", username, content);
+                // 更新发送状态
+                notification.setStatus(2); // 已发送
+                notification.setSendTime(LocalDateTime.now());
+                notification.setUpdateTime(LocalDateTime.now());
+                return updateById(notification);
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("发送短信通知失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean sendEmailNotification(Long userId, String username, String email, String subject, String content) {
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setUsername(username);
+            notification.setType(1); // 系统通知
+            notification.setTitle(subject);
+            notification.setContent(content);
+            notification.setMethod(3); // 邮件
+            notification.setStatus(1); // 待发送
+            notification.setReadStatus(1); // 未读
+            notification.setDeleted(0);
+            notification.setCreateTime(LocalDateTime.now());
+            notification.setUpdateTime(LocalDateTime.now());
+            boolean saved = save(notification);
+            if (saved) {
+                // 调用邮件发送接口
+                // 这里简化处理，实际应该调用真实的邮件发送API
+                log.info("发送邮件通知: {} - {}", email, subject);
+                // 更新发送状态
+                notification.setStatus(2); // 已发送
+                notification.setSendTime(LocalDateTime.now());
+                notification.setUpdateTime(LocalDateTime.now());
+                return updateById(notification);
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("发送邮件通知失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean updateNotificationStatus(Long id, Integer status) {
+        try {
+            Notification notification = getById(id);
             if (notification != null) {
-                successCount++;
+                notification.setStatus(status);
+                notification.setUpdateTime(LocalDateTime.now());
+                return updateById(notification);
             }
-        }
-        
-        log.info("批量发送通知完成: 总数={}, 成功={}", userIds.length, successCount);
-        return successCount;
-    }
-    
-    @Override
-    public IPage<Notification> getUserNotifications(int page, int size, Long userId, String type) {
-        IPage<Notification> pageInfo = new Page<>(page, size);
-        return notificationMapper.selectUserNotifications(pageInfo, userId, type);
-    }
-    
-    @Override
-    public int getUnreadCount(Long userId) {
-        return notificationMapper.countUnreadNotifications(userId);
-    }
-    
-    @Override
-    public boolean markAsRead(Long userId, Long notificationId) {
-        Notification notification = notificationMapper.selectById(notificationId);
-        if (notification == null || !notification.getUserId().equals(userId)) {
+            return false;
+        } catch (Exception e) {
+            log.error("更新通知状态失败: {}", e.getMessage(), e);
             return false;
         }
-        
-        notification.setRead(true);
-        int result = notificationMapper.updateById(notification);
-        return result > 0;
     }
-    
+
     @Override
-    public int markBatchAsRead(Long userId, Long[] notificationIds) {
-        return notificationMapper.markAsRead(userId, notificationIds);
-    }
-    
-    @Override
-    public boolean deleteNotification(Long userId, Long notificationId) {
-        Notification notification = notificationMapper.selectById(notificationId);
-        if (notification == null || !notification.getUserId().equals(userId)) {
+    @Transactional
+    public boolean markAsRead(Long id) {
+        try {
+            notificationMapper.markAsRead(id);
+            return true;
+        } catch (Exception e) {
+            log.error("标记通知为已读失败: {}", e.getMessage(), e);
             return false;
         }
-        
-        notification.setDeleted(true);
-        int result = notificationMapper.updateById(notification);
-        return result > 0;
     }
-    
+
     @Override
-    public int deleteBatchNotifications(Long userId, Long[] notificationIds) {
-        int successCount = 0;
-        
-        for (Long id : notificationIds) {
-            if (deleteNotification(userId, id)) {
-                successCount++;
-            }
+    @Transactional
+    public boolean batchMarkAsRead(List<Long> ids) {
+        try {
+            notificationMapper.batchMarkAsRead(ids);
+            return true;
+        } catch (Exception e) {
+            log.error("批量标记通知为已读失败: {}", e.getMessage(), e);
+            return false;
         }
-        
-        return successCount;
     }
-    
+
     @Override
-    public Map<String, Integer> getNotificationStats(Long userId) {
-        Map<String, Integer> stats = new HashMap<>();
-        
-        // 这里可以通过查询数据库获取各类型通知的数量
-        // 暂时返回模拟数据
-        stats.put("all", 24);
-        stats.put("system", 5);
-        stats.put("learning", 12);
-        stats.put("interaction", 7);
-        stats.put("activity", 3);
-        stats.put("unread", getUnreadCount(userId));
-        
-        return stats;
+    public Notification getNotificationById(Long id) {
+        try {
+            return getById(id);
+        } catch (Exception e) {
+            log.error("获取通知详情失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getNotificationsByUserId(Long userId, int page, int size) {
+        try {
+            int offset = (page - 1) * size;
+            List<Notification> notifications = notificationMapper.selectByUserId(userId, offset, size);
+            // 计算总数
+            int total = notifications.size();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", notifications);
+            result.put("total", total);
+            return result;
+        } catch (Exception e) {
+            log.error("根据用户ID查询通知失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
+        }
+    }
+
+    @Override
+    public Integer getUnreadCountByUserId(Long userId) {
+        try {
+            return notificationMapper.selectUnreadCountByUserId(userId);
+        } catch (Exception e) {
+            log.error("根据用户ID查询未读通知数量失败: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getNotificationsByType(Integer type, int page, int size) {
+        try {
+            int offset = (page - 1) * size;
+            List<Notification> notifications = notificationMapper.selectByType(type, offset, size);
+            // 计算总数
+            int total = notifications.size();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", notifications);
+            result.put("total", total);
+            return result;
+        } catch (Exception e) {
+            log.error("根据通知类型查询通知失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getNotificationsByMethod(Integer method, int page, int size) {
+        try {
+            int offset = (page - 1) * size;
+            List<Notification> notifications = notificationMapper.selectByMethod(method, offset, size);
+            // 计算总数
+            int total = notifications.size();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", notifications);
+            result.put("total", total);
+            return result;
+        } catch (Exception e) {
+            log.error("根据通知方式查询通知失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getNotificationsByStatus(Integer status, int page, int size) {
+        try {
+            int offset = (page - 1) * size;
+            List<Notification> notifications = notificationMapper.selectByStatus(status, offset, size);
+            // 计算总数
+            int total = notifications.size();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", notifications);
+            result.put("total", total);
+            return result;
+        } catch (Exception e) {
+            log.error("根据发送状态查询通知失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getNotificationStats() {
+        try {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("typeStats", notificationMapper.selectTypeStats());
+            stats.put("methodStats", notificationMapper.selectMethodStats());
+            stats.put("statusStats", notificationMapper.selectStatusStats());
+            return stats;
+        } catch (Exception e) {
+            log.error("统计通知信息失败: {}", e.getMessage(), e);
+            return new HashMap<>();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Integer cleanExpiredNotifications(int days) {
+        try {
+            // 这里简化处理，实际应该根据创建时间删除过期通知
+            // 暂时返回0，表示清理了0条记录
+            return 0;
+        } catch (Exception e) {
+            log.error("清理过期通知失败: {}", e.getMessage(), e);
+            return 0;
+        }
     }
 }

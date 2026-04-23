@@ -46,13 +46,22 @@ const monitorData = ref({
   screenChanges: 0,
   mouseMovements: 0,
   answerSpeed: 0,
-  deviceCount: 1
+  deviceCount: 1,
+  tabSwitches: 0,
+  copyPasteCount: 0,
+  windowResizeCount: 0,
+  keyboardInput: {
+    typingSpeed: 0
+  }
 })
 
 let screenChangeTimer: number | null = null
 let mouseMoveTimer: number | null = null
 let lastAnswerTime: number = 0
 let answerCount: number = 0
+let lastTabSwitchTime: number = 0
+let keyPressCount: number = 0
+let keyPressStartTime: number = 0
 
 // 开始监控
 const startMonitoring = () => {
@@ -68,6 +77,18 @@ const startMonitoring = () => {
   
   // 监控答题速度
   monitorAnswerSpeed()
+  
+  // 监控标签页切换
+  monitorTabSwitches()
+  
+  // 监控复制粘贴
+  monitorCopyPaste()
+  
+  // 监控窗口大小变化
+  monitorWindowResize()
+  
+  // 监控键盘输入
+  monitorKeyboardInput()
   
   // 定期发送监控数据
   screenChangeTimer = window.setInterval(() => {
@@ -97,6 +118,53 @@ const monitorMouseMovements = () => {
 const monitorAnswerSpeed = () => {
   // 可以通过事件监听来捕获答题行为
   // 这里简化处理，实际项目中需要根据具体的答题组件来实现
+}
+
+// 监控标签页切换
+const monitorTabSwitches = () => {
+  window.addEventListener('blur', () => {
+    const now = Date.now()
+    if (now - lastTabSwitchTime > 1000) { // 避免频繁触发
+      monitorData.value.tabSwitches++
+      lastTabSwitchTime = now
+    }
+  })
+}
+
+// 监控复制粘贴
+const monitorCopyPaste = () => {
+  document.addEventListener('copy', () => {
+    monitorData.value.copyPasteCount++
+  })
+  document.addEventListener('paste', () => {
+    monitorData.value.copyPasteCount++
+  })
+}
+
+// 监控窗口大小变化
+const monitorWindowResize = () => {
+  window.addEventListener('resize', () => {
+    monitorData.value.windowResizeCount++
+  })
+}
+
+// 监控键盘输入
+const monitorKeyboardInput = () => {
+  document.addEventListener('keydown', () => {
+    if (keyPressStartTime === 0) {
+      keyPressStartTime = Date.now()
+    }
+    keyPressCount++
+    
+    // 每10次按键计算一次打字速度
+    if (keyPressCount % 10 === 0) {
+      const now = Date.now()
+      const timeElapsed = (now - keyPressStartTime) / 1000 // 秒
+      if (timeElapsed > 0) {
+        monitorData.value.keyboardInput.typingSpeed = (keyPressCount / timeElapsed) * 60 // 字符/分钟
+      }
+    }
+  })
 }
 
 // 发送监控数据

@@ -255,6 +255,89 @@ const messages: Record<Locale, LocaleMessages> = {
         read: '已读'
       }
     },
+    community: {
+      title: '社区互助',
+      list: '帖子列表',
+      add: '发布帖子',
+      edit: '编辑帖子',
+      delete: '删除帖子',
+      titleField: '标题',
+      content: '内容',
+      type: '类型',
+      viewCount: '浏览量',
+      likeCount: '点赞数',
+      commentCount: '评论数',
+      shareCount: '分享数',
+      createTime: '创建时间',
+      updateTime: '更新时间',
+      confirmDelete: '确定删除这条帖子吗？',
+      createSuccess: '帖子创建成功',
+      updateSuccess: '帖子更新成功',
+      deleteSuccess: '帖子删除成功',
+      typeOptions: {
+        knowledge: '反诈知识',
+        suspicious: '可疑信息',
+        help: '求助问答',
+        experience: '经验分享',
+        other: '其他'
+      }
+    },
+    collaboration: {
+      title: '多人协作演练',
+      list: '演练会话列表',
+      create: '创建会话',
+      join: '加入会话',
+      leave: '离开会话',
+      end: '结束会话',
+      name: '会话名称',
+      description: '会话描述',
+      scenario: '演练场景',
+      status: '状态',
+      participants: '参与者',
+      startTime: '开始时间',
+      endTime: '结束时间',
+      createTime: '创建时间',
+      updateTime: '更新时间',
+      confirmEnd: '确定结束这个会话吗？',
+      createSuccess: '会话创建成功',
+      joinSuccess: '加入会话成功',
+      leaveSuccess: '离开会话成功',
+      endSuccess: '会话结束成功',
+      statusOptions: {
+        preparing: '准备中',
+        ongoing: '进行中',
+        ended: '已结束',
+        cancelled: '已取消'
+      }
+    },
+    risk: {
+      title: '智能风险画像',
+      list: '风险画像列表',
+      detail: '风险画像详情',
+      userId: '用户ID',
+      username: '用户名',
+      riskScore: '风险评分',
+      riskLevel: '风险等级',
+      riskTags: '风险标签',
+      behaviorFeatures: '行为特征',
+      riskAnalysis: '风险分析',
+      suggestions: '建议措施',
+      lastUpdateTime: '最后更新时间',
+      status: '状态',
+      createTime: '创建时间',
+      updateTime: '更新时间',
+      generate: '生成风险画像',
+      generateSuccess: '风险画像生成成功',
+      levelOptions: {
+        low: '低风险',
+        medium: '中风险',
+        high: '高风险'
+      },
+      statusOptions: {
+        normal: '正常',
+        abnormal: '异常'
+      }
+    },
     setting: {
       title: '系统设置',
       basic: '基础设置',
@@ -509,6 +592,89 @@ const messages: Record<Locale, LocaleMessages> = {
       statusOptions: {
         unread: 'Unread',
         read: 'Read'
+      }
+    },
+    community: {
+      title: 'Community',
+      list: 'Post List',
+      add: 'Add Post',
+      edit: 'Edit Post',
+      delete: 'Delete Post',
+      titleField: 'Title',
+      content: 'Content',
+      type: 'Type',
+      viewCount: 'View Count',
+      likeCount: 'Like Count',
+      commentCount: 'Comment Count',
+      shareCount: 'Share Count',
+      createTime: 'Create Time',
+      updateTime: 'Update Time',
+      confirmDelete: 'Are you sure to delete this post?',
+      createSuccess: 'Post created successfully',
+      updateSuccess: 'Post updated successfully',
+      deleteSuccess: 'Post deleted successfully',
+      typeOptions: {
+        knowledge: 'Anti-fraud Knowledge',
+        suspicious: 'Suspicious Information',
+        help: 'Help & Q&A',
+        experience: 'Experience Sharing',
+        other: 'Other'
+      }
+    },
+    collaboration: {
+      title: 'Multi-person Collaboration',
+      list: 'Session List',
+      create: 'Create Session',
+      join: 'Join Session',
+      leave: 'Leave Session',
+      end: 'End Session',
+      name: 'Session Name',
+      description: 'Description',
+      scenario: 'Scenario',
+      status: 'Status',
+      participants: 'Participants',
+      startTime: 'Start Time',
+      endTime: 'End Time',
+      createTime: 'Create Time',
+      updateTime: 'Update Time',
+      confirmEnd: 'Are you sure to end this session?',
+      createSuccess: 'Session created successfully',
+      joinSuccess: 'Joined session successfully',
+      leaveSuccess: 'Left session successfully',
+      endSuccess: 'Session ended successfully',
+      statusOptions: {
+        preparing: 'Preparing',
+        ongoing: 'Ongoing',
+        ended: 'Ended',
+        cancelled: 'Cancelled'
+      }
+    },
+    risk: {
+      title: 'Intelligent Risk Profile',
+      list: 'Risk Profile List',
+      detail: 'Risk Profile Details',
+      userId: 'User ID',
+      username: 'Username',
+      riskScore: 'Risk Score',
+      riskLevel: 'Risk Level',
+      riskTags: 'Risk Tags',
+      behaviorFeatures: 'Behavior Features',
+      riskAnalysis: 'Risk Analysis',
+      suggestions: 'Suggestions',
+      lastUpdateTime: 'Last Update Time',
+      status: 'Status',
+      createTime: 'Create Time',
+      updateTime: 'Update Time',
+      generate: 'Generate Risk Profile',
+      generateSuccess: 'Risk profile generated successfully',
+      levelOptions: {
+        low: 'Low Risk',
+        medium: 'Medium Risk',
+        high: 'High Risk'
+      },
+      statusOptions: {
+        normal: 'Normal',
+        abnormal: 'Abnormal'
       }
     },
     setting: {

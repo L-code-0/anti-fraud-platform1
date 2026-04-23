@@ -5,7 +5,8 @@ import com.anti.fraud.modules.team.entity.Team;
 import com.anti.fraud.modules.team.entity.TeamMember;
 import com.anti.fraud.modules.team.service.TeamService;
 import com.anti.fraud.utils.SecurityUtils;
-import io.swagger.annotations.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ import java.util.Map;
 @RequestMapping("/team")
 @RequiredArgsConstructor
 @Slf4j
-@Api(tags = "团队管理")
+@Tag(name = "团队管理", description = "团队相关接口")
 public class TeamController {
 
     private final TeamService teamService;

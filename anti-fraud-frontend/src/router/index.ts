@@ -78,6 +78,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '真实案例回放' }
   },
   {
+    path: '/fraud-script',
+    name: 'FraudScript',
+    component: () => import('@/views/FraudScript.vue'),
+    meta: { title: '诈骗话术库' }
+  },
+  {
     path: '/roleplay',
     name: 'RolePlay',
     component: () => import('@/views/RolePlay.vue'),

@@ -1,268 +1,474 @@
 <template>
   <div class="risk-profile">
-    <!-- 头部 -->
     <div class="header">
-      <h1>智能风险画像</h1>
-      <p>通用产品 - 分众化+精准预警</p>
-    </div>
-
-    <!-- 风险画像概览 -->
-    <div class="profile-overview">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>风险画像概览</span>
-            <el-button type="primary" @click="refreshProfile">刷新画像</el-button>
-          </div>
-        </template>
-        <div class="overview-content">
-          <div class="risk-score">
-            <div class="score-circle">
-              <svg class="score-svg" width="200" height="200">
-                <circle cx="100" cy="100" r="80" fill="none" stroke="#e4e7ed" stroke-width="10" />
-                <circle 
-                  cx="100" 
-                  cy="100" 
-                  r="80" 
-                  fill="none" 
-                  :stroke="getScoreColor(userRiskProfile.riskScore)" 
-                  stroke-width="10" 
-                  :stroke-dasharray="`${2 * Math.PI * 80 * userRiskProfile.riskScore / 100} ${2 * Math.PI * 80}`"
-                  stroke-linecap="round"
-                  transform="rotate(-90 100 100)"
-                />
-                <text x="100" y="100" text-anchor="middle" dominant-baseline="middle" font-size="36" font-weight="bold" :fill="getScoreColor(userRiskProfile.riskScore)">
-                  {{ userRiskProfile.riskScore }}
-                </text>
-                <text x="100" y="130" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#606266">
-                  风险评分
-                </text>
-              </svg>
-            </div>
-            <div class="score-info">
-              <h3>{{ userRiskProfile.riskLevel }}</h3>
-              <p>{{ userRiskProfile.riskDescription }}</p>
-            </div>
-          </div>
-          <div class="risk-metrics">
-            <div class="metric-item">
-              <div class="metric-value">{{ userRiskProfile.age }}</div>
-              <div class="metric-label">年龄</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-value">{{ userRiskProfile.occupation }}</div>
-              <div class="metric-label">职业</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-value">{{ userRiskProfile.education }}</div>
-              <div class="metric-label">教育程度</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-value">{{ userRiskProfile.internetUsage }}</div>
-              <div class="metric-label">网络使用频率</div>
-            </div>
+      <div class="header-content">
+        <div class="header-text">
+          <h1>智能风险画像</h1>
+          <div class="differentiator">
+            <span class="tag">分众化</span>
+            <span class="tag">精准预警</span>
+            <span class="competitor">对比：通用产品</span>
           </div>
         </div>
-      </el-card>
+        <div class="header-actions">
+          <el-button type="primary" @click="refreshProfile">
+            <el-icon><Refresh /></el-icon>
+            刷新画像
+          </el-button>
+        </div>
+      </div>
     </div>
 
-    <!-- 风险分析 -->
-    <div class="risk-analysis">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>风险分析</span>
-          </div>
-        </template>
-        <div class="analysis-content">
-          <!-- 风险类型分布 -->
-          <div class="analysis-section">
-            <h3>风险类型分布</h3>
+    <div class="profile-content">
+      <div class="main-area">
+        <div class="profile-overview">
+          <el-card shadow="hover" class="overview-card">
+            <div class="overview-grid">
+              <div class="risk-score-section">
+                <div class="score-circle">
+                  <svg class="score-svg" width="180" height="180">
+                    <circle cx="90" cy="90" r="75" fill="none" stroke="#e4e7ed" stroke-width="12" />
+                    <circle
+                      cx="90"
+                      cy="90"
+                      r="75"
+                      fill="none"
+                      :stroke="getScoreColor(userRiskProfile.riskScore)"
+                      stroke-width="12"
+                      :stroke-dasharray="`${2 * Math.PI * 75 * userRiskProfile.riskScore / 100} ${2 * Math.PI * 75}`"
+                      stroke-linecap="round"
+                      transform="rotate(-90 90 90)"
+                    />
+                    <text x="90" y="85" text-anchor="middle" dominant-baseline="middle" font-size="40" font-weight="bold" :fill="getScoreColor(userRiskProfile.riskScore)">
+                      {{ userRiskProfile.riskScore }}
+                    </text>
+                    <text x="90" y="115" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#909399">
+                      风险评分
+                    </text>
+                  </svg>
+                </div>
+                <div class="score-details">
+                  <div class="risk-level-badge" :class="userRiskProfile.riskLevelClass">
+                    {{ userRiskProfile.riskLevel }}
+                  </div>
+                  <p class="risk-description">{{ userRiskProfile.riskDescription }}</p>
+                </div>
+              </div>
+
+              <div class="user-info-section">
+                <div class="user-header">
+                  <img :src="userInfo.avatar" alt="avatar" class="user-avatar" />
+                  <div class="user-badges">
+                    <el-tag v-if="userInfo.isVerified" type="success" size="small">已认证</el-tag>
+                    <el-tag v-if="userInfo.isHighRisk" type="danger" size="small">高风险</el-tag>
+                  </div>
+                </div>
+                <h3 class="user-name">{{ userInfo.name }}</h3>
+                <div class="user-tags">
+                  <el-tag
+                    v-for="tag in userInfo.tags"
+                    :key="tag"
+                    size="small"
+                    :type="getTagType(tag)"
+                  >
+                    {{ tag }}
+                  </el-tag>
+                </div>
+                <div class="user-metrics">
+                  <div class="metric-item">
+                    <div class="metric-value">{{ userInfo.age }}</div>
+                    <div class="metric-label">年龄</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-value">{{ userInfo.occupation }}</div>
+                    <div class="metric-label">职业</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-value">{{ userInfo.education }}</div>
+                    <div class="metric-label">学历</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </el-card>
+        </div>
+
+        <div class="risk-analysis">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <span>风险类型分布</span>
+                <el-select v-model="riskPeriod" size="small" style="width: 120px">
+                  <el-option label="本周" value="week" />
+                  <el-option label="本月" value="month" />
+                  <el-option label="本季" value="quarter" />
+                </el-select>
+              </div>
+            </template>
             <div class="risk-distribution">
-              <div 
-                v-for="(risk, index) in userRiskProfile.riskDistribution" 
+              <div
+                v-for="(risk, index) in userRiskProfile.riskDistribution"
                 :key="index"
                 class="distribution-item"
               >
-                <div class="distribution-label">{{ risk.type }}</div>
+                <div class="distribution-header">
+                  <span class="distribution-type">{{ risk.type }}</span>
+                  <span class="distribution-value">{{ risk.percentage }}%</span>
+                </div>
                 <div class="distribution-bar">
-                  <div 
-                    class="distribution-progress" 
+                  <div
+                    class="distribution-progress"
                     :style="{ width: risk.percentage + '%', backgroundColor: getRiskColor(risk.type) }"
                   />
                 </div>
-                <div class="distribution-percentage">{{ risk.percentage }}%</div>
+                <div class="distribution-meta">
+                  <span>遭遇次数: {{ risk.count }}</span>
+                  <span>规避成功率: {{ risk.avoidRate }}%</span>
+                </div>
               </div>
             </div>
-          </div>
+          </el-card>
+        </div>
 
-          <!-- 行为特征分析 -->
-          <div class="analysis-section">
-            <h3>行为特征分析</h3>
-            <div class="behavior-analysis">
-              <div 
-                v-for="(behavior, index) in userRiskProfile.behaviorFeatures" 
+        <div class="behavior-analysis">
+          <el-card shadow="hover">
+            <template #header>
+              <span>行为特征分析</span>
+            </template>
+            <div class="behavior-grid">
+              <div
+                v-for="(behavior, index) in userRiskProfile.behaviorFeatures"
                 :key="index"
-                class="behavior-item"
+                class="behavior-card"
               >
-                <div class="behavior-label">{{ behavior.feature }}</div>
-                <div class="behavior-value">
-                  <el-rate 
-                    v-model="behavior.riskLevel" 
-                    :max="5" 
-                    disabled 
-                    show-score 
-                    text-color="#606266"
+                <div class="behavior-header">
+                  <span class="behavior-icon">{{ behavior.icon }}</span>
+                  <span class="behavior-name">{{ behavior.feature }}</span>
+                </div>
+                <div class="behavior-risk">
+                  <el-rate
+                    v-model="behavior.riskLevel"
+                    :max="5"
+                    disabled
+                    show-score
+                    text-color="#ff9900"
                   />
+                  <span class="risk-label" :class="getRiskLevelClass(behavior.riskLevel)">
+                    {{ getRiskLevelText(behavior.riskLevel) }}
+                  </span>
+                </div>
+                <div class="behavior-advice" v-if="behavior.advice">
+                  <el-icon><Warning /></el-icon>
+                  {{ behavior.advice }}
                 </div>
               </div>
             </div>
-          </div>
+          </el-card>
+        </div>
 
-          <!-- 环境风险分析 -->
-          <div class="analysis-section">
-            <h3>环境风险分析</h3>
-            <div class="environment-analysis">
-              <div 
-                v-for="(env, index) in userRiskProfile.environmentRisks" 
+        <div class="environment-analysis">
+          <el-card shadow="hover">
+            <template #header>
+              <span>环境风险评估</span>
+            </template>
+            <div class="environment-grid">
+              <div
+                v-for="(env, index) in userRiskProfile.environmentRisks"
                 :key="index"
-                class="environment-item"
+                class="environment-card"
               >
-                <div class="environment-label">{{ env.type }}</div>
-                <div class="environment-risk">
-                  <el-tag :type="getEnvRiskType(env.riskLevel)">{{ env.riskLevel }}</el-tag>
+                <div class="env-header">
+                  <span class="env-icon">{{ env.icon }}</span>
+                  <span class="env-type">{{ env.type }}</span>
                 </div>
+                <div class="env-status" :class="env.statusClass">
+                  {{ env.status }}
+                </div>
+                <div class="env-detail">{{ env.detail }}</div>
+              </div>
+            </div>
+          </el-card>
+        </div>
+
+        <div class="risk-timeline">
+          <el-card shadow="hover">
+            <template #header>
+              <span>风险时间线</span>
+            </template>
+            <el-timeline>
+              <el-timeline-item
+                v-for="(event, index) in riskTimeline"
+                :key="index"
+                :type="event.type"
+                :hollow="event.hollow"
+                :timestamp="event.time"
+                placement="top"
+              >
+                <div class="timeline-content">
+                  <h4>{{ event.title }}</h4>
+                  <p>{{ event.description }}</p>
+                  <el-tag v-if="event.level" :type="getAlertType(event.level)" size="small">
+                    {{ event.level }}
+                  </el-tag>
+                </div>
+              </el-timeline-item>
+            </el-timeline>
+          </el-card>
+        </div>
+      </div>
+
+      <div class="side-area">
+        <el-card shadow="hover" class="alerts-card">
+          <template #header>
+            <div class="card-header">
+              <span>精准预警</span>
+              <el-badge :value="unreadAlerts" :hidden="unreadAlerts === 0">
+                <el-button type="text" size="small">全部已读</el-button>
+              </el-badge>
+            </div>
+          </template>
+          <div class="alerts-list">
+            <div
+              v-for="(alert, index) in userRiskProfile.alerts"
+              :key="index"
+              :class="['alert-item', alert.level, { unread: alert.unread }]"
+              @click="viewAlertDetail(alert)"
+            >
+              <div class="alert-header">
+                <el-tag :type="getAlertType(alert.level)" size="small">
+                  {{ alert.level }}
+                </el-tag>
+                <span class="alert-time">{{ alert.time }}</span>
+              </div>
+              <h4 class="alert-title">{{ alert.title }}</h4>
+              <p class="alert-desc">{{ alert.description }}</p>
+              <div class="alert-actions">
+                <el-button text type="primary" size="small" @click.stop="viewAlertDetail(alert)">
+                  查看详情
+                </el-button>
+                <el-button text size="small" @click.stop="dismissAlert(alert)">
+                  忽略
+                </el-button>
               </div>
             </div>
           </div>
-        </div>
-      </el-card>
-    </div>
+        </el-card>
 
-    <!-- 精准预警 -->
-    <div class="risk-alerts">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>精准预警</span>
-            <el-button type="info" @click="viewAllAlerts">查看全部</el-button>
-          </div>
-        </template>
-        <div class="alerts-content">
-          <div 
-            v-for="(alert, index) in userRiskProfile.alerts" 
-            :key="index"
-            :class="['alert-item', alert.level]"
-          >
-            <div class="alert-header">
-              <el-tag :type="getAlertType(alert.level)">{{ alert.level }}</el-tag>
-              <span class="alert-time">{{ alert.time }}</span>
-            </div>
-            <div class="alert-content">
-              <h4>{{ alert.title }}</h4>
-              <p>{{ alert.description }}</p>
-            </div>
-            <div class="alert-actions">
-              <el-button type="text" @click="viewAlertDetail(alert)">查看详情</el-button>
-              <el-button type="text" @click="dismissAlert(alert)">忽略</el-button>
-            </div>
-          </div>
-        </div>
-      </el-card>
-    </div>
-
-    <!-- 风险防范建议 -->
-    <div class="risk-suggestions">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
+        <el-card shadow="hover" class="suggestions-card">
+          <template #header>
             <span>风险防范建议</span>
+          </template>
+          <div class="suggestions-list">
+            <div
+              v-for="(suggestion, index) in userRiskProfile.suggestions"
+              :key="index"
+              :class="['suggestion-item', suggestion.priority]"
+            >
+              <div class="suggestion-priority">
+                <span class="priority-icon">
+                  {{ suggestion.priority === 'high' ? '🔴' : suggestion.priority === 'medium' ? '🟡' : '🟢' }}
+                </span>
+              </div>
+              <div class="suggestion-content">
+                <h4>{{ suggestion.title }}</h4>
+                <p>{{ suggestion.description }}</p>
+              </div>
+              <el-button
+                v-if="suggestion.action"
+                type="primary"
+                size="small"
+                text
+                @click="executeSuggestion(suggestion)"
+              >
+                {{ suggestion.action }}
+              </el-button>
+            </div>
           </div>
-        </template>
-        <div class="suggestions-content">
-          <div 
-            v-for="(suggestion, index) in userRiskProfile.suggestions" 
-            :key="index"
-            class="suggestion-item"
-          >
-            <div class="suggestion-icon">
-              <span :style="{ fontSize: '24px', color: suggestion.type === '高' ? '#f56c6c' : suggestion.type === '中' ? '#e6a23c' : '#67c23a' }">
-                ⚠️
-              </span>
+        </el-card>
+
+        <el-card shadow="hover" class="segments-card">
+          <template #header>
+            <span>人群分众标签</span>
+          </template>
+          <div class="segments-display">
+            <div class="segment-ring">
+              <svg class="segment-svg" width="160" height="160">
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#f0f0f0" stroke-width="20" />
+                <circle
+                  v-for="(segment, index) in userSegments"
+                  :key="index"
+                  cx="80"
+                  cy="80"
+                  r="60"
+                  fill="none"
+                  :stroke="segment.color"
+                  stroke-width="20"
+                  :stroke-dasharray="`${2 * Math.PI * 60 * segment.percentage / 100} ${2 * Math.PI * 60}`"
+                  :stroke-dashoffset="-segment.offset"
+                  stroke-linecap="round"
+                  transform="rotate(-90 80 80)"
+                />
+              </svg>
+              <div class="segment-center">
+                <span class="segment-main">{{ mainSegment }}</span>
+                <span class="segment-label">主要标签</span>
+              </div>
             </div>
-            <div class="suggestion-content">
-              <h4>{{ suggestion.title }}</h4>
-              <p>{{ suggestion.description }}</p>
-            </div>
-            <div class="suggestion-type">
-              <el-tag :type="suggestion.type === '高' ? 'danger' : suggestion.type === '中' ? 'warning' : 'success'">
-                {{ suggestion.type }}
-              </el-tag>
+            <div class="segment-legend">
+              <div
+                v-for="segment in userSegments"
+                :key="segment.name"
+                class="legend-item"
+              >
+                <span class="legend-color" :style="{ backgroundColor: segment.color }"></span>
+                <span class="legend-name">{{ segment.name }}</span>
+                <span class="legend-percent">{{ segment.percentage }}%</span>
+              </div>
             </div>
           </div>
-        </div>
-      </el-card>
+        </el-card>
+
+        <el-card shadow="hover" class="comparison-card">
+          <template #header>
+            <span>与同类用户对比</span>
+          </template>
+          <div class="comparison-content">
+            <div class="comparison-item">
+              <span class="comparison-label">风险评分</span>
+              <div class="comparison-bar">
+                <div class="bar-user" :style="{ width: userRiskProfile.riskScore + '%' }"></div>
+                <div class="bar-avg" :style="{ left: avgComparison.riskScore + '%' }"></div>
+              </div>
+              <div class="comparison-value">
+                <span class="user-val">{{ userRiskProfile.riskScore }}</span>
+                <span class="avg-val">平均: {{ avgComparison.riskScore }}</span>
+              </div>
+            </div>
+            <div class="comparison-item">
+              <span class="comparison-label">预警响应速度</span>
+              <div class="comparison-bar">
+                <div class="bar-user" :style="{ width: avgComparison.responseSpeed + '%' }"></div>
+                <div class="bar-avg" :style="{ left: avgComparison.responseSpeed + '%' }"></div>
+              </div>
+              <div class="comparison-value">
+                <span class="user-val">{{ avgComparison.responseSpeed }}分</span>
+                <span class="avg-val">超越{{ avgComparison.betterThan }}%用户</span>
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </div>
     </div>
 
-    <!-- 预警详情对话框 -->
     <el-dialog v-model="alertDetailVisible" :title="currentAlert?.title" width="600px">
       <div class="alert-detail" v-if="currentAlert">
-        <div class="alert-meta">
-          <el-tag :type="getAlertType(currentAlert.level)">{{ currentAlert.level }}</el-tag>
-          <span class="alert-time">{{ currentAlert.time }}</span>
-        </div>
-        <div class="alert-description">
+        <el-alert
+          :title="currentAlert.level"
+          :type="getAlertType(currentAlert.level)"
+          :description="currentAlert.description"
+          show-icon
+          :closable="false"
+        />
+        <div class="detail-section">
+          <h4>风险说明</h4>
           <p>{{ currentAlert.description }}</p>
         </div>
-        <div class="alert-impact">
+        <div class="detail-section">
           <h4>可能影响</h4>
           <p>{{ currentAlert.impact }}</p>
         </div>
-        <div class="alert-suggestion">
+        <div class="detail-section">
           <h4>防范建议</h4>
           <p>{{ currentAlert.suggestion }}</p>
         </div>
+        <div class="detail-section" v-if="currentAlert.relatedCases?.length">
+          <h4>相关案例</h4>
+          <div class="related-cases">
+            <div v-for="c in currentAlert.relatedCases" :key="c.id" class="case-item">
+              <span class="case-title">{{ c.title }}</span>
+              <el-tag size="small" type="info">{{ c.type }}</el-tag>
+            </div>
+          </div>
+        </div>
       </div>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="alertDetailVisible = false">关闭</el-button>
-          <el-button type="primary" @click="alertDetailVisible = false">已了解</el-button>
-        </span>
+        <el-button @click="alertDetailVisible = false">关闭</el-button>
+        <el-button type="primary" @click="alertDetailVisible = false">我已知晓</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Refresh, Warning } from '@element-plus/icons-vue'
+
+interface Alert {
+  id: number
+  title: string
+  description: string
+  level: string
+  time: string
+  impact: string
+  suggestion: string
+  unread?: boolean
+  relatedCases?: { id: number; title: string; type: string }[]
+}
+
+interface Suggestion {
+  id: number
+  title: string
+  description: string
+  priority: string
+  action?: string
+}
+
+interface Segment {
+  name: string
+  percentage: number
+  color: string
+  offset: number
+}
+
+const riskPeriod = ref('month')
+const alertDetailVisible = ref(false)
+const currentAlert = ref<Alert | null>(null)
+
+const userInfo = ref({
+  name: '反诈学习者',
+  avatar: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%20friendly%20person&image_size=square',
+  age: 25,
+  occupation: '学生',
+  education: '本科',
+  tags: ['大学生', '高频上网', '月光族'],
+  isVerified: true,
+  isHighRisk: false
+})
 
 const userRiskProfile = ref({
   riskScore: 65,
   riskLevel: '中风险',
-  riskDescription: '您的风险评分为65分，属于中风险等级。建议加强防范意识，关注相关预警信息。',
-  age: 25,
-  occupation: '学生',
-  education: '本科',
-  internetUsage: '高频',
+  riskLevelClass: 'medium',
+  riskDescription: '您的风险评分为65分，属于中风险等级。根据您的上网行为和社交习惯，建议加强防范意识，关注相关预警信息。',
   riskDistribution: [
-    { type: '电信诈骗', percentage: 35 },
-    { type: '网络诈骗', percentage: 30 },
-    { type: '金融诈骗', percentage: 20 },
-    { type: '其他诈骗', percentage: 15 }
+    { type: '电信诈骗', percentage: 35, count: 12, avoidRate: 85 },
+    { type: '网络诈骗', percentage: 30, count: 8, avoidRate: 78 },
+    { type: '金融诈骗', percentage: 20, count: 3, avoidRate: 92 },
+    { type: '其他诈骗', percentage: 15, count: 5, avoidRate: 80 }
   ],
   behaviorFeatures: [
-    { feature: '网络购物频率', riskLevel: 4 },
-    { feature: '社交软件使用', riskLevel: 3 },
-    { feature: '金融交易行为', riskLevel: 5 },
-    { feature: '个人信息保护意识', riskLevel: 2 },
-    { feature: '防诈知识掌握程度', riskLevel: 3 }
+    { feature: '网络购物频率', icon: '🛒', riskLevel: 4, advice: '建议核实商家资质，避免冲动消费' },
+    { feature: '社交软件使用', icon: '💬', riskLevel: 3, advice: '谨慎添加陌生好友，勿轻信转账请求' },
+    { feature: '金融交易行为', icon: '💳', riskLevel: 5, advice: '务必核实对方身份，使用官方渠道交易' },
+    { feature: '个人信息保护', icon: '🔒', riskLevel: 2, advice: '减少在社交媒体分享个人信息' },
+    { feature: '防诈知识掌握', icon: '📚', riskLevel: 3, advice: '建议定期学习最新诈骗手法' }
   ],
   environmentRisks: [
-    { type: '网络环境', riskLevel: '中风险' },
-    { type: '社交圈子', riskLevel: '低风险' },
-    { type: '经济状况', riskLevel: '中风险' },
-    { type: '地域风险', riskLevel: '低风险' }
+    { type: '网络环境', icon: '🌐', status: '良好', statusClass: 'good', detail: '主要使用校园网络，风险较低' },
+    { type: '社交圈子', icon: '👥', status: '一般', statusClass: 'normal', detail: '建议关注朋友圈异常转账请求' },
+    { type: '经济状况', icon: '💰', status: '需注意', statusClass: 'warning', detail: '近期有大额消费，需警惕诈骗' },
+    { type: '地理位置', icon: '📍', status: '安全', statusClass: 'good', detail: '当前位于常驻地区' }
   ],
   alerts: [
     {
@@ -272,7 +478,12 @@ const userRiskProfile = ref({
       level: '高',
       time: '2026-04-12 10:30',
       impact: '可能导致个人信息泄露和资金损失',
-      suggestion: '接到自称公检法的电话时，应挂断后通过官方渠道核实。'
+      suggestion: '接到自称公检法的电话时，应挂断后通过官方渠道核实。',
+      unread: true,
+      relatedCases: [
+        { id: 1, title: '冒充公安机关诈骗案', type: '电信诈骗' },
+        { id: 2, title: '冒充检察院诈骗案', type: '电信诈骗' }
+      ]
     },
     {
       id: 2,
@@ -281,7 +492,8 @@ const userRiskProfile = ref({
       level: '中',
       time: '2026-04-11 15:45',
       impact: '可能导致资金损失',
-      suggestion: '不要相信任何要求先垫付资金的兼职。'
+      suggestion: '不要相信任何要求先垫付资金的兼职。',
+      unread: true
     },
     {
       id: 3,
@@ -290,7 +502,8 @@ const userRiskProfile = ref({
       level: '中',
       time: '2026-04-10 09:15',
       impact: '可能导致陷入债务陷阱',
-      suggestion: '遇到资金困难应向学校或正规金融机构寻求帮助。'
+      suggestion: '遇到资金困难应向学校或正规金融机构寻求帮助。',
+      unread: false
     }
   ],
   suggestions: [
@@ -298,37 +511,62 @@ const userRiskProfile = ref({
       id: 1,
       title: '加强个人信息保护',
       description: '不要轻易向陌生人透露个人信息，特别是身份证号、银行卡号、验证码等敏感信息。',
-      type: '高'
+      priority: 'high',
+      action: '去学习'
     },
     {
       id: 2,
-      title: '提高防诈意识',
-      description: '定期学习防诈知识，了解最新的诈骗手法和防范措施。',
-      type: '高'
+      title: '开启支付验证',
+      description: '建议开启银行卡/支付软件的二次验证功能，提高账户安全性。',
+      priority: 'high',
+      action: '立即设置'
     },
     {
       id: 3,
-      title: '谨慎网络交易',
-      description: '进行网络交易时，应选择正规平台，仔细核实对方身份。',
-      type: '中'
+      title: '定期查看预警',
+      description: '建议每周至少查看一次风险预警，及时了解最新诈骗手法。',
+      priority: 'medium'
     },
     {
       id: 4,
-      title: '及时报警',
-      description: '遇到可疑情况或被骗时，应及时报警，寻求警方帮助。',
-      type: '高'
-    },
-    {
-      id: 5,
-      title: '关注预警信息',
-      description: '定期查看系统发布的预警信息，了解最新的诈骗趋势。',
-      type: '中'
+      title: '参与防诈学习',
+      description: '完成更多防诈课程可降低您的风险评分，获得更精准的保护。',
+      priority: 'medium',
+      action: '去学习'
     }
   ]
 })
 
-const alertDetailVisible = ref(false)
-const currentAlert = ref<any>(null)
+const riskTimeline = ref([
+  { time: '2026-04-12 10:30', title: '收到高风险预警', description: '系统检测到您所在地区电信诈骗高发', type: 'danger', hollow: false },
+  { time: '2026-04-10 14:20', title: '完成VR演练', description: '您完成了电信诈骗VR演练，获得85分', type: 'success', hollow: false },
+  { time: '2026-04-08 09:15', title: '风险评分更新', description: '您的风险评分从68下降至65', type: 'primary', hollow: true },
+  { time: '2026-04-05 16:45', title: '收到中风险预警', description: '网络兼职诈骗预警已忽略', type: 'warning', hollow: true }
+])
+
+const userSegments = ref<Segment[]>([
+  { name: '学生群体', percentage: 40, color: '#409eff', offset: 0 },
+  { name: '年轻网民', percentage: 30, color: '#67c23a', offset: 100.5 },
+  { name: '网络高频', percentage: 20, color: '#e6a23c', offset: 188.5 },
+  { name: '其他', percentage: 10, color: '#909399', offset: 226.2 }
+])
+
+const mainSegment = computed(() => {
+  const main = userSegments.value.reduce((prev, curr) =>
+    curr.percentage > prev.percentage ? curr : prev
+  )
+  return main.name
+})
+
+const unreadAlerts = computed(() => {
+  return userRiskProfile.value.alerts.filter(a => a.unread).length
+})
+
+const avgComparison = ref({
+  riskScore: 72,
+  responseSpeed: 85,
+  betterThan: 65
+})
 
 function getScoreColor(score: number): string {
   if (score >= 80) return '#f56c6c'
@@ -346,15 +584,6 @@ function getRiskColor(riskType: string): string {
   return colorMap[riskType] || '#909399'
 }
 
-function getEnvRiskType(riskLevel: string): string {
-  const typeMap: Record<string, string> = {
-    '高风险': 'danger',
-    '中风险': 'warning',
-    '低风险': 'success'
-  }
-  return typeMap[riskLevel] || 'info'
-}
-
 function getAlertType(level: string): string {
   const typeMap: Record<string, string> = {
     '高': 'danger',
@@ -364,28 +593,47 @@ function getAlertType(level: string): string {
   return typeMap[level] || 'info'
 }
 
+function getTagType(tag: string): string {
+  const typeMap: Record<string, string> = {
+    '大学生': 'primary',
+    '高频上网': 'warning',
+    '月光族': 'danger'
+  }
+  return typeMap[tag] || 'info'
+}
+
+function getRiskLevelClass(level: number): string {
+  if (level >= 4) return 'high'
+  if (level >= 3) return 'medium'
+  return 'low'
+}
+
+function getRiskLevelText(level: number): string {
+  if (level >= 4) return '风险较高'
+  if (level >= 3) return '风险中等'
+  return '风险较低'
+}
+
 function refreshProfile() {
-  // 模拟刷新风险画像
   ElMessage.success('风险画像已刷新')
 }
 
-function viewAllAlerts() {
-  // 模拟查看全部预警
-  ElMessage.info('查看全部预警功能开发中')
-}
-
-function viewAlertDetail(alert: any) {
+function viewAlertDetail(alert: Alert) {
   currentAlert.value = alert
+  alert.unread = false
   alertDetailVisible.value = true
 }
 
-function dismissAlert(alert: any) {
-  // 模拟忽略预警
+function dismissAlert(alert: Alert) {
+  alert.unread = false
   ElMessage.success('预警已忽略')
 }
 
+function executeSuggestion(suggestion: Suggestion) {
+  ElMessage.info(`跳转至：${suggestion.title}`)
+}
+
 onMounted(() => {
-  // 初始化风险画像数据
   console.log('智能风险画像初始化')
 })
 </script>
@@ -393,31 +641,68 @@ onMounted(() => {
 <style scoped>
 .risk-profile {
   padding: 24px;
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
+  background: linear-gradient(135deg, #f0f3f7 0%, #e8ecf1 100%);
+  min-height: calc(100vh - 60px);
 }
 
 .header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.header h1 {
-  font-size: 32px;
-  margin-bottom: 8px;
-  color: #333;
-}
-
-.header p {
-  font-size: 16px;
-  color: #666;
-}
-
-.profile-overview,
-.risk-analysis,
-.risk-alerts,
-.risk-suggestions {
   margin-bottom: 24px;
+}
+
+.header-content {
+  background: linear-gradient(135deg, #f56c6c 0%, #e6a23c 100%);
+  border-radius: 16px;
+  padding: 32px;
+  color: white;
+  box-shadow: 0 8px 32px rgba(245, 108, 108, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-text h1 {
+  margin: 0 0 12px 0;
+  font-size: 32px;
+}
+
+.differentiator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.competitor {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.profile-content {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+}
+
+.main-area {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.side-area {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .card-header {
@@ -426,195 +711,355 @@ onMounted(() => {
   align-items: center;
 }
 
-.overview-content {
-  display: flex;
-  gap: 40px;
-  align-items: center;
-  padding: 20px 0;
+.overview-card {
+  overflow: hidden;
 }
 
-.risk-score {
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding: 24px 0;
+}
+
+.risk-score-section {
   display: flex;
   align-items: center;
-  gap: 40px;
-  flex: 1;
+  gap: 24px;
 }
 
 .score-circle {
   flex-shrink: 0;
 }
 
-.score-info {
+.score-details {
   flex: 1;
 }
 
-.score-info h3 {
-  margin: 0 0 8px 0;
-  font-size: 24px;
-  color: #333;
+.risk-level-badge {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 12px;
 }
 
-.score-info p {
+.risk-level-badge.high {
+  background: rgba(245, 108, 108, 0.15);
+  color: #f56c6c;
+}
+
+.risk-level-badge.medium {
+  background: rgba(230, 162, 60, 0.15);
+  color: #e6a23c;
+}
+
+.risk-level-badge.low {
+  background: rgba(103, 194, 58, 0.15);
+  color: #67c23a;
+}
+
+.risk-description {
   margin: 0;
-  color: #666;
-  line-height: 1.5;
+  color: #606266;
+  line-height: 1.6;
 }
 
-.risk-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  flex: 1;
+.user-info-section {
+  text-align: center;
+}
+
+.user-header {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.user-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-badges {
+  position: absolute;
+  top: 0;
+  right: -10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-name {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+}
+
+.user-tags {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.user-metrics {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
 }
 
 .metric-item {
   text-align: center;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 8px;
 }
 
 .metric-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
-  color: #409eff;
-  margin-bottom: 8px;
+  color: #333;
 }
 
 .metric-label {
-  font-size: 14px;
-  color: #606266;
-}
-
-.analysis-content {
-  padding: 20px 0;
-}
-
-.analysis-section {
-  margin-bottom: 32px;
-}
-
-.analysis-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  color: #333;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e4e7ed;
+  font-size: 13px;
+  color: #909399;
 }
 
 .risk-distribution {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
+  padding: 12px 0;
 }
 
 .distribution-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
 }
 
-.distribution-label {
-  width: 100px;
-  font-size: 14px;
+.distribution-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.distribution-type {
+  font-weight: 500;
   color: #333;
 }
 
+.distribution-value {
+  font-weight: bold;
+  color: #409eff;
+}
+
 .distribution-bar {
-  flex: 1;
-  height: 20px;
-  background: #f5f7fa;
-  border-radius: 10px;
+  height: 8px;
+  background: #e4e7ed;
+  border-radius: 4px;
   overflow: hidden;
+  margin-bottom: 8px;
 }
 
 .distribution-progress {
   height: 100%;
-  border-radius: 10px;
+  border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.distribution-percentage {
-  width: 60px;
+.distribution-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #909399;
+}
+
+.behavior-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.behavior-card {
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.behavior-card:hover {
+  background: #f5f5f5;
+}
+
+.behavior-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.behavior-icon {
+  font-size: 20px;
+}
+
+.behavior-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.behavior-risk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.risk-label {
+  font-size: 13px;
+}
+
+.risk-label.high {
+  color: #f56c6c;
+}
+
+.risk-label.medium {
+  color: #e6a23c;
+}
+
+.risk-label.low {
+  color: #67c23a;
+}
+
+.behavior-advice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #909399;
+  padding: 8px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.environment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.environment-card {
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.env-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.env-icon {
+  font-size: 24px;
+}
+
+.env-type {
+  font-weight: 500;
+  color: #333;
+}
+
+.env-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.env-status.good {
+  background: rgba(103, 194, 58, 0.15);
+  color: #67c23a;
+}
+
+.env-status.normal {
+  background: rgba(230, 162, 60, 0.15);
+  color: #e6a23c;
+}
+
+.env-status.warning {
+  background: rgba(245, 108, 108, 0.15);
+  color: #f56c6c;
+}
+
+.env-detail {
+  font-size: 12px;
+  color: #909399;
+}
+
+.risk-timeline {
+  padding-bottom: 16px;
+}
+
+.timeline-content {
+  padding: 8px 0;
+}
+
+.timeline-content h4 {
+  margin: 0 0 4px 0;
   font-size: 14px;
+}
+
+.timeline-content p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
   color: #606266;
-  text-align: right;
 }
 
-.behavior-analysis {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.behavior-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-}
-
-.behavior-label {
-  font-size: 14px;
-  color: #333;
-}
-
-.environment-analysis {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.environment-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-}
-
-.environment-label {
-  font-size: 14px;
-  color: #333;
-}
-
-.alerts-content {
+.alerts-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 20px 0;
 }
 
 .alert-item {
-  padding: 20px;
+  padding: 16px;
+  background: #f9f9f9;
   border-radius: 8px;
   border-left: 4px solid;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.alert-item:hover {
+  background: #f5f5f5;
 }
 
 .alert-item.high {
-  background: #fef0f0;
   border-left-color: #f56c6c;
 }
 
 .alert-item.medium {
-  background: #fdf6ec;
   border-left-color: #e6a23c;
 }
 
 .alert-item.low {
-  background: #f0f9eb;
   border-left-color: #67c23a;
+}
+
+.alert-item.unread {
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.05) 0%, rgba(64, 158, 255, 0.02) 100%);
 }
 
 .alert-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .alert-time {
@@ -622,159 +1067,255 @@ onMounted(() => {
   color: #909399;
 }
 
-.alert-content h4 {
+.alert-title {
   margin: 0 0 8px 0;
-  font-size: 16px;
+  font-size: 15px;
   color: #333;
 }
 
-.alert-content p {
-  margin: 0 0 16px 0;
-  color: #666;
+.alert-desc {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #606266;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .alert-actions {
   display: flex;
-  gap: 12px;
-  justify-content: flex-end;
+  gap: 8px;
 }
 
-.suggestions-content {
+.suggestions-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 20px 0;
 }
 
 .suggestion-item {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  background: #f5f7fa;
+  gap: 12px;
+  padding: 12px;
   border-radius: 8px;
-  transition: all 0.3s ease;
 }
 
-.suggestion-item:hover {
-  background: #ecf5ff;
+.suggestion-item.high {
+  background: rgba(245, 108, 108, 0.08);
 }
 
-.suggestion-icon {
-  margin-top: 4px;
-  flex-shrink: 0;
+.suggestion-item.medium {
+  background: rgba(230, 162, 60, 0.08);
+}
+
+.suggestion-item.low {
+  background: rgba(103, 194, 58, 0.08);
+}
+
+.priority-icon {
+  font-size: 18px;
 }
 
 .suggestion-content {
   flex: 1;
+  min-width: 0;
 }
 
 .suggestion-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
+  margin: 0 0 4px 0;
+  font-size: 14px;
   color: #333;
 }
 
 .suggestion-content p {
   margin: 0;
-  color: #666;
-  line-height: 1.5;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.4;
 }
 
-.suggestion-type {
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
-.alert-detail {
-  padding: 20px 0;
-}
-
-.alert-meta {
+.segments-display {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 24px;
 }
 
-.alert-description {
-  margin-bottom: 24px;
+.segment-ring {
+  position: relative;
 }
 
-.alert-description p {
-  line-height: 1.5;
-  color: #666;
+.segment-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.alert-impact,
-.alert-suggestion {
-  margin-bottom: 24px;
-}
-
-.alert-impact h4,
-.alert-suggestion h4 {
-  margin: 0 0 12px 0;
+.segment-main {
   font-size: 16px;
+  font-weight: bold;
   color: #333;
 }
 
-.alert-impact p,
-.alert-suggestion p {
-  margin: 0;
-  line-height: 1.5;
-  color: #666;
+.segment-label {
+  font-size: 12px;
+  color: #909399;
 }
 
-.dialog-footer {
+.segment-legend {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-name {
+  color: #333;
+}
+
+.legend-percent {
+  color: #909399;
+}
+
+.comparison-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comparison-item {
+  padding: 12px 0;
+}
+
+.comparison-label {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.comparison-bar {
+  position: relative;
+  height: 8px;
+  background: #e4e7ed;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.bar-user {
+  height: 100%;
+  background: linear-gradient(90deg, #409eff, #66b1ff);
+  border-radius: 4px;
+}
+
+.bar-avg {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 16px;
+  background: #f56c6c;
+  transform: translateX(-50%);
+}
+
+.comparison-value {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.user-val {
+  font-weight: bold;
+  color: #409eff;
+}
+
+.avg-val {
+  color: #909399;
+}
+
+.alert-detail {
+  padding: 8px 0;
+}
+
+.detail-section {
+  margin-top: 20px;
+}
+
+.detail-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.detail-section p {
+  margin: 0;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.related-cases {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.case-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.case-title {
+  font-size: 13px;
+  color: #333;
+}
+
+@media (max-width: 1200px) {
+  .profile-content {
+    grid-template-columns: 1fr;
+  }
+
+  .side-area {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
 }
 
 @media (max-width: 768px) {
-  .risk-profile {
-    padding: 16px;
-  }
-  
-  .overview-content {
-    flex-direction: column;
-    align-items: flex-start;
+  .overview-grid {
+    grid-template-columns: 1fr;
     gap: 24px;
   }
-  
-  .risk-score {
+
+  .risk-score-section {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
+    text-align: center;
   }
-  
-  .risk-metrics {
+
+  .behavior-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .behavior-analysis,
-  .environment-analysis {
-    grid-template-columns: 1fr;
-  }
-  
-  .distribution-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .distribution-bar {
-    width: 100%;
-  }
-  
-  .suggestion-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .suggestion-type {
-    align-self: flex-end;
   }
 }
 </style>
