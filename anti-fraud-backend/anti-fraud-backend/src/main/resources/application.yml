@@ -117,3 +117,19 @@ third-party:
     app-secret: ${DINGTALK_APP_SECRET}
     redirect-uri: ${DINGTALK_REDIRECT_URI:http://localhost:8080/api/auth/login/dingtalk/callback}
     scope: snsapi_login
+
+# AI服务配置
+ai:
+  default-provider: ${AI_DEFAULT_PROVIDER:wenxin}
+  wenxin:
+    api-key: ${WENXIN_API_KEY}
+    model: ${WENXIN_MODEL:ERNIE-Bot-4}
+    api-url: ${WENXIN_API_URL:https://ark.cn-beijing.volces.com/api/v3}
+    temperature: ${WENXIN_TEMPERATURE:0.7}
+    max-tokens: ${WENXIN_MAX_TOKENS:2048}
+  chatglm:
+    api-key: ${CHATGLM_API_KEY}
+    model: ${CHATGLM_MODEL:chatglm3-6b}
+    api-url: ${CHATGLM_API_URL:https://open.bigmodel.cn/api/m/v1}
+    temperature: ${CHATGLM_TEMPERATURE:0.7}
+    max-tokens: ${CHATGLM_MAX_TOKENS:2048}

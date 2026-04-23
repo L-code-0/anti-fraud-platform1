@@ -1,333 +1,401 @@
 package com.anti.fraud.modules.knowledge.service.impl;
 
-import com.anti.fraud.common.exception.BusinessException;
-import com.anti.fraud.common.utils.SecurityUtils;
-import com.anti.fraud.modules.knowledge.dto.KnowledgeQueryDTO;
-import com.anti.fraud.modules.knowledge.entity.KnowledgeCategory;
-import com.anti.fraud.modules.knowledge.entity.KnowledgeContent;
-import com.anti.fraud.modules.knowledge.mapper.KnowledgeCategoryMapper;
-import com.anti.fraud.modules.knowledge.mapper.KnowledgeContentMapper;
+import com.anti.fraud.modules.knowledge.entity.KnowledgeNode;
+import com.anti.fraud.modules.knowledge.entity.KnowledgeEdge;
+import com.anti.fraud.modules.knowledge.mapper.KnowledgeNodeMapper;
+import com.anti.fraud.modules.knowledge.mapper.KnowledgeEdgeMapper;
 import com.anti.fraud.modules.knowledge.service.KnowledgeService;
-import com.anti.fraud.modules.knowledge.vo.CategoryVO;
-import com.anti.fraud.modules.knowledge.vo.KnowledgeDetailVO;
-import com.anti.fraud.modules.knowledge.vo.KnowledgeListVO;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.UUID;
 
 /**
- * 知识服务实现类
- *
- * 缓存策略说明：
- * - 知识分类：缓存1小时，分类变化时清除
- * - 热门知识：缓存30分钟，保持热度数据新鲜
- * - 推荐知识：缓存30分钟
+ * 知识图谱服务实现类
  */
-@Slf4j
 @Service
+@Slf4j
 @RequiredArgsConstructor
-public class KnowledgeServiceImpl implements KnowledgeService {
+public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeNodeMapper, KnowledgeNode> implements KnowledgeService {
 
-    private final KnowledgeContentMapper knowledgeMapper;
-    private final KnowledgeCategoryMapper categoryMapper;
+    private final KnowledgeNodeMapper knowledgeNodeMapper;
+    private final KnowledgeEdgeMapper knowledgeEdgeMapper;
 
-    /**
-     * 获取知识分类列表（带缓存）
-     * 缓存时间：1小时
-     */
     @Override
-    @Cacheable(value = "knowledge:categories", key = "'all'", unless = "#result == null")
-    public List<CategoryVO> getCategories() {
-        log.debug("从数据库加载知识分类列表");
-        List<KnowledgeCategory> categories = categoryMapper.selectList(
-                new LambdaQueryWrapper<KnowledgeCategory>()
-                        .eq(KnowledgeCategory::getStatus, 1)
-                        .orderByAsc(KnowledgeCategory::getSortOrder)
-        );
-
-        return categories.stream()
-                .map(this::convertToCategoryVO)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 分页查询知识列表
-     * 不缓存分页数据，因为查询条件多变
-     */
-    @Override
-    public Page<KnowledgeListVO> getKnowledgePage(KnowledgeQueryDTO queryDTO) {
-        // 参数校验
-        int page = Math.max(1, queryDTO.getPage());
-        int size = Math.min(100, Math.max(1, queryDTO.getSize()));
-
-        Page<KnowledgeContent> pageParam = new Page<>(page, size);
-
-        LambdaQueryWrapper<KnowledgeContent> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(KnowledgeContent::getStatus, 1);
-
-        if (queryDTO.getCategoryId() != null) {
-            wrapper.eq(KnowledgeContent::getCategoryId, queryDTO.getCategoryId());
-        }
-
-        if (queryDTO.getKeyword() != null && !queryDTO.getKeyword().isEmpty()) {
-            wrapper.like(KnowledgeContent::getTitle, queryDTO.getKeyword());
-        }
-
-        if (queryDTO.getContentType() != null) {
-            wrapper.eq(KnowledgeContent::getContentType, queryDTO.getContentType());
-        }
-
-        wrapper.orderByDesc(KnowledgeContent::getIsTop)
-                .orderByDesc(KnowledgeContent::getPublishTime);
-
-        Page<KnowledgeContent> contentPage = knowledgeMapper.selectPage(pageParam, wrapper);
-
-        // 手动转换避免类型不兼容
-        Page<KnowledgeListVO> result = new Page<>(contentPage.getCurrent(), contentPage.getSize(), contentPage.getTotal());
-        result.setRecords(contentPage.getRecords().stream().map(this::convertToListVO).collect(Collectors.toList()));
-        return result;
-    }
-
-    /**
-     * 获取知识详情
-     * 缓存单个知识详情，更新时清除
-     */
-    @Override
-    @Cacheable(value = "knowledge:detail", key = "#id", unless = "#result == null")
     @Transactional
-    public KnowledgeDetailVO getKnowledgeDetail(Long id) {
-        log.debug("从数据库加载知识详情: {}", id);
-        KnowledgeContent knowledge = knowledgeMapper.selectById(id);
-        if (knowledge == null) {
-            throw new BusinessException("知识内容不存在");
-        }
-
-        // 异步更新浏览量，不影响查询性能
-        updateViewCountAsync(id);
-
-        KnowledgeDetailVO vo = convertToDetailVO(knowledge);
-
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId != null) {
-            vo.setIsCollected(false);
-        }
-
-        return vo;
-    }
-
-    /**
-     * 异步更新浏览量
-     */
-    private void updateViewCountAsync(Long id) {
-        // 使用Redis计数器或异步更新，避免每次都写数据库
-        // 这里简化处理，实际生产环境可以使用Redis incr
+    public String createNode(KnowledgeNode knowledgeNode) {
         try {
-            KnowledgeContent knowledge = new KnowledgeContent();
-            knowledge.setId(id);
-            // knowledgeMapper.incrementViewCount(id);
-        } catch (Exception e) {
-            log.warn("更新浏览量失败: {}", e.getMessage());
-        }
-    }
+            // 生成节点ID
+            String nodeId = UUID.randomUUID().toString();
+            knowledgeNode.setNodeId(nodeId);
+            knowledgeNode.setHotness(0);
+            knowledgeNode.setStatus(1); // 启用
+            knowledgeNode.setDeleted(0);
+            knowledgeNode.setCreateTime(LocalDateTime.now());
+            knowledgeNode.setUpdateTime(LocalDateTime.now());
 
-    /**
-     * 收藏知识
-     * 清除该知识的缓存
-     */
-    @Override
-    @Transactional
-    @CacheEvict(value = "knowledge:detail", key = "#id")
-    public void collectKnowledge(Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
-        }
-
-        KnowledgeContent knowledge = knowledgeMapper.selectById(id);
-        if (knowledge == null) {
-            throw new BusinessException("知识内容不存在");
-        }
-
-        knowledge.setCollectCount(knowledge.getCollectCount() + 1);
-        knowledgeMapper.updateById(knowledge);
-
-        log.info("用户 {} 收藏了知识 {}", userId, id);
-    }
-
-    /**
-     * 取消收藏
-     * 清除该知识的缓存
-     */
-    @Override
-    @Transactional
-    @CacheEvict(value = "knowledge:detail", key = "#id")
-    public void uncollectKnowledge(Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            throw new BusinessException("请先登录");
-        }
-
-        KnowledgeContent knowledge = knowledgeMapper.selectById(id);
-        if (knowledge == null) {
-            throw new BusinessException("知识内容不存在");
-        }
-
-        if (knowledge.getCollectCount() > 0) {
-            knowledge.setCollectCount(knowledge.getCollectCount() - 1);
-            knowledgeMapper.updateById(knowledge);
-        }
-
-        log.info("用户 {} 取消收藏知识 {}", userId, id);
-    }
-
-    @Override
-    public void recordProgress(Long id, Integer duration) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            return;
-        }
-        // 记录学习进度到Redis，使用hash存储用户学习进度
-        // 格式: learning:progress:{userId}:{knowledgeId} -> {startTime, duration, lastVisitTime}
-        try {
-            // 这里使用RedisUtils记录学习进度
-            // String redisKey = String.format("learning:progress:%d:%d", userId, id);
-            // RedisUtils.hset(redisKey, "duration", duration);
-            // RedisUtils.hset(redisKey, "lastVisitTime", System.currentTimeMillis());
-            log.debug("用户 {} 学习知识 {} 时长 {} 秒", userId, id, duration);
-            
-            // 如果学习时长超过一定时间（比如30秒），可以增加用户积分
-            if (duration >= 30) {
-                // 异步增加积分
-                // pointsService.addPoints(userId, 1, "learning", id, "学习知识奖励");
+            boolean success = save(knowledgeNode);
+            if (success) {
+                return nodeId;
+            } else {
+                throw new RuntimeException("创建节点失败");
             }
         } catch (Exception e) {
-            log.warn("记录学习进度失败: {}", e.getMessage());
+            log.error("创建节点失败: {}", e.getMessage(), e);
+            throw new RuntimeException("创建节点失败");
         }
     }
 
-    /**
-     * 点赞知识
-     * 清除该知识的缓存
-     */
     @Override
     @Transactional
-    @CacheEvict(value = "knowledge:detail", key = "#id")
-    public void likeKnowledge(Long id) {
-        KnowledgeContent knowledge = knowledgeMapper.selectById(id);
-        if (knowledge == null) {
-            throw new BusinessException("知识内容不存在");
+    public boolean updateNode(KnowledgeNode knowledgeNode) {
+        try {
+            knowledgeNode.setUpdateTime(LocalDateTime.now());
+            return updateById(knowledgeNode);
+        } catch (Exception e) {
+            log.error("更新节点失败: {}", e.getMessage(), e);
+            return false;
         }
-
-        knowledge.setLikeCount(knowledge.getLikeCount() + 1);
-        knowledgeMapper.updateById(knowledge);
-
-        log.info("用户点赞知识 {}", id);
     }
 
-    /**
-     * 获取推荐知识（带缓存）
-     * 缓存时间：30分钟
-     */
     @Override
-    @Cacheable(value = "knowledge:recommend", key = "'top10'", unless = "#result == null || #result.isEmpty()")
-    public List<KnowledgeListVO> getRecommendKnowledge() {
-        log.debug("从数据库加载推荐知识");
-        List<KnowledgeContent> list = knowledgeMapper.selectList(
-                new LambdaQueryWrapper<KnowledgeContent>()
-                        .eq(KnowledgeContent::getStatus, 1)
-                        .eq(KnowledgeContent::getIsRecommend, 1)
-                        .orderByDesc(KnowledgeContent::getPublishTime)
-                        .last("LIMIT 10")
-        );
-
-        return list.stream()
-                .map(this::convertToListVO)
-                .collect(Collectors.toList());
+    @Transactional
+    public boolean deleteNode(String nodeId) {
+        try {
+            KnowledgeNode node = knowledgeNodeMapper.selectByNodeId(nodeId);
+            if (node != null) {
+                node.setDeleted(1);
+                node.setUpdateTime(LocalDateTime.now());
+                boolean success = updateById(node);
+                if (success) {
+                    // 删除节点相关的所有边
+                    knowledgeEdgeMapper.deleteByNodeId(nodeId);
+                }
+                return success;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("删除节点失败: {}", e.getMessage(), e);
+            return false;
+        }
     }
 
-    /**
-     * 获取热门知识（带缓存）
-     * 缓存时间：30分钟
-     */
     @Override
-    @Cacheable(value = "knowledge:hot", key = "'top10'", unless = "#result == null || #result.isEmpty()")
-    public List<KnowledgeListVO> getHotKnowledge() {
-        log.debug("从数据库加载热门知识");
-        List<KnowledgeContent> list = knowledgeMapper.selectList(
-                new LambdaQueryWrapper<KnowledgeContent>()
-                        .eq(KnowledgeContent::getStatus, 1)
-                        .eq(KnowledgeContent::getIsHot, 1)
-                        .orderByDesc(KnowledgeContent::getViewCount)
-                        .last("LIMIT 10")
-        );
-
-        return list.stream()
-                .map(this::convertToListVO)
-                .collect(Collectors.toList());
+    public KnowledgeNode getNodeByNodeId(String nodeId) {
+        try {
+            return knowledgeNodeMapper.selectByNodeId(nodeId);
+        } catch (Exception e) {
+            log.error("获取节点详情失败: {}", e.getMessage(), e);
+            return null;
+        }
     }
 
-    /**
-     * 清除所有知识相关缓存
-     * 在管理后台更新知识时调用
-     */
-    @CacheEvict(value = {"knowledge:categories", "knowledge:recommend", "knowledge:hot"}, allEntries = true)
-    public void clearAllCache() {
-        log.info("清除知识模块所有缓存");
+    @Override
+    public Map<String, Object> getNodeList(Integer type, Integer status, int page, int size) {
+        try {
+            int offset = (page - 1) * size;
+            List<KnowledgeNode> nodes = knowledgeNodeMapper.selectByType(type, status, offset, size);
+            // 计算总数
+            int total = knowledgeNodeMapper.countByType(type, status);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", nodes);
+            result.put("total", total);
+            return result;
+        } catch (Exception e) {
+            log.error("查询节点列表失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
+        }
     }
 
-    private CategoryVO convertToCategoryVO(KnowledgeCategory category) {
-        CategoryVO vo = new CategoryVO();
-        vo.setId(category.getId());
-        vo.setCategoryName(category.getCategoryName());
-        vo.setParentId(category.getParentId());
-        vo.setLevel(category.getLevel());
-        vo.setIcon(category.getIcon());
-        return vo;
+    @Override
+    public Map<String, Object> searchNodes(String keyword, Integer status, int page, int size) {
+        try {
+            int offset = (page - 1) * size;
+            List<KnowledgeNode> nodes = knowledgeNodeMapper.selectByKeyword(keyword, status, offset, size);
+            // 这里简化处理，实际应该计算总数
+            int total = nodes.size();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", nodes);
+            result.put("total", total);
+            return result;
+        } catch (Exception e) {
+            log.error("模糊查询节点失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
+        }
     }
 
-    private KnowledgeListVO convertToListVO(KnowledgeContent content) {
-        KnowledgeListVO vo = new KnowledgeListVO();
-        vo.setId(content.getId());
-        vo.setTitle(content.getTitle());
-        vo.setCategoryId(content.getCategoryId());
-        vo.setContentType(content.getContentType());
-        vo.setSummary(content.getSummary());
-        vo.setCoverImage(content.getCoverImage());
-        vo.setViewCount(content.getViewCount());
-        vo.setLikeCount(content.getLikeCount());
-        vo.setCollectCount(content.getCollectCount());
-        vo.setPublishTime(content.getPublishTime());
-        vo.setAuthorName(content.getAuthorName());
-        return vo;
+    @Override
+    @Transactional
+    public String createEdge(KnowledgeEdge knowledgeEdge) {
+        try {
+            // 生成边ID
+            String edgeId = UUID.randomUUID().toString();
+            knowledgeEdge.setEdgeId(edgeId);
+            knowledgeEdge.setWeight(1.0);
+            knowledgeEdge.setStatus(1); // 启用
+            knowledgeEdge.setDeleted(0);
+            knowledgeEdge.setCreateTime(LocalDateTime.now());
+            knowledgeEdge.setUpdateTime(LocalDateTime.now());
+
+            boolean success = knowledgeEdgeMapper.insert(knowledgeEdge) > 0;
+            if (success) {
+                return edgeId;
+            } else {
+                throw new RuntimeException("创建边失败");
+            }
+        } catch (Exception e) {
+            log.error("创建边失败: {}", e.getMessage(), e);
+            throw new RuntimeException("创建边失败");
+        }
     }
 
-    private KnowledgeDetailVO convertToDetailVO(KnowledgeContent content) {
-        KnowledgeDetailVO vo = new KnowledgeDetailVO();
-        vo.setId(content.getId());
-        vo.setTitle(content.getTitle());
-        vo.setCategoryId(content.getCategoryId());
-        vo.setContentType(content.getContentType());
-        vo.setSummary(content.getSummary());
-        vo.setContent(content.getContent());
-        vo.setCoverImage(content.getCoverImage());
-        vo.setVideoUrl(content.getVideoUrl());
-        vo.setVideoDuration(content.getVideoDuration());
-        vo.setTags(content.getTags());
-        vo.setViewCount(content.getViewCount());
-        vo.setLikeCount(content.getLikeCount());
-        vo.setCollectCount(content.getCollectCount());
-        vo.setShareCount(content.getShareCount());
-        vo.setPublishTime(content.getPublishTime());
-        vo.setAuthorName(content.getAuthorName());
-        vo.setSource(content.getSource());
-        return vo;
+    @Override
+    @Transactional
+    public boolean updateEdge(KnowledgeEdge knowledgeEdge) {
+        try {
+            knowledgeEdge.setUpdateTime(LocalDateTime.now());
+            return knowledgeEdgeMapper.updateById(knowledgeEdge) > 0;
+        } catch (Exception e) {
+            log.error("更新边失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteEdge(String edgeId) {
+        try {
+            KnowledgeEdge edge = knowledgeEdgeMapper.selectByEdgeId(edgeId);
+            if (edge != null) {
+                edge.setDeleted(1);
+                edge.setUpdateTime(LocalDateTime.now());
+                return knowledgeEdgeMapper.updateById(edge) > 0;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("删除边失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public KnowledgeEdge getEdgeByEdgeId(String edgeId) {
+        try {
+            return knowledgeEdgeMapper.selectByEdgeId(edgeId);
+        } catch (Exception e) {
+            log.error("获取边详情失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getEdgeList(Integer type, Integer status, int page, int size) {
+        try {
+            int offset = (page - 1) * size;
+            List<KnowledgeEdge> edges = knowledgeEdgeMapper.selectByType(type, status, offset, size);
+            // 计算总数
+            int total = knowledgeEdgeMapper.countByType(type, status);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", edges);
+            result.put("total", total);
+            return result;
+        } catch (Exception e) {
+            log.error("查询边列表失败: {}", e.getMessage(), e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("list", new ArrayList<>());
+            result.put("total", 0);
+            return result;
+        }
+    }
+
+    @Override
+    public List<KnowledgeEdge> getInEdges(String nodeId, Integer status) {
+        try {
+            return knowledgeEdgeMapper.selectByTargetNodeId(nodeId, status);
+        } catch (Exception e) {
+            log.error("获取节点的入边失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<KnowledgeEdge> getOutEdges(String nodeId, Integer status) {
+        try {
+            return knowledgeEdgeMapper.selectBySourceNodeId(nodeId, status);
+        } catch (Exception e) {
+            log.error("获取节点的出边失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<KnowledgeNode> getNeighbors(String nodeId, Integer status) {
+        try {
+            List<KnowledgeEdge> outEdges = knowledgeEdgeMapper.selectBySourceNodeId(nodeId, status);
+            List<KnowledgeEdge> inEdges = knowledgeEdgeMapper.selectByTargetNodeId(nodeId, status);
+
+            List<KnowledgeNode> neighbors = new ArrayList<>();
+            for (KnowledgeEdge edge : outEdges) {
+                KnowledgeNode node = knowledgeNodeMapper.selectByNodeId(edge.getTargetNodeId());
+                if (node != null) {
+                    neighbors.add(node);
+                }
+            }
+            for (KnowledgeEdge edge : inEdges) {
+                KnowledgeNode node = knowledgeNodeMapper.selectByNodeId(edge.getSourceNodeId());
+                if (node != null && !neighbors.contains(node)) {
+                    neighbors.add(node);
+                }
+            }
+            return neighbors;
+        } catch (Exception e) {
+            log.error("获取节点的邻居节点失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<KnowledgeNode> getRelatedKnowledgeByFraudType(Long fraudTypeId, int limit) {
+        try {
+            // 先查询诈骗类型节点
+            KnowledgeNode fraudTypeNode = knowledgeNodeMapper.selectByRelatedId(fraudTypeId, 1);
+            if (fraudTypeNode != null) {
+                // 查询诈骗类型节点的出边
+                List<KnowledgeEdge> edges = knowledgeEdgeMapper.selectBySourceNodeId(fraudTypeNode.getNodeId(), 1);
+                // 根据边获取相关知识节点
+                List<KnowledgeNode> relatedKnowledge = new ArrayList<>();
+                for (KnowledgeEdge edge : edges) {
+                    KnowledgeNode node = knowledgeNodeMapper.selectByNodeId(edge.getTargetNodeId());
+                    if (node != null && (node.getType() == 2 || node.getType() == 3 || node.getType() == 4)) {
+                        relatedKnowledge.add(node);
+                        if (relatedKnowledge.size() >= limit) {
+                            break;
+                        }
+                    }
+                }
+                return relatedKnowledge;
+            }
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("根据诈骗类型获取相关知识失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean buildFraudTypeKnowledgeMapping(Long fraudTypeId, List<String> knowledgeIds) {
+        try {
+            // 先查询诈骗类型节点
+            KnowledgeNode fraudTypeNode = knowledgeNodeMapper.selectByRelatedId(fraudTypeId, 1);
+            if (fraudTypeNode != null) {
+                // 删除现有的映射边
+                List<KnowledgeEdge> existingEdges = knowledgeEdgeMapper.selectBySourceNodeId(fraudTypeNode.getNodeId(), 1);
+                for (KnowledgeEdge edge : existingEdges) {
+                    knowledgeEdgeMapper.deleteById(edge.getId());
+                }
+                // 创建新的映射边
+                for (String knowledgeId : knowledgeIds) {
+                    KnowledgeEdge edge = new KnowledgeEdge();
+                    edge.setEdgeId(UUID.randomUUID().toString());
+                    edge.setSourceNodeId(fraudTypeNode.getNodeId());
+                    edge.setTargetNodeId(knowledgeId);
+                    edge.setType(3); // 关联
+                    edge.setName("关联");
+                    edge.setDescription("诈骗类型与知识的关联");
+                    edge.setWeight(1.0);
+                    edge.setStatus(1); // 启用
+                    edge.setDeleted(0);
+                    edge.setCreateTime(LocalDateTime.now());
+                    edge.setUpdateTime(LocalDateTime.now());
+                    knowledgeEdgeMapper.insert(edge);
+                }
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("建立诈骗类型与知识的映射失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public List<KnowledgeNode> getHotNodes(Integer type, Integer status, int limit) {
+        try {
+            return knowledgeNodeMapper.selectHotNodes(type, status, limit);
+        } catch (Exception e) {
+            log.error("获取热度最高的节点失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean updateNodeHotness(String nodeId, Integer hotness) {
+        try {
+            KnowledgeNode node = knowledgeNodeMapper.selectByNodeId(nodeId);
+            if (node != null) {
+                return knowledgeNodeMapper.updateHotness(node.getId(), hotness) > 0;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("更新节点热度失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public int batchCreateNodes(List<KnowledgeNode> nodes) {
+        try {
+            for (KnowledgeNode node : nodes) {
+                node.setNodeId(UUID.randomUUID().toString());
+                node.setHotness(0);
+                node.setStatus(1); // 启用
+                node.setDeleted(0);
+                node.setCreateTime(LocalDateTime.now());
+                node.setUpdateTime(LocalDateTime.now());
+            }
+            return knowledgeNodeMapper.batchInsert(nodes);
+        } catch (Exception e) {
+            log.error("批量创建节点失败: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    @Override
+    @Transactional
+    public int batchCreateEdges(List<KnowledgeEdge> edges) {
+        try {
+            for (KnowledgeEdge edge : edges) {
+                edge.setEdgeId(UUID.randomUUID().toString());
+                edge.setWeight(1.0);
+                edge.setStatus(1); // 启用
+                edge.setDeleted(0);
+                edge.setCreateTime(LocalDateTime.now());
+                edge.setUpdateTime(LocalDateTime.now());
+            }
+            return knowledgeEdgeMapper.batchInsert(edges);
+        } catch (Exception e) {
+            log.error("批量创建边失败: {}", e.getMessage(), e);
+            return 0;
+        }
     }
 }

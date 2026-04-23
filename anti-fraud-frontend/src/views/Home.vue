@@ -14,10 +14,10 @@
         </div>
 
         <nav class="nav-menu">
-          <a href="#knowledge" class="nav-item active">知识学习</a>
-          <a href="#test" class="nav-item">在线测试</a>
-          <a href="#simulation" class="nav-item">情景演练</a>
-          <a href="#activity" class="nav-item">活动中心</a>
+          <a href="#knowledge" class="nav-item" :class="{ active: activeNav === 'knowledge' }" @click="setActiveNav('knowledge')">知识学习</a>
+          <a href="#test" class="nav-item" :class="{ active: activeNav === 'test' }" @click="setActiveNav('test')">在线测试</a>
+          <a href="#simulation" class="nav-item" :class="{ active: activeNav === 'simulation' }" @click="setActiveNav('simulation')">情景演练</a>
+          <a href="#activity" class="nav-item" :class="{ active: activeNav === 'activity' }" @click="setActiveNav('activity')">活动中心</a>
         </nav>
 
         <div class="header-actions">
@@ -33,10 +33,13 @@
 
       <!-- 移动端菜单 -->
       <div class="mobile-menu" v-show="mobileMenuOpen">
-        <a href="#knowledge" class="mobile-nav-item">知识学习</a>
-        <a href="#test" class="mobile-nav-item">在线测试</a>
-        <a href="#simulation" class="mobile-nav-item">情景演练</a>
-        <a href="#activity" class="mobile-nav-item">活动中心</a>
+        <a href="#knowledge" class="mobile-nav-item" @click="setActiveNav('knowledge'); mobileMenuOpen = false">知识学习</a>
+        <a href="#test" class="mobile-nav-item" @click="setActiveNav('test'); mobileMenuOpen = false">在线测试</a>
+        <a href="#simulation" class="mobile-nav-item" @click="setActiveNav('simulation'); mobileMenuOpen = false">情景演练</a>
+        <a href="#activity" class="mobile-nav-item" @click="setActiveNav('activity'); mobileMenuOpen = false">活动中心</a>
+        <el-button type="primary" size="default" class="mobile-login-btn" @click="router.push('/login'); mobileMenuOpen = false">
+          登录/注册
+        </el-button>
       </div>
     </header>
 
@@ -311,16 +314,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Lock, Key, Star, Reading, VideoPlay, ArrowRight,
-  Menu, View, Document, WarnTriangleFilled, EditPen, Coordinate
+  Menu, View, Document, WarnTriangleFilled, EditPen, Coordinate, Trophy
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const mobileMenuOpen = ref(false)
 const activeKnowledgeTab = ref('all')
+const activeNav = ref('knowledge')
+const isMobile = ref(false)
+
+const setActiveNav = (nav: string) => {
+  activeNav.value = nav
+}
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 
 const getParticleStyle = (index: number) => {
   const size = Math.random() * 6 + 2
@@ -501,6 +523,12 @@ const learningPath = [
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--border-primary);
+  transition: all var(--transition-normal);
+}
+
+.home-header.scrolled {
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-md);
 }
 
 .header-container {
@@ -516,6 +544,11 @@ const learningPath = [
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
+  transition: transform var(--transition-fast);
+}
+
+.logo-section:hover {
+  transform: scale(1.02);
 }
 
 .logo-icon {
@@ -529,6 +562,11 @@ const learningPath = [
   color: white;
   font-size: 20px;
   box-shadow: var(--shadow-primary);
+  transition: box-shadow var(--transition-fast);
+}
+
+.logo-icon:hover {
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
 .logo-text {
@@ -550,6 +588,7 @@ const learningPath = [
 .nav-menu {
   display: flex;
   gap: var(--spacing-6);
+  align-items: center;
 }
 
 .nav-item {
@@ -558,7 +597,8 @@ const learningPath = [
   font-weight: var(--font-weight-medium);
   padding: var(--spacing-2) 0;
   position: relative;
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-base);
 }
 
 .nav-item::after {
@@ -575,6 +615,7 @@ const learningPath = [
 .nav-item:hover,
 .nav-item.active {
   color: var(--primary-color);
+  transform: translateY(-1px);
 }
 
 .nav-item:hover::after,
@@ -585,6 +626,16 @@ const learningPath = [
 .header-actions {
   display: flex;
   gap: var(--spacing-3);
+  align-items: center;
+}
+
+.header-actions .el-button {
+  transition: all var(--transition-fast);
+}
+
+.header-actions .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .mobile-menu-btn {
@@ -595,6 +646,13 @@ const learningPath = [
   font-size: 24px;
   color: var(--text-primary);
   cursor: pointer;
+  transition: all var(--transition-fast);
+  border-radius: var(--radius-md);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--bg-hover);
+  transform: rotate(90deg);
 }
 
 .mobile-menu {
@@ -604,6 +662,18 @@ const learningPath = [
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
+  animation: slideDown 0.3s ease forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .mobile-nav-item {
@@ -611,11 +681,25 @@ const learningPath = [
   color: var(--text-primary);
   text-decoration: none;
   border-radius: var(--radius-md);
-  transition: background var(--transition-fast);
+  transition: all var(--transition-fast);
+  font-weight: var(--font-weight-medium);
 }
 
 .mobile-nav-item:hover {
   background: var(--bg-hover);
+  transform: translateX(4px);
+}
+
+.mobile-login-btn {
+  margin-top: var(--spacing-4);
+  width: 100%;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.mobile-login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 /* ==================== Hero区域 ========== */
@@ -626,6 +710,7 @@ const learningPath = [
   align-items: center;
   padding: var(--spacing-16) var(--spacing-6);
   overflow: hidden;
+  transition: all var(--transition-normal);
 }
 
 .hero-bg {
@@ -695,6 +780,20 @@ const learningPath = [
   font-size: var(--font-size-sm);
   backdrop-filter: blur(10px);
   margin-bottom: var(--spacing-6);
+  animation: fadeIn 0.6s ease forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .hero-title {
@@ -702,6 +801,37 @@ const learningPath = [
   font-weight: var(--font-weight-bold);
   line-height: 1.2;
   margin-bottom: var(--spacing-6);
+  animation: slideUp 0.8s ease forwards;
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+.hero-desc {
+  font-size: var(--font-size-lg);
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.7;
+  margin-bottom: var(--spacing-8);
+  animation: slideUp 0.8s ease forwards;
+  animation-delay: 0.6s;
+  opacity: 0;
+}
+
+.hero-actions {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-10);
+  animation: slideUp 0.8s ease forwards;
+  animation-delay: 0.8s;
+  opacity: 0;
+}
+
+.hero-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  animation: slideUp 0.8s ease forwards;
+  animation-delay: 1s;
+  opacity: 0;
 }
 
 .gradient-text {
@@ -711,34 +841,16 @@ const learningPath = [
   background-clip: text;
 }
 
-.hero-desc {
-  font-size: var(--font-size-lg);
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.7;
-  margin-bottom: var(--spacing-8);
-}
-
-.hero-actions {
-  display: flex;
-  gap: var(--spacing-4);
-  margin-bottom: var(--spacing-10);
-}
-
 .btn-primary-gradient {
   background: var(--gradient-primary) !important;
   border: none !important;
   box-shadow: var(--shadow-primary) !important;
+  transition: all var(--transition-fast) !important;
 }
 
 .btn-primary-gradient:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg), var(--shadow-glow) !important;
-}
-
-.hero-stats {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-8);
 }
 
 .stat-item {
@@ -936,6 +1048,23 @@ const learningPath = [
   transition: all var(--transition-normal);
   animation: fadeInUp 0.6s ease forwards;
   opacity: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 4px;
+  background: var(--gradient-primary);
+  transition: left var(--transition-normal);
+}
+
+.feature-card:hover::before {
+  left: 0;
 }
 
 @keyframes fadeInUp {
@@ -955,6 +1084,11 @@ const learningPath = [
   border-color: var(--primary-color);
 }
 
+.feature-card:hover .feature-icon {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
 .feature-icon {
   width: 64px;
   height: 64px;
@@ -965,6 +1099,7 @@ const learningPath = [
   font-size: 28px;
   color: white;
   margin: 0 auto var(--spacing-4);
+  transition: all var(--transition-fast);
 }
 
 .feature-card h3 {

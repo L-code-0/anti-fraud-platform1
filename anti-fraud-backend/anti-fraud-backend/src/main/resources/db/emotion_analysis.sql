@@ -1,0 +1,31 @@
+-- 情感分析表
+DROP TABLE IF EXISTS `emotion_analysis`;
+CREATE TABLE `emotion_analysis` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `analysis_id` VARCHAR(50) NOT NULL COMMENT '分析ID（UUID）',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
+    `message_id` VARCHAR(50) NOT NULL COMMENT '消息ID',
+    `session_id` VARCHAR(50) NOT NULL COMMENT '会话ID',
+    `text` TEXT NOT NULL COMMENT '分析文本',
+    `emotion_type` TINYINT NOT NULL DEFAULT 3 COMMENT '情感类型：1-积极，2-消极，3-中性',
+    `emotion_score` DOUBLE NOT NULL DEFAULT 0.0 COMMENT '情感得分（-1到1，-1表示最消极，1表示最积极）',
+    `emotion_tags` TEXT COMMENT '情绪标签（JSON格式）',
+    `analysis_result` TEXT COMMENT '分析结果（JSON格式）',
+    `analysis_time` DATETIME COMMENT '分析时间',
+    `status` TINYINT NOT NULL DEFAULT 2 COMMENT '状态：1-已分析，2-分析中，3-分析失败',
+    `error_message` TEXT COMMENT '错误信息',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_analysis_id` (`analysis_id`),
+    UNIQUE KEY `uk_message_id` (`message_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_session_id` (`session_id`),
+    KEY `idx_emotion_type` (`emotion_type`),
+    KEY `idx_emotion_score` (`emotion_score`),
+    KEY `idx_status` (`status`),
+    KEY `idx_analysis_time` (`analysis_time`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='情感分析表';

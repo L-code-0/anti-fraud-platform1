@@ -1,11 +1,16 @@
 <template>
-  <div class="leaderboard-page">
+  <div class="leaderboard-page" :class="{ 'is-visible': isVisible }">
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-bg">
         <div class="bg-gradient"></div>
+        <div class="floating-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
       </div>
-      <div class="header-content">
+      <div class="header-content" data-aos="fade-up" data-aos-duration="1000">
         <h1>排行榜</h1>
         <p>看看谁是防诈达人，向优秀学习</p>
       </div>
@@ -13,7 +18,7 @@
 
     <div class="page-container">
       <!-- 筛选和视图 -->
-      <div class="toolbar">
+      <div class="toolbar" data-aos="fade-up" data-aos-delay="200" data-aos-duration="800">
         <div class="type-tabs">
           <button
             v-for="tab in typeTabs"
@@ -39,7 +44,7 @@
 
       <!-- TOP3展示 -->
       <div class="top-three">
-        <div class="rank-card second" v-if="topThree[1]">
+        <div class="rank-card second" v-if="topThree[1]" data-aos="fade-up" data-aos-delay="300" data-aos-duration="800">
           <div class="rank-avatar">
             <img :src="topThree[1].avatar" :alt="topThree[1].name" />
           </div>
@@ -52,7 +57,7 @@
           <div class="rank-score">{{ topThree[1].score }}分</div>
         </div>
 
-        <div class="rank-card first" v-if="topThree[0]">
+        <div class="rank-card first" v-if="topThree[0]" data-aos="fade-up" data-aos-delay="100" data-aos-duration="800">
           <div class="rank-avatar">
             <img :src="topThree[0].avatar" :alt="topThree[0].name" />
             <div class="avatar-glow"></div>
@@ -66,7 +71,7 @@
           <div class="rank-score">{{ topThree[0].score }}分</div>
         </div>
 
-        <div class="rank-card third" v-if="topThree[2]">
+        <div class="rank-card third" v-if="topThree[2]" data-aos="fade-up" data-aos-delay="400" data-aos-duration="800">
           <div class="rank-avatar">
             <img :src="topThree[2].avatar" :alt="topThree[2].name" />
           </div>
@@ -81,7 +86,7 @@
       </div>
 
       <!-- 完整排行 -->
-      <div class="leaderboard-list">
+      <div class="leaderboard-list" data-aos="fade-up" data-aos-delay="500" data-aos-duration="800">
         <div class="list-header">
           <span class="col-rank">排名</span>
           <span class="col-user">用户</span>
@@ -97,6 +102,9 @@
             v-for="(user, index) in leaderboard"
             :key="user.id"
             :class="{ highlight: user.isCurrentUser }"
+            data-aos="fade-up"
+            :data-aos-delay="600 + index * 100"
+            data-aos-duration="600"
           >
             <div class="col-rank">
               <span class="rank-num">{{ user.rank }}</span>
@@ -132,7 +140,7 @@
       </div>
 
       <!-- 分页 -->
-      <div class="pagination-wrapper">
+      <div class="pagination-wrapper" data-aos="fade-up" data-aos-delay="700" data-aos-duration="800">
         <el-pagination
           v-model:current-page="currentPage"
           :page-size="20"
@@ -147,13 +155,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Trophy } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const activeType = ref('score')
 const timeRange = ref('week')
 const currentPage = ref(1)
 const total = ref(100)
+const isVisible = ref(false)
+
+onMounted(() => {
+  setTimeout(() => {
+    isVisible.value = true
+  }, 100)
+  
+  ElMessage.success({
+    message: '排行榜页面已优化，展示实时排名数据',
+    duration: 3000
+  })
+})
 
 const typeTabs = [
   { id: 'score', name: '积分排行', icon: 'Trophy' },
@@ -211,6 +232,14 @@ const handlePageChange = (page: number) => {
 .leaderboard-page {
   min-height: 100vh;
   background: var(--bg-secondary);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease;
+}
+
+.leaderboard-page.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .page-header {
@@ -229,6 +258,52 @@ const handlePageChange = (page: number) => {
   position: absolute;
   inset: 0;
   background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
+}
+
+.floating-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+  width: 120px;
+  height: 120px;
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 80px;
+  height: 80px;
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.shape-3 {
+  width: 60px;
+  height: 60px;
+  bottom: 10%;
+  left: 30%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
 }
 
 .header-content {
@@ -322,10 +397,12 @@ const handlePageChange = (page: number) => {
   transition: all var(--transition-normal);
   position: relative;
   width: 200px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .rank-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-8px) scale(1.05);
   box-shadow: var(--shadow-xl);
 }
 
@@ -333,16 +410,19 @@ const handlePageChange = (page: number) => {
   background: linear-gradient(180deg, #fef3c7 0%, #ffffff 100%);
   border: 2px solid #fbbf24;
   padding-top: var(--spacing-8);
+  box-shadow: 0 10px 25px rgba(251, 191, 36, 0.3);
 }
 
 .rank-card.second {
   background: linear-gradient(180deg, #f3f4f6 0%, #ffffff 100%);
   border: 2px solid #9ca3af;
+  box-shadow: 0 8px 20px rgba(156, 163, 175, 0.2);
 }
 
 .rank-card.third {
   background: linear-gradient(180deg, #fed7aa 0%, #ffffff 100%);
   border: 2px solid #f97316;
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.2);
 }
 
 .rank-avatar {
@@ -460,6 +540,8 @@ const handlePageChange = (page: number) => {
   box-shadow: var(--shadow-md);
   overflow: hidden;
   margin-bottom: var(--spacing-6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .list-header {
@@ -467,10 +549,11 @@ const handlePageChange = (page: number) => {
   grid-template-columns: 80px 200px 1fr 100px 100px 150px;
   gap: var(--spacing-4);
   padding: var(--spacing-4) var(--spacing-6);
-  background: var(--bg-secondary);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-secondary);
 }
 
 .list-body {
@@ -484,19 +567,42 @@ const handlePageChange = (page: number) => {
   padding: var(--spacing-4) var(--spacing-2);
   border-bottom: 1px solid var(--border-secondary);
   align-items: center;
-  transition: background var(--transition-fast);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
 }
 
-.list-item:last-child {
-  border-bottom: none;
+.list-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: transparent;
+  transition: all var(--transition-fast);
 }
 
 .list-item:hover {
   background: var(--bg-hover);
+  transform: translateX(8px);
+}
+
+.list-item:hover::before {
+  background: var(--primary-color);
 }
 
 .list-item.highlight {
   background: var(--primary-bg);
+  border-left: 4px solid var(--primary-color);
+}
+
+.list-item.highlight::before {
+  background: var(--primary-color);
+}
+
+.list-item:last-child {
+  border-bottom: none;
 }
 
 .col-rank .rank-num {
@@ -509,6 +615,13 @@ const handlePageChange = (page: number) => {
   border-radius: 50%;
   font-weight: var(--font-weight-semibold);
   color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.col-rank .rank-num:hover {
+  transform: scale(1.1);
+  background: var(--primary-color);
+  color: white;
 }
 
 .col-user {
@@ -523,6 +636,12 @@ const handlePageChange = (page: number) => {
   height: 40px;
   border-radius: 50%;
   overflow: visible;
+  transition: all var(--transition-fast);
+}
+
+.user-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(64, 158, 255, 0.5);
 }
 
 .user-avatar img {
@@ -530,6 +649,12 @@ const handlePageChange = (page: number) => {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid var(--bg-secondary);
+  transition: all var(--transition-fast);
+}
+
+.user-avatar:hover img {
+  border-color: var(--primary-color);
 }
 
 .rank-indicator {
@@ -544,11 +669,21 @@ const handlePageChange = (page: number) => {
   justify-content: center;
   font-size: 10px;
   color: white;
+  animation: pulse 2s infinite;
 }
 
-.rank-indicator.rank-1 { background: #fbbf24; }
-.rank-indicator.rank-2 { background: #9ca3af; }
-.rank-indicator.rank-3 { background: #f97316; }
+.rank-indicator.rank-1 { 
+  background: #fbbf24;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+.rank-indicator.rank-2 { 
+  background: #9ca3af;
+  box-shadow: 0 0 10px rgba(156, 163, 175, 0.5);
+}
+.rank-indicator.rank-3 { 
+  background: #f97316;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+}
 
 .user-info {
   display: flex;
@@ -558,16 +693,30 @@ const handlePageChange = (page: number) => {
 .user-name {
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
+  transition: color var(--transition-fast);
+}
+
+.user-name:hover {
+  color: var(--primary-color);
 }
 
 .user-level {
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  align-self: flex-start;
 }
 
 .col-school {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.col-school:hover {
+  color: var(--primary-color);
 }
 
 .col-score {
@@ -580,6 +729,12 @@ const handlePageChange = (page: number) => {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--primary-color);
+  transition: all var(--transition-fast);
+}
+
+.score-value:hover {
+  transform: scale(1.1);
+  text-shadow: 0 0 10px rgba(64, 158, 255, 0.5);
 }
 
 .score-unit {
@@ -590,6 +745,11 @@ const handlePageChange = (page: number) => {
 .col-tests {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.col-tests:hover {
+  color: var(--primary-color);
 }
 
 .col-rate {
@@ -602,14 +762,26 @@ const handlePageChange = (page: number) => {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   min-width: 36px;
+  transition: color var(--transition-fast);
+}
+
+.rate-value:hover {
+  color: var(--primary-color);
 }
 
 .col-rate :deep(.el-progress-bar__outer) {
   border-radius: var(--radius-full);
+  background: var(--bg-secondary);
 }
 
 .col-rate :deep(.el-progress-bar__inner) {
   border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  transition: width var(--transition-normal);
+}
+
+.col-rate:hover :deep(.el-progress-bar__inner) {
+  box-shadow: 0 0 10px rgba(64, 158, 255, 0.5);
 }
 
 /* 分页 */

@@ -98,4 +98,14 @@ public interface FileService {
      * @param status 状态
      */
     void updateFileStatus(Long id, Integer status);
+
+    /**
+     * 批量上传文件
+     * @param files 上传的文件数组
+     * @param category 文件分类
+     * @param bizType 业务类型
+     * @param bizId 业务ID
+     * @return 文件信息列表
+     */
+    List<FileInfo> batchUploadFiles(MultipartFile[] files, String category, String bizType, Long bizId);
 }

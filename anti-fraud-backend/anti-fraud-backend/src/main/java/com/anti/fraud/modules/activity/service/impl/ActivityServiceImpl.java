@@ -9,6 +9,10 @@ import com.anti.fraud.modules.activity.mapper.ActivityMapper;
 import com.anti.fraud.modules.activity.mapper.ActivityRegistrationMapper;
 import com.anti.fraud.modules.activity.service.ActivityService;
 import com.anti.fraud.modules.activity.vo.ActivityVO;
+import com.anti.fraud.modules.notification.entity.Notification;
+import com.anti.fraud.modules.notification.service.NotificationService;
+import com.anti.fraud.modules.user.entity.User;
+import com.anti.fraud.modules.user.mapper.UserMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +42,8 @@ public class ActivityServiceImpl implements ActivityService {
 
     private final ActivityMapper activityMapper;
     private final ActivityRegistrationMapper registrationMapper;
+    private final UserMapper userMapper;
+    private final NotificationService notificationService;
 
     /**
      * 分页查询活动列表
@@ -280,6 +286,22 @@ public class ActivityServiceImpl implements ActivityService {
         // 更新参与人数（使用乐观锁机制）
         activity.setCurrentParticipants(activity.getCurrentParticipants() + 1);
         activityMapper.updateById(activity);
+        
+        // 发送报名成功提醒
+        User user = userMapper.selectById(userId);
+        if (user != null) {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setTitle("报名成功提醒");
+            notification.setContent("亲爱的" + user.getUsername() + "，您已成功报名活动\"" + activity.getActivityName() + "\"，请准时参加！");
+            notification.setType(1); // 活动提醒
+            notification.setMethod(1); // 系统通知
+            notification.setStatus(0); // 未读
+            notification.setCreateTime(LocalDateTime.now());
+            
+            notificationService.sendNotification(notification);
+            log.info("向用户 {} 发送报名成功提醒: {}", user.getUsername(), activity.getActivityName());
+        }
         
         log.info("用户报名成功: userId={}, activityId={}", userId, activityId);
     }

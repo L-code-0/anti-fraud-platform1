@@ -1,0 +1,32 @@
+-- 设备风险表
+DROP TABLE IF EXISTS `device_risk`;
+CREATE TABLE `device_risk` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `risk_id` VARCHAR(50) NOT NULL COMMENT '风险ID（UUID）',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
+    `device_id` VARCHAR(50) NOT NULL COMMENT '设备ID',
+    `device_type` TINYINT NOT NULL DEFAULT 4 COMMENT '设备类型：1-手机，2-平板，3-电脑，4-其他',
+    `device_name` VARCHAR(100) COMMENT '设备名称',
+    `device_info` TEXT COMMENT '设备信息（JSON格式）',
+    `ip_address` VARCHAR(50) COMMENT 'IP地址',
+    `location` TEXT COMMENT '地理位置（JSON格式）',
+    `risk_score` DOUBLE DEFAULT 0 COMMENT '风险分数（0-100）',
+    `risk_level` TINYINT NOT NULL DEFAULT 1 COMMENT '风险等级：1-低风险，2-中风险，3-高风险，4-极高风险',
+    `risk_details` TEXT COMMENT '风险详情（JSON格式）',
+    `last_used_time` DATETIME COMMENT '最后使用时间',
+    `status` TINYINT NOT NULL DEFAULT 2 COMMENT '状态：1-已分析，2-分析中，3-分析失败',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_risk_id` (`risk_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_device_id` (`device_id`),
+    KEY `idx_device_type` (`device_type`),
+    KEY `idx_ip_address` (`ip_address`),
+    KEY `idx_risk_level` (`risk_level`),
+    KEY `idx_last_used_time` (`last_used_time`),
+    KEY `idx_status` (`status`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='设备风险表';

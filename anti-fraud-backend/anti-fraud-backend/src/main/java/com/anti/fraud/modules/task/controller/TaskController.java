@@ -1,101 +1,153 @@
 package com.anti.fraud.modules.task.controller;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.anti.fraud.common.result.Result;
-import com.anti.fraud.modules.task.dto.TaskCreateDTO;
+import com.anti.fraud.modules.task.entity.TaskInfo;
 import com.anti.fraud.modules.task.service.TaskService;
 import com.anti.fraud.modules.task.vo.TaskVO;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "班级任务", description = "班级任务管理接口")
+import java.util.List;
+
+/**
+ * 任务控制器
+ */
 @RestController
 @RequestMapping("/task")
 @RequiredArgsConstructor
+@Slf4j
+@Api(tags = "任务服务")
 public class TaskController {
 
     private final TaskService taskService;
 
-    @Operation(summary = "创建任务", security = @SecurityRequirement(name = "Bearer"))
-    @PostMapping
-    public Result<Long> createTask(@RequestBody TaskCreateDTO dto) {
-        Long taskId = taskService.createTask(dto);
-        return Result.success("创建成功", taskId);
+    @Operation(summary = "获取用户任务列表")
+    @GetMapping("/user-tasks")
+    public Result<List<TaskVO>> getUserTasks(
+            @ApiParam(value = "任务类型：1-每日任务，2-成就任务，3-赛季任务") @RequestParam(required = false) Integer taskType) {
+        try {
+            List<TaskVO> tasks = taskService.getUserTasks(taskType);
+            return Result.success(tasks);
+        } catch (Exception e) {
+            log.error("获取用户任务列表失败: {}", e.getMessage(), e);
+            return Result.fail("获取任务列表失败");
+        }
     }
 
-    @Operation(summary = "我发布的任务列表（教师）", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/my")
-    public Result<Page<TaskVO>> getMyTasks(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        return Result.success(taskService.getMyTasks(page, size));
+    @Operation(summary = "获取所有任务列表")
+    @GetMapping("/all-tasks")
+    public Result<List<TaskInfo>> getAllTasks(
+            @ApiParam(value = "任务类型：1-每日任务，2-成就任务，3-赛季任务") @RequestParam(required = false) Integer taskType) {
+        try {
+            List<TaskInfo> tasks = taskService.getAllTasks(taskType);
+            return Result.success(tasks);
+        } catch (Exception e) {
+            log.error("获取所有任务列表失败: {}", e.getMessage(), e);
+            return Result.fail("获取任务列表失败");
+        }
     }
 
-    @Operation(summary = "学生的任务列表", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/student")
-    public Result<Page<TaskVO>> getStudentTasks(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        return Result.success(taskService.getStudentTasks(page, size));
+    @Operation(summary = "更新任务进度")
+    @PostMapping("/update-progress")
+    public Result<Boolean> updateTaskProgress(
+            @ApiParam(value = "任务ID", required = true) @RequestParam Long taskId,
+            @ApiParam(value = "进度增量", required = true) @RequestParam Integer progress) {
+        try {
+            boolean result = taskService.updateTaskProgress(taskId, progress);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("更新任务进度失败: {}", e.getMessage(), e);
+            return Result.fail("更新任务进度失败");
+        }
     }
 
-    @Operation(summary = "任务详情", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/{id}")
-    public Result<TaskVO> getTaskDetail(@PathVariable Long id) {
-        return Result.success(taskService.getTaskDetail(id));
+    @Operation(summary = "领取任务奖励")
+    @PostMapping("/claim-reward")
+    public Result<Boolean> claimTaskReward(
+            @ApiParam(value = "任务ID", required = true) @RequestParam Long taskId,
+            @ApiParam(value = "任务周期", required = true) @RequestParam String taskCycle) {
+        try {
+            boolean result = taskService.claimTaskReward(taskId, taskCycle);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("领取任务奖励失败: {}", e.getMessage(), e);
+            return Result.fail("领取任务奖励失败");
+        }
     }
 
-    @Operation(summary = "完成任务（学生）", security = @SecurityRequirement(name = "Bearer"))
-    @PostMapping("/{id}/complete")
-    public Result<Void> completeTask(
-            @PathVariable Long id,
-            @RequestParam(required = false) Integer score) {
-        taskService.completeTask(id, score);
-        return Result.successMsg("完成成功");
+    @Operation(summary = "获取未领取奖励的任务数量")
+    @GetMapping("/unclaimed-count")
+    public Result<Integer> getUnclaimedTaskCount() {
+        try {
+            int count = taskService.getUnclaimedTaskCount();
+            return Result.success(count);
+        } catch (Exception e) {
+            log.error("获取未领取奖励任务数量失败: {}", e.getMessage(), e);
+            return Result.fail("获取未领取奖励任务数量失败");
+        }
     }
 
-    @Operation(summary = "任务完成情况", security = @SecurityRequirement(name = "Bearer"))
-    @GetMapping("/{id}/completions")
-    public Result<Page<?>> getTaskCompletions(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        return Result.success(taskService.getTaskCompletions(id, page, size));
+    @Operation(summary = "创建任务")
+    @PostMapping("/create")
+    public Result<Boolean> createTask(@RequestBody TaskInfo taskInfo) {
+        try {
+            boolean result = taskService.createTask(taskInfo);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("创建任务失败: {}", e.getMessage(), e);
+            return Result.fail("创建任务失败");
+        }
     }
 
-    @Operation(summary = "删除任务", security = @SecurityRequirement(name = "Bearer"))
-    @DeleteMapping("/{id}")
-    public Result<Void> deleteTask(@PathVariable Long id) {
-        taskService.deleteTask(id);
-        return Result.successMsg("删除成功");
+    @Operation(summary = "更新任务")
+    @PutMapping("/update")
+    public Result<Boolean> updateTask(@RequestBody TaskInfo taskInfo) {
+        try {
+            boolean result = taskService.updateTask(taskInfo);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("更新任务失败: {}", e.getMessage(), e);
+            return Result.fail("更新任务失败");
+        }
     }
 
-    @Operation(summary = "设置任务提醒", security = @SecurityRequirement(name = "Bearer"))
-    @PostMapping("/{id}/reminder")
-    public Result<Void> setTaskReminder(
-            @PathVariable Long id,
-            @RequestParam Integer remindType,
-            @RequestParam Integer remindDays) {
-        taskService.setTaskReminder(id, remindType, remindDays);
-        return Result.successMsg("设置提醒成功");
+    @Operation(summary = "删除任务")
+    @DeleteMapping("/delete/{taskId}")
+    public Result<Boolean> deleteTask(@ApiParam(value = "任务ID", required = true) @PathVariable Long taskId) {
+        try {
+            boolean result = taskService.deleteTask(taskId);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("删除任务失败: {}", e.getMessage(), e);
+            return Result.fail("删除任务失败");
+        }
     }
 
-    @Operation(summary = "触发任务提醒", security = @SecurityRequirement(name = "Bearer"))
-    @PostMapping("/reminders/trigger")
-    public Result<Void> triggerTaskReminders() {
-        taskService.triggerTaskReminders();
-        return Result.successMsg("触发提醒成功");
+    @Operation(summary = "获取任务详情")
+    @GetMapping("/detail/{taskId}")
+    public Result<TaskInfo> getTaskById(@ApiParam(value = "任务ID", required = true) @PathVariable Long taskId) {
+        try {
+            TaskInfo task = taskService.getTaskById(taskId);
+            return Result.success(task);
+        } catch (Exception e) {
+            log.error("获取任务详情失败: {}", e.getMessage(), e);
+            return Result.fail("获取任务详情失败");
+        }
     }
 
-    @Operation(summary = "自动分配任务", security = @SecurityRequirement(name = "Bearer"))
-    @PostMapping("/{id}/auto-assign")
-    public Result<Void> autoAssignTask(
-            @PathVariable Long id,
-            @RequestParam Integer strategy) {
-        taskService.autoAssignTask(id, strategy);
-        return Result.successMsg("自动分配任务成功");
+    @Operation(summary = "重置每日任务")
+    @PostMapping("/reset-daily")
+    public Result<Void> resetDailyTasks() {
+        try {
+            taskService.resetDailyTasks();
+            return Result.successMsg("重置每日任务成功");
+        } catch (Exception e) {
+            log.error("重置每日任务失败: {}", e.getMessage(), e);
+            return Result.fail("重置每日任务失败");
+        }
     }
 }

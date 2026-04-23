@@ -22,6 +22,7 @@ public class Report {
     private String fraudType;
     private String description;
     private String evidenceUrl;
+    private String evidenceFileIds; // 存储证据文件ID，逗号分隔
     private String status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

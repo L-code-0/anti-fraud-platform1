@@ -1,10 +1,10 @@
 package com.anti.fraud.modules.ai.controller;
 
 import com.anti.fraud.common.result.Result;
-import com.anti.fraud.modules.ai.entity.AIQuestion;
-import com.anti.fraud.modules.ai.service.AIService;
-import com.anti.fraud.utils.SecurityUtils;
-import io.swagger.annotations.*;
+import com.anti.fraud.modules.ai.service.AiService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -12,131 +12,128 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * AI服务控制器
+ */
 @RestController
 @RequestMapping("/ai")
 @RequiredArgsConstructor
 @Slf4j
-@Api(tags = "AI智能问答")
-public class AIController {
+@Api(tags = "AI服务")
+public class AiController {
 
-    private final AIService aiService;
+    private final AiService aiService;
+
+    @Operation(summary = "文本生成")
+    @PostMapping("/generate/text")
+    public Result<String> generateText(
+            @ApiParam(value = "提示词", required = true) @RequestParam String prompt,
+            @ApiParam(value = "模型名称", required = false) @RequestParam(required = false) String model,
+            @ApiParam(value = "温度参数", required = false) @RequestParam(required = false) Double temperature,
+            @ApiParam(value = "最大token数", required = false) @RequestParam(required = false) Integer maxTokens) {
+        try {
+            String result = aiService.generateText(prompt, model, temperature, maxTokens);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("生成文本失败: {}", e.getMessage(), e);
+            return Result.fail("生成文本失败");
+        }
+    }
+
+    @Operation(summary = "对话生成")
+    @PostMapping("/generate/chat")
+    public Result<String> generateChat(
+            @ApiParam(value = "对话历史", required = true) @RequestBody List<Map<String, String>> messages,
+            @ApiParam(value = "模型名称", required = false) @RequestParam(required = false) String model,
+            @ApiParam(value = "温度参数", required = false) @RequestParam(required = false) Double temperature,
+            @ApiParam(value = "最大token数", required = false) @RequestParam(required = false) Integer maxTokens) {
+        try {
+            String result = aiService.generateChat(messages, model, temperature, maxTokens);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("生成对话失败: {}", e.getMessage(), e);
+            return Result.fail("生成对话失败");
+        }
+    }
 
     @Operation(summary = "智能问答")
-    @PostMapping("/ask")
-    public Result<Map<String, Object>> askQuestion(@RequestBody Map<String, String> params) {
-        String question = params.get("question");
-        String category = params.get("category");
-
-        if (question == null || question.isEmpty()) {
-            return Result.fail("问题不能为空");
-        }
-
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            userId = 0L; // 未登录用户
-        }
-
+    @PostMapping("/answer")
+    public Result<String> answerQuestion(
+            @ApiParam(value = "问题", required = true) @RequestParam String question,
+            @ApiParam(value = "上下文", required = false) @RequestParam(required = false) String context,
+            @ApiParam(value = "模型名称", required = false) @RequestParam(required = false) String model) {
         try {
-            Map<String, Object> result = aiService.askQuestion(userId, question, category);
-            return Result.success("问答成功", result);
+            String result = aiService.answerQuestion(question, context, model);
+            return Result.success(result);
         } catch (Exception e) {
-            log.error("智能问答失败: {}", e.getMessage(), e);
-            return Result.fail("问答失败");
+            log.error("回答问题失败: {}", e.getMessage(), e);
+            return Result.fail("回答问题失败");
         }
     }
 
-    @Operation(summary = "获取问答历史")
-    @GetMapping("/history")
-    public Result<List<AIQuestion>> getQuestionHistory(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            return Result.fail("请先登录");
-        }
-
+    @Operation(summary = "批量生成文本")
+    @PostMapping("/batch/generate")
+    public Result<List<String>> batchGenerateText(
+            @ApiParam(value = "提示词列表", required = true) @RequestBody List<String> prompts,
+            @ApiParam(value = "模型名称", required = false) @RequestParam(required = false) String model,
+            @ApiParam(value = "温度参数", required = false) @RequestParam(required = false) Double temperature,
+            @ApiParam(value = "最大token数", required = false) @RequestParam(required = false) Integer maxTokens) {
         try {
-            List<AIQuestion> history = aiService.getQuestionHistory(userId, page, size);
-            return Result.success("获取历史成功", history);
+            List<String> results = aiService.batchGenerateText(prompts, model, temperature, maxTokens);
+            return Result.success(results);
         } catch (Exception e) {
-            log.error("获取问答历史失败: {}", e.getMessage(), e);
-            return Result.fail("获取历史失败");
+            log.error("批量生成文本失败: {}", e.getMessage(), e);
+            return Result.fail("批量生成文本失败");
         }
     }
 
-    @Operation(summary = "获取热门问题")
-    @GetMapping("/hot")
-    public Result<List<AIQuestion>> getHotQuestions(
-            @RequestParam(defaultValue = "10") Integer limit) {
+    @Operation(summary = "获取模型列表")
+    @GetMapping("/models")
+    public Result<List<String>> getModels() {
         try {
-            List<AIQuestion> hotQuestions = aiService.getHotQuestions(limit);
-            return Result.success("获取热门问题成功", hotQuestions);
+            List<String> models = aiService.getModels();
+            return Result.success(models);
         } catch (Exception e) {
-            log.error("获取热门问题失败: {}", e.getMessage(), e);
-            return Result.fail("获取热门问题失败");
+            log.error("获取模型列表失败: {}", e.getMessage(), e);
+            return Result.fail("获取模型列表失败");
         }
     }
 
-    @Operation(summary = "标记问题为公开")
-    @PostMapping("/question/{id}/public")
-    public Result<Void> markAsPublic(@PathVariable Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            return Result.fail("请先登录");
-        }
-
+    @Operation(summary = "健康检查")
+    @GetMapping("/health")
+    public Result<Boolean> healthCheck(
+            @ApiParam(value = "模型名称", required = false) @RequestParam(required = false) String model) {
         try {
-            boolean success = aiService.markAsPublic(id, userId);
-            if (success) {
-                return Result.successMsg("标记成功");
-            } else {
-                return Result.fail("标记失败");
-            }
+            boolean health = aiService.healthCheck(model);
+            return Result.success(health);
         } catch (Exception e) {
-            log.error("标记问题为公开失败: {}", e.getMessage(), e);
-            return Result.fail("标记失败");
+            log.error("健康检查失败: {}", e.getMessage(), e);
+            return Result.fail("健康检查失败");
         }
     }
 
-    @Operation(summary = "标记问题为私有")
-    @PostMapping("/question/{id}/private")
-    public Result<Void> markAsPrivate(@PathVariable Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            return Result.fail("请先登录");
-        }
-
+    @Operation(summary = "设置默认模型")
+    @PutMapping("/default-model")
+    public Result<Void> setDefaultModel(
+            @ApiParam(value = "模型名称", required = true) @RequestParam String model) {
         try {
-            boolean success = aiService.markAsPrivate(id, userId);
-            if (success) {
-                return Result.successMsg("标记成功");
-            } else {
-                return Result.fail("标记失败");
-            }
+            aiService.setDefaultModel(model);
+            return Result.successMsg("设置默认模型成功");
         } catch (Exception e) {
-            log.error("标记问题为私有失败: {}", e.getMessage(), e);
-            return Result.fail("标记失败");
+            log.error("设置默认模型失败: {}", e.getMessage(), e);
+            return Result.fail("设置默认模型失败");
         }
     }
 
-    @Operation(summary = "删除问题")
-    @DeleteMapping("/question/{id}")
-    public Result<Void> deleteQuestion(@PathVariable Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        if (userId == null) {
-            return Result.fail("请先登录");
-        }
-
+    @Operation(summary = "获取默认模型")
+    @GetMapping("/default-model")
+    public Result<String> getDefaultModel() {
         try {
-            boolean success = aiService.deleteQuestion(id, userId);
-            if (success) {
-                return Result.successMsg("删除成功");
-            } else {
-                return Result.fail("删除失败");
-            }
+            String model = aiService.getDefaultModel();
+            return Result.success(model);
         } catch (Exception e) {
-            log.error("删除问题失败: {}", e.getMessage(), e);
-            return Result.fail("删除失败");
+            log.error("获取默认模型失败: {}", e.getMessage(), e);
+            return Result.fail("获取默认模型失败");
         }
     }
 }

@@ -1,0 +1,32 @@
+-- 异常检测表
+DROP TABLE IF EXISTS `anomaly_detection`;
+CREATE TABLE `anomaly_detection` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `detection_id` VARCHAR(50) NOT NULL COMMENT '检测ID（UUID）',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
+    `detection_type` TINYINT NOT NULL DEFAULT 4 COMMENT '检测类型：1-行为异常，2-设备异常，3-社交异常，4-综合异常',
+    `detection_method` TINYINT NOT NULL DEFAULT 1 COMMENT '检测方法：1-Isolation Forest，2-LOF，3-One-Class SVM，4-其他',
+    `feature_data` TEXT COMMENT '特征数据（JSON格式）',
+    `anomaly_score` DOUBLE DEFAULT 0 COMMENT '异常分数（0-1）',
+    `anomaly_level` TINYINT NOT NULL DEFAULT 1 COMMENT '异常等级：1-正常，2-轻微异常，3-中度异常，4-严重异常',
+    `is_anomaly` BOOLEAN DEFAULT FALSE COMMENT '是否为异常',
+    `confidence` DOUBLE DEFAULT 0 COMMENT '置信度（0-1）',
+    `detection_result` TEXT COMMENT '检测结果（JSON格式）',
+    `detection_time` DATETIME NOT NULL COMMENT '检测时间',
+    `status` TINYINT NOT NULL DEFAULT 2 COMMENT '状态：1-已检测，2-检测中，3-检测失败',
+    `description` VARCHAR(255) COMMENT '描述',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_detection_id` (`detection_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_detection_type` (`detection_type`),
+    KEY `idx_detection_method` (`detection_method`),
+    KEY `idx_anomaly_level` (`anomaly_level`),
+    KEY `idx_is_anomaly` (`is_anomaly`),
+    KEY `idx_detection_time` (`detection_time`),
+    KEY `idx_status` (`status`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='异常检测表';

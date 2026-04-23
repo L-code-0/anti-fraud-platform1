@@ -348,6 +348,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/warning/Index.vue'),
     meta: { title: '智能预警', requiresAuth: true }
   },
+  {
+    path: '/warning/external',
+    name: 'ExternalWarning',
+    component: () => import('@/views/warning/ExternalWarning.vue'),
+    meta: { title: '官方反诈通报', requiresAuth: true }
+  },
   // 后台管理
   {
     path: '/admin',

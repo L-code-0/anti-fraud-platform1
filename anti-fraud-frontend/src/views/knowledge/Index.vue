@@ -1,19 +1,24 @@
 <template>
-  <div class="knowledge-page">
+  <div class="knowledge-page" :class="{ 'visible': isVisible }">
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-bg">
         <div class="bg-gradient"></div>
+        <div class="floating-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
       </div>
-      <div class="header-content">
-        <h1>知识学习中心</h1>
-        <p>深入了解各类诈骗手法，提升防骗能力</p>
+      <div class="header-content" data-aos="fade-up" data-aos-duration="1000">
+        <h1 data-aos="fade-up" data-aos-delay="100">知识学习中心</h1>
+        <p data-aos="fade-up" data-aos-delay="200">深入了解各类诈骗手法，提升防骗能力</p>
       </div>
     </div>
 
     <div class="page-container">
       <!-- 搜索和筛选 -->
-      <div class="search-section">
+      <div class="search-section" data-aos="fade-up" data-aos-delay="300" data-aos-duration="800">
         <div class="search-bar">
           <el-input
             v-model="searchKeyword"
@@ -26,7 +31,7 @@
               <el-icon><Search /></el-icon>
             </template>
             <template #append>
-              <el-button @click="handleSearch">
+              <el-button @click="handleSearch" class="search-button">
                 <el-icon><Search /></el-icon>
               </el-button>
             </template>
@@ -35,11 +40,14 @@
 
         <div class="filter-tabs">
           <button
-            v-for="tab in categoryTabs"
+            v-for="(tab, index) in categoryTabs"
             :key="tab.id"
             class="filter-tab"
             :class="{ active: activeCategory === tab.id }"
             @click="activeCategory = tab.id"
+            data-aos="fade-up"
+            :data-aos-delay="(index + 1) * 50"
+            data-aos-duration="600"
           >
             <el-icon><component :is="tab.icon" /></el-icon>
             {{ tab.name }}
@@ -49,7 +57,7 @@
 
       <!-- 统计卡片 -->
       <div class="stats-cards">
-        <div class="stat-card" v-for="stat in statsData" :key="stat.label">
+        <div class="stat-card" v-for="(stat, index) in statsData" :key="stat.label" data-aos="fade-up" :data-aos-delay="100 * index" data-aos-duration="800">
           <div class="stat-icon" :style="{ background: stat.gradient }">
             <el-icon><component :is="stat.icon" /></el-icon>
           </div>
@@ -61,7 +69,7 @@
       </div>
 
       <!-- 知识列表 -->
-      <div class="knowledge-content">
+      <div class="knowledge-content" data-aos="fade-up" data-aos-delay="400" data-aos-duration="800">
         <div class="content-header">
           <h2>热门文章</h2>
           <div class="view-toggle">
@@ -81,6 +89,9 @@
             :key="item.id"
             :style="{ animationDelay: index * 0.05 + 's' }"
             @click="goToDetail(item.id)"
+            data-aos="fade-up"
+            :data-aos-delay="(index % 4) * 100"
+            data-aos-duration="600"
           >
             <div class="card-image">
               <img :src="item.cover" :alt="item.title" />
@@ -88,7 +99,7 @@
                 {{ item.category }}
               </div>
               <div class="card-overlay">
-                <el-button type="primary" size="large">
+                <el-button type="primary" size="large" class="read-button">
                   <el-icon><View /></el-icon>
                   阅读全文
                 </el-button>
@@ -122,7 +133,7 @@
         </div>
 
         <!-- 分页 -->
-        <div class="pagination-wrapper">
+        <div class="pagination-wrapper" data-aos="fade-up" data-aos-delay="500" data-aos-duration="800">
           <el-pagination
             v-model:current-page="currentPage"
             :page-size="pageSize"
@@ -138,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Search, Grid, List, View, Star, ChatDotRound,
@@ -152,6 +163,12 @@ const viewMode = ref<'grid' | 'list'>('grid')
 const currentPage = ref(1)
 const pageSize = 12
 const total = ref(50)
+const isVisible = ref(false)
+
+// 页面加载时触发动画
+onMounted(() => {
+  isVisible.value = true
+})
 
 const categoryTabs = [
   { id: 'all', name: '全部', icon: 'Document' },
@@ -312,6 +329,14 @@ const goToDetail = (id: number) => {
 .knowledge-page {
   min-height: 100vh;
   background: var(--bg-secondary);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.knowledge-page.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* 页面头部 */
@@ -333,6 +358,52 @@ const goToDetail = (id: number) => {
   background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #1e293b 100%);
 }
 
+.floating-shapes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+  width: 100px;
+  height: 100px;
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 60px;
+  height: 60px;
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.shape-3 {
+  width: 80px;
+  height: 80px;
+  bottom: 10%;
+  left: 30%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
 .header-content {
   position: relative;
   z-index: 1;
@@ -346,11 +417,13 @@ const goToDetail = (id: number) => {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   margin-bottom: var(--spacing-4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-content p {
   font-size: var(--font-size-lg);
   opacity: 0.8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 页面容器 */
@@ -374,11 +447,36 @@ const goToDetail = (id: number) => {
   padding: var(--spacing-6);
   box-shadow: var(--shadow-xl);
   margin-bottom: var(--spacing-4);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all var(--transition-normal);
+}
+
+.search-bar:hover {
+  box-shadow: var(--shadow-2xl);
 }
 
 .search-bar :deep(.el-input__wrapper) {
   border-radius: var(--radius-md);
   padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--border-primary);
+  transition: all var(--transition-normal);
+}
+
+.search-bar :deep(.el-input__wrapper):hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.search-button {
+  transition: all var(--transition-normal);
+  border-radius: var(--radius-md);
+}
+
+.search-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .filter-tabs {
@@ -400,12 +498,16 @@ const goToDetail = (id: number) => {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
 }
 
 .filter-tab:hover {
   background: var(--bg-hover);
   border-color: var(--primary-color);
   color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .filter-tab.active {
@@ -413,6 +515,7 @@ const goToDetail = (id: number) => {
   border-color: var(--primary-color);
   color: white;
   box-shadow: var(--shadow-primary);
+  transform: translateY(-2px);
 }
 
 /* 统计卡片 */
@@ -432,11 +535,40 @@ const goToDetail = (id: number) => {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--gradient-primary);
+  opacity: 0.8;
+}
+
+.stat-card:nth-child(2)::before {
+  background: var(--gradient-success);
+}
+
+.stat-card:nth-child(3)::before {
+  background: var(--gradient-warning);
+}
+
+.stat-card:nth-child(4)::before {
+  background: var(--gradient-info);
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
+  background: rgba(255, 255, 255, 1);
 }
 
 .stat-icon {
@@ -448,6 +580,17 @@ const goToDetail = (id: number) => {
   justify-content: center;
   font-size: 24px;
   color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .stat-info {
@@ -478,6 +621,18 @@ const goToDetail = (id: number) => {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
+  position: relative;
+}
+
+.content-header h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: var(--gradient-primary);
+  border-radius: 2px;
 }
 
 .view-toggle {
@@ -486,6 +641,9 @@ const goToDetail = (id: number) => {
   background: var(--bg-primary);
   padding: var(--spacing-1);
   border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .view-toggle button {
@@ -500,11 +658,13 @@ const goToDetail = (id: number) => {
 
 .view-toggle button:hover {
   color: var(--primary-color);
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .view-toggle button.active {
   background: var(--primary-color);
   color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 /* 知识网格 */
@@ -523,6 +683,21 @@ const goToDetail = (id: number) => {
   transition: all var(--transition-normal);
   animation: fadeInUp 0.5s ease forwards;
   opacity: 0;
+  position: relative;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.knowledge-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--gradient-primary);
+  opacity: 0.8;
 }
 
 @keyframes fadeInUp {
@@ -539,6 +714,7 @@ const goToDetail = (id: number) => {
 .knowledge-card:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-xl);
+  background: rgba(255, 255, 255, 1);
 }
 
 .knowledge-card:hover .card-overlay {
@@ -571,6 +747,8 @@ const goToDetail = (id: number) => {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: white;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .badge-phone { background: var(--danger-color); }
@@ -588,6 +766,17 @@ const goToDetail = (id: number) => {
   justify-content: center;
   opacity: 0;
   transition: opacity var(--transition-normal);
+  z-index: 2;
+}
+
+.read-button {
+  transition: all var(--transition-normal);
+  border-radius: var(--radius-lg);
+}
+
+.read-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 .card-content {
@@ -604,6 +793,11 @@ const goToDetail = (id: number) => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.knowledge-card:hover .card-content h3 {
+  color: var(--primary-color);
 }
 
 .card-desc {
@@ -635,6 +829,11 @@ const goToDetail = (id: number) => {
   gap: var(--spacing-1);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  transition: all var(--transition-normal);
+}
+
+.knowledge-card:hover .meta-item {
+  color: var(--text-secondary);
 }
 
 .meta-time {
@@ -654,6 +853,12 @@ const goToDetail = (id: number) => {
   color: var(--text-tertiary);
   font-size: var(--font-size-xs);
   border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.knowledge-card:hover .card-tags .tag {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color);
 }
 
 /* 列表视图 */
@@ -691,14 +896,23 @@ const goToDetail = (id: number) => {
   padding: var(--spacing-4);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .pagination-wrapper :deep(.el-pagination.is-background .el-pager li) {
   border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+}
+
+.pagination-wrapper :deep(.el-pagination.is-background .el-pager li:hover) {
+  transform: translateY(-2px);
 }
 
 .pagination-wrapper :deep(.el-pagination.is-background .el-pager li.is-active) {
   background: var(--gradient-primary);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 /* 响应式 */
@@ -750,6 +964,10 @@ const goToDetail = (id: number) => {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-3);
+  }
+
+  .content-header h2::after {
+    bottom: -4px;
   }
 }
 </style>

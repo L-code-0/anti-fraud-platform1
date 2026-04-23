@@ -1,7 +1,7 @@
 <template>
-  <div class="community">
+  <div class="community" :class="{ 'is-visible': isVisible }">
     <div class="header">
-      <div class="header-content">
+      <div class="header-content" data-aos="fade-up" data-aos-duration="1000">
         <div class="header-text">
           <h1>社区互助反诈</h1>
           <div class="differentiator">
@@ -11,15 +11,15 @@
           </div>
         </div>
         <div class="header-features">
-          <div class="feature-item">
+          <div class="feature-item" data-aos="fade-up" data-aos-delay="200">
             <span class="feature-icon">🏆</span>
             <span class="feature-text">积分排行榜</span>
           </div>
-          <div class="feature-item">
+          <div class="feature-item" data-aos="fade-up" data-aos-delay="400">
             <span class="feature-icon">🎯</span>
             <span class="feature-text">每日挑战</span>
           </div>
-          <div class="feature-item">
+          <div class="feature-item" data-aos="fade-up" data-aos-delay="600">
             <span class="feature-icon">👥</span>
             <span class="feature-text">全民互动</span>
           </div>
@@ -29,7 +29,7 @@
 
     <div class="community-content">
       <div class="main-area">
-        <div class="create-section">
+        <div class="create-section" data-aos="fade-up" data-aos-duration="800">
           <el-card shadow="hover" class="create-card">
             <div class="create-header">
               <img :src="userInfo.avatar" alt="avatar" class="user-avatar-small" />
@@ -63,7 +63,7 @@
                   <el-icon><Star /></el-icon>
                   发布帖子 +10积分
                 </span>
-                <el-button type="primary" @click="createPost" :loading="isCreating">
+                <el-button type="primary" @click="createPost" :loading="isCreating" class="btn-primary">
                   发布
                 </el-button>
               </div>
@@ -71,7 +71,7 @@
           </el-card>
         </div>
 
-        <div class="filter-tabs">
+        <div class="filter-tabs" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
           <el-tabs v-model="activeTab" @tab-change="handleTabChange">
             <el-tab-pane label="推荐" name="recommend" />
             <el-tab-pane label="最新" name="latest" />
@@ -79,7 +79,7 @@
             <el-tab-pane label="我的关注" name="following" />
           </el-tabs>
           <div class="tab-actions">
-            <el-button size="small" @click="refreshPosts">
+            <el-button size="small" @click="refreshPosts" class="btn-refresh">
               <el-icon><Refresh /></el-icon>
             </el-button>
           </div>
@@ -87,11 +87,14 @@
 
         <div class="posts-list">
           <el-card
-            v-for="post in posts"
+            v-for="(post, index) in posts"
             :key="post.id"
             shadow="hover"
             class="post-card"
             :class="{ featured: post.featured }"
+            data-aos="fade-up"
+            :data-aos-delay="(index % 3) * 100"
+            data-aos-duration="800"
           >
             <div class="post-wrapper">
               <div class="post-vote" v-if="post.featured">
@@ -187,7 +190,7 @@
           </el-card>
         </div>
 
-        <div class="pagination-wrapper">
+        <div class="pagination-wrapper" data-aos="fade-up" data-aos-duration="600">
           <el-pagination
             v-model:current-page="pagination.currentPage"
             v-model:page-size="pagination.pageSize"
@@ -201,7 +204,7 @@
       </div>
 
       <div class="side-area">
-        <el-card shadow="hover" class="user-card">
+        <el-card shadow="hover" class="user-card" data-aos="fade-left" data-aos-duration="800">
           <template #header>
             <div class="card-header">
               <span>我的社区</span>
@@ -210,7 +213,10 @@
           </template>
           <div class="user-profile">
             <div class="profile-header">
-              <img :src="userInfo.avatar" alt="avatar" class="profile-avatar" />
+              <div class="avatar-container">
+                <img :src="userInfo.avatar" alt="avatar" class="profile-avatar" />
+                <div class="avatar-glow"></div>
+              </div>
               <div class="profile-badge" v-if="userInfo.title">
                 {{ userInfo.title }}
               </div>
@@ -270,6 +276,7 @@
                     size="small"
                     type="primary"
                     @click="completeTask(task)"
+                    class="btn-task"
                   >
                     去完成
                   </el-button>
@@ -280,7 +287,7 @@
           </div>
         </el-card>
 
-        <el-card shadow="hover" class="ranking-card">
+        <el-card shadow="hover" class="ranking-card" data-aos="fade-left" data-aos-duration="800" data-aos-delay="100">
           <template #header>
             <div class="card-header">
               <span>积分排行榜</span>
@@ -329,7 +336,7 @@
           </div>
         </el-card>
 
-        <el-card shadow="hover" class="activity-card">
+        <el-card shadow="hover" class="activity-card" data-aos="fade-left" data-aos-duration="800" data-aos-delay="200">
           <template #header>
             <div class="card-header">
               <span>社区活动</span>
@@ -364,6 +371,7 @@
                   type="primary"
                   size="small"
                   @click="joinActivity(activity)"
+                  class="btn-activity"
                 >
                   立即参与
                 </el-button>
@@ -373,7 +381,7 @@
           </div>
         </el-card>
 
-        <el-card shadow="hover" class="hot-topics-card">
+        <el-card shadow="hover" class="hot-topics-card" data-aos="fade-left" data-aos-duration="800" data-aos-delay="300">
           <template #header>
             <div class="card-header">
               <span>热门话题</span>
@@ -422,7 +430,7 @@
               maxlength="200"
               show-word-limit
             />
-            <el-button type="primary" @click="submitComment" :loading="isSubmitting">
+            <el-button type="primary" @click="submitComment" :loading="isSubmitting" class="btn-comment">
               发表评论
             </el-button>
           </div>
@@ -474,6 +482,8 @@ import {
   User,
   ArrowRight
 } from '@element-plus/icons-vue'
+
+const isVisible = ref(false)
 
 interface Author {
   name: string
@@ -856,6 +866,9 @@ function viewTopic(topic: Topic) {
 
 onMounted(() => {
   loadPosts()
+  setTimeout(() => {
+    isVisible.value = true
+  }, 100)
   ElMessage.success({
     message: '社区互助反诈已优化完成，积分激励全民参与',
     duration: 3000
@@ -870,6 +883,14 @@ onMounted(() => {
   margin: 0 auto;
   background: linear-gradient(135deg, #f0f3f7 0%, #e8ecf1 100%);
   min-height: calc(100vh - 60px);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease;
+}
+
+.community.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .header {
@@ -882,11 +903,32 @@ onMounted(() => {
   padding: 32px;
   color: white;
   box-shadow: 0 8px 32px rgba(64, 158, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-content::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: rotate(45deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
 }
 
 .header-text h1 {
   font-size: 32px;
   margin: 0 0 12px 0;
+  position: relative;
+  z-index: 1;
 }
 
 .differentiator {
@@ -894,6 +936,8 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
 .tag {
@@ -902,24 +946,43 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 14px;
   backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.tag:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .competitor {
   color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   margin-left: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .header-features {
   display: flex;
   gap: 32px;
   margin-top: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .feature-item {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
 }
 
 .feature-icon {
@@ -952,6 +1015,15 @@ onMounted(() => {
 
 .create-card {
   background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.create-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .create-header {
@@ -965,6 +1037,13 @@ onMounted(() => {
   height: 48px;
   border-radius: 50%;
   flex-shrink: 0;
+  border: 2px solid #409eff;
+  transition: all 0.3s ease;
+}
+
+.user-avatar-small:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(64, 158, 255, 0.4);
 }
 
 .create-actions {
@@ -990,6 +1069,15 @@ onMounted(() => {
   gap: 4px;
   font-size: 13px;
   color: #909399;
+  background: #f5f7fa;
+  padding: 4px 12px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.points-hint:hover {
+  background: #e4e8f0;
+  color: #606266;
 }
 
 .filter-tabs {
@@ -999,11 +1087,28 @@ onMounted(() => {
   background: white;
   padding: 12px 20px;
   border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.filter-tabs:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .tab-actions {
   display: flex;
   gap: 8px;
+}
+
+.btn-refresh {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.btn-refresh:hover {
+  background: #f0f9eb;
+  color: #67c23a;
+  transform: rotate(180deg);
 }
 
 .posts-list {
@@ -1017,15 +1122,18 @@ onMounted(() => {
   border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
 }
 
 .post-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .post-card.featured {
   border-left: 4px solid #409eff;
+  background: linear-gradient(135deg, #f0f9ff, #ffffff);
 }
 
 .post-wrapper {
@@ -1047,6 +1155,13 @@ onMounted(() => {
   gap: 4px;
   color: #f56c6c;
   font-size: 12px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 .post-main {
@@ -1070,6 +1185,13 @@ onMounted(() => {
   width: 44px;
   height: 44px;
   border-radius: 50%;
+  border: 2px solid #e6a23c;
+  transition: all 0.3s ease;
+}
+
+.author-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(230, 162, 60, 0.4);
 }
 
 .author-details {
@@ -1088,6 +1210,11 @@ onMounted(() => {
   font-weight: bold;
   color: #333;
   font-size: 15px;
+  transition: color 0.3s ease;
+}
+
+.author-name:hover {
+  color: #409eff;
 }
 
 .author-badge {
@@ -1096,6 +1223,13 @@ onMounted(() => {
   background: #fef0f0;
   padding: 2px 8px;
   border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.author-badge:hover {
+  background: #f56c6c;
+  color: white;
+  transform: translateY(-1px);
 }
 
 .post-time {
@@ -1112,6 +1246,12 @@ onMounted(() => {
   font-size: 17px;
   color: #333;
   font-weight: bold;
+  transition: color 0.3s ease;
+  cursor: pointer;
+}
+
+.post-title:hover {
+  color: #409eff;
 }
 
 .post-content {
@@ -1134,11 +1274,14 @@ onMounted(() => {
   object-fit: cover;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 2px solid transparent;
 }
 
 .post-image:hover {
   transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #409eff;
 }
 
 .post-footer {
@@ -1161,19 +1304,25 @@ onMounted(() => {
   font-size: 14px;
   color: #909399;
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 8px;
 }
 
 .interaction-item:hover {
   color: #409eff;
+  background: #ecf5ff;
+  transform: translateY(-1px);
 }
 
 .interaction-item.active {
   color: #f56c6c;
+  background: #fef0f0;
 }
 
 .interaction-item.collect.active {
   color: #e6a23c;
+  background: #fdf6ec;
 }
 
 .reward-info {
@@ -1182,18 +1331,40 @@ onMounted(() => {
   gap: 4px;
   font-size: 13px;
   color: #e6a23c;
+  background: #fdf6ec;
+  padding: 4px 12px;
+  border-radius: 12px;
+  animation: glow 2s infinite;
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 0 rgba(230, 162, 60, 0.2); }
+  50% { box-shadow: 0 0 10px rgba(230, 162, 60, 0.4); }
+  100% { box-shadow: 0 0 0 rgba(230, 162, 60, 0.2); }
 }
 
 .post-comments-preview {
   background: #fafafa;
   padding: 12px 20px;
   border-top: 1px solid #ebeef5;
+  transition: all 0.3s ease;
+}
+
+.post-comments-preview:hover {
+  background: #f0f2f5;
 }
 
 .comment-preview {
   font-size: 13px;
   line-height: 1.6;
   margin-bottom: 8px;
+  transition: all 0.3s ease;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.comment-preview:hover {
+  background: rgba(64, 158, 255, 0.05);
 }
 
 .comment-preview:last-child {
@@ -1203,6 +1374,11 @@ onMounted(() => {
 .comment-author {
   color: #409eff;
   font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.comment-author:hover {
+  color: #66b1ff;
 }
 
 .comment-text {
@@ -1215,10 +1391,16 @@ onMounted(() => {
   color: #909399;
   cursor: pointer;
   margin-top: 8px;
+  transition: all 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-block;
 }
 
 .view-more:hover {
   color: #409eff;
+  background: #ecf5ff;
+  transform: translateX(2px);
 }
 
 .pagination-wrapper {
@@ -1229,16 +1411,29 @@ onMounted(() => {
 
 .user-card {
   background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.user-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f0f9ff, #e6f7ff);
+  border-bottom: 1px solid #ecf5ff;
 }
 
 .user-profile {
   text-align: center;
+  padding: 20px;
 }
 
 .profile-header {
@@ -1247,11 +1442,35 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
+.avatar-container {
+  position: relative;
+  display: inline-block;
+}
+
 .profile-avatar {
   width: 80px;
   height: 80px;
   border-radius: 50%;
   border: 3px solid #409eff;
+  transition: all 0.3s ease;
+}
+
+.avatar-glow {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #409eff, #66b1ff);
+  animation: avatarGlow 2s infinite;
+  z-index: -1;
+}
+
+@keyframes avatarGlow {
+  0% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+  100% { opacity: 0.5; transform: scale(1); }
 }
 
 .profile-badge {
@@ -1265,12 +1484,23 @@ onMounted(() => {
   padding: 2px 8px;
   border-radius: 8px;
   white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.profile-badge:hover {
+  background: linear-gradient(135deg, #f78989, #f56c6c);
+  transform: translateX(-50%) translateY(-2px);
 }
 
 .profile-name {
   margin: 0 0 8px 0;
   font-size: 18px;
   color: #333;
+  transition: color 0.3s ease;
+}
+
+.profile-name:hover {
+  color: #409eff;
 }
 
 .profile-level {
@@ -1288,6 +1518,12 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 14px;
   font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.level-badge:hover {
+  background: linear-gradient(135deg, #66b1ff, #91caff);
+  transform: translateY(-2px);
 }
 
 .level-tip {
@@ -1300,6 +1536,25 @@ onMounted(() => {
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.points-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(103, 194, 58, 0.1), transparent);
+  animation: pointsShimmer 3s infinite;
+}
+
+@keyframes pointsShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .points-main {
@@ -1308,16 +1563,31 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .points-icon {
   font-size: 24px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
 }
 
 .points-value {
   font-size: 32px;
   font-weight: bold;
   color: #67c23a;
+  transition: all 0.3s ease;
+}
+
+.points-value:hover {
+  transform: scale(1.1);
+  text-shadow: 0 0 10px rgba(103, 194, 58, 0.5);
 }
 
 .points-label {
@@ -1328,10 +1598,20 @@ onMounted(() => {
 .points-stats {
   display: flex;
   justify-content: space-around;
+  position: relative;
+  z-index: 1;
 }
 
 .stat-item {
   text-align: center;
+  transition: all 0.3s ease;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.stat-item:hover {
+  background: rgba(103, 194, 58, 0.1);
+  transform: translateY(-2px);
 }
 
 .stat-value {
@@ -1357,6 +1637,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .task-list {
@@ -1373,14 +1655,18 @@ onMounted(() => {
   background: #f5f7fa;
   border-radius: 10px;
   transition: all 0.3s ease;
+  border-left: 4px solid transparent;
 }
 
 .task-item:hover {
   background: #e4e8f0;
+  transform: translateX(4px);
 }
 
 .task-item.completed {
   opacity: 0.6;
+  border-left-color: #67c23a;
+  background: #f0f9eb;
 }
 
 .task-info {
@@ -1397,21 +1683,51 @@ onMounted(() => {
 .task-reward {
   font-size: 11px;
   color: #67c23a;
+  font-weight: 500;
 }
 
 .task-done {
   color: #67c23a;
   font-size: 18px;
+  animation: checkPulse 1s ease-in-out;
+}
+
+@keyframes checkPulse {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.btn-task {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.btn-task:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
 }
 
 .ranking-card {
   background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.ranking-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .ranking-tabs {
   display: flex;
   gap: 16px;
   margin-bottom: 16px;
+  padding: 0 20px;
+  border-bottom: 1px solid #ebeef5;
+  padding-bottom: 12px;
 }
 
 .ranking-tabs span {
@@ -1421,6 +1737,11 @@ onMounted(() => {
   padding-bottom: 4px;
   border-bottom: 2px solid transparent;
   transition: all 0.3s ease;
+  position: relative;
+}
+
+.ranking-tabs span:hover {
+  color: #409eff;
 }
 
 .ranking-tabs span.active {
@@ -1428,10 +1749,27 @@ onMounted(() => {
   border-color: #409eff;
 }
 
+.ranking-tabs span.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #409eff;
+  animation: tabSlide 0.3s ease;
+}
+
+@keyframes tabSlide {
+  0% { width: 0; left: 50%; }
+  100% { width: 100%; left: 0; }
+}
+
 .ranking-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 0 20px 20px;
 }
 
 .ranking-item {
@@ -1440,15 +1778,39 @@ onMounted(() => {
   gap: 12px;
   padding: 8px;
   border-radius: 10px;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ranking-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.ranking-item:hover::before {
+  left: 100%;
 }
 
 .ranking-item:hover {
-  background: #f5f7fa;
+  background: #f0f9ff;
+  transform: translateX(4px);
 }
 
 .ranking-item.top-three {
   background: linear-gradient(135deg, #fff9f9, #fff);
+  border: 1px solid #fde2e2;
+}
+
+.ranking-item.top-three:hover {
+  background: linear-gradient(135deg, #fef0f0, #fff);
+  border-color: #f56c6c;
 }
 
 .ranking-position {
@@ -1458,17 +1820,32 @@ onMounted(() => {
 
 .medal {
   font-size: 20px;
+  animation: medalGlow 2s infinite;
+}
+
+@keyframes medalGlow {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 .position-number {
   font-size: 14px;
   color: #909399;
+  font-weight: 500;
 }
 
 .ranking-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
+  border: 2px solid #e6a23c;
+  transition: all 0.3s ease;
+}
+
+.ranking-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(230, 162, 60, 0.4);
 }
 
 .ranking-info {
@@ -1482,6 +1859,11 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   color: #333;
+  transition: color 0.3s ease;
+}
+
+.ranking-name:hover {
+  color: #409eff;
 }
 
 .ranking-detail {
@@ -1493,16 +1875,32 @@ onMounted(() => {
   font-size: 13px;
   color: #e6a23c;
   font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.ranking-points:hover {
+  color: #f59e0b;
+  transform: scale(1.1);
 }
 
 .activity-card {
   background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.activity-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .activity-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 0 20px 20px;
 }
 
 .activity-item {
@@ -1510,14 +1908,18 @@ onMounted(() => {
   overflow: hidden;
   border: 1px solid #ebeef5;
   transition: all 0.3s ease;
+  background: white;
 }
 
 .activity-item:hover {
   border-color: #409eff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.1);
 }
 
 .activity-item.joined {
   border-color: #67c23a;
+  background: #f0f9eb;
 }
 
 .activity-banner {
@@ -1525,6 +1927,11 @@ onMounted(() => {
   background-size: cover;
   background-position: center;
   position: relative;
+  transition: all 0.3s ease;
+}
+
+.activity-banner:hover {
+  transform: scale(1.05);
 }
 
 .activity-tag {
@@ -1536,6 +1943,12 @@ onMounted(() => {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.activity-tag:hover {
+  background: linear-gradient(135deg, #f78989, #f56c6c);
+  transform: translateY(-2px);
 }
 
 .activity-content {
@@ -1546,6 +1959,11 @@ onMounted(() => {
   margin: 0 0 6px 0;
   font-size: 15px;
   color: #333;
+  transition: color 0.3s ease;
+}
+
+.activity-content h4:hover {
+  color: #409eff;
 }
 
 .activity-content p {
@@ -1566,16 +1984,41 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+  transition: color 0.3s ease;
+}
+
+.activity-meta span:hover {
+  color: #409eff;
+}
+
+.btn-activity {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.btn-activity:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
 }
 
 .hot-topics-card {
   background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.hot-topics-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .hot-topics {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 0 20px 20px;
 }
 
 .topic-item {
@@ -1587,10 +2030,13 @@ onMounted(() => {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
+  border-left: 4px solid transparent;
 }
 
 .topic-item:hover {
   background: #e4e8f0;
+  transform: translateX(4px);
+  border-left-color: #409eff;
 }
 
 .topic-rank {
@@ -1599,10 +2045,18 @@ onMounted(() => {
   font-weight: bold;
   color: #909399;
   text-align: center;
+  transition: all 0.3s ease;
 }
 
 .topic-rank.top {
   color: #f56c6c;
+  animation: rankPulse 2s infinite;
+}
+
+@keyframes rankPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 .topic-info {
@@ -1615,6 +2069,11 @@ onMounted(() => {
 .topic-name {
   font-size: 14px;
   color: #333;
+  transition: color 0.3s ease;
+}
+
+.topic-name:hover {
+  color: #409eff;
 }
 
 .topic-count {
@@ -1625,6 +2084,12 @@ onMounted(() => {
 .topic-arrow {
   color: #909399;
   font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.topic-item:hover .topic-arrow {
+  color: #409eff;
+  transform: translateX(4px);
 }
 
 .comments-dialog :deep(.el-dialog__body) {
@@ -1640,6 +2105,11 @@ onMounted(() => {
   padding: 20px;
   background: #fafafa;
   border-bottom: 1px solid #ebeef5;
+  transition: all 0.3s ease;
+}
+
+.original-post:hover {
+  background: #f0f2f5;
 }
 
 .original-post .post-author {
@@ -1648,46 +2118,57 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-.original-post .post-text {
-  margin: 0;
-  font-size: 15px;
-  color: #606266;
-  line-height: 1.7;
+.btn-primary, .btn-comment {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
 }
 
-.comments-section {
-  padding: 20px;
+.btn-primary:hover, .btn-comment:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
 }
 
-.comments-section h4 {
-  margin: 0 0 16px 0;
-  font-size: 16px;
-  color: #333;
+.btn-primary::before, .btn-comment::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
 }
 
-.comment-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.btn-primary:hover::before, .btn-comment:hover::before {
+  left: 100%;
 }
 
 .comment-item {
   display: flex;
   gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+  transition: all 0.3s ease;
+}
+
+.comment-item:hover {
+  background: #f0f9ff;
+  transform: translateX(4px);
 }
 
 .comment-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  flex-shrink: 0;
+  border: 2px solid #409eff;
+  transition: all 0.3s ease;
+}
+
+.comment-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(64, 158, 255, 0.4);
 }
 
 .comment-body {
@@ -1698,13 +2179,17 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .comment-author {
   font-weight: 500;
-  font-size: 14px;
   color: #333;
+  transition: color 0.3s ease;
+}
+
+.comment-author:hover {
+  color: #409eff;
 }
 
 .comment-time {
@@ -1731,26 +2216,31 @@ onMounted(() => {
   font-size: 12px;
   color: #909399;
   cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 2px 8px;
+  border-radius: 8px;
 }
 
 .action-item:hover {
   color: #409eff;
+  background: #ecf5ff;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 1200px) {
   .community-content {
     flex-direction: column;
   }
-
+  
   .side-area {
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
   }
-
-  .side-area > * {
+  
+  .user-card, .ranking-card, .activity-card, .hot-topics-card {
     flex: 1;
-    min-width: 300px;
+    min-width: 280px;
   }
 }
 
@@ -1758,33 +2248,239 @@ onMounted(() => {
   .community {
     padding: 16px;
   }
-
+  
   .header-content {
-    padding: 20px;
+    padding: 24px;
   }
-
+  
   .header-text h1 {
     font-size: 24px;
   }
-
+  
   .header-features {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .feature-item {
+    justify-content: center;
+  }
+  
+  .side-area {
+    flex-direction: column;
+  }
+  
+  .create-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .action-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .action-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .interaction-bar {
+    gap: 16px;
+  }
+  
+  .post-image {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 16px;
+  }
+  
+  .header-text h1 {
+    font-size: 20px;
+  }
+  
+  .differentiator {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .action-left {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .action-left > * {
+    width: 100%;
+  }
+  
+  .post-vote {
+    display: none;
+  }
+  
+  .post-images {
+    flex-direction: column;
+  }
+  
+  .post-image {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+  }
+  
+  .interaction-bar {
     flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .interaction-item {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .comments-dialog {
+    width: 90vw !important;
+  }
+
+  .original-post .post-text {
+    margin: 0;
+    font-size: 15px;
+    color: #606266;
+    line-height: 1.7;
+  }
+
+  .comments-section {
+    padding: 20px;
+  }
+
+  .comments-section h4 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    color: #333;
+  }
+
+  .comment-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .comments-list {
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 
-  .filter-tabs {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .interaction-bar {
-    flex-wrap: wrap;
+  .comment-item {
+    display: flex;
     gap: 12px;
   }
 
-  .ranking-tabs {
-    gap: 12px;
+  .comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .comment-body {
+    flex: 1;
+  }
+
+  .comment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .comment-author {
+    font-weight: 500;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .comment-time {
+    font-size: 12px;
+    color: #909399;
+  }
+
+  .comment-text {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #606266;
+    line-height: 1.6;
+  }
+
+  .comment-actions {
+    display: flex;
+    gap: 16px;
+  }
+
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #909399;
+    cursor: pointer;
+  }
+
+  .action-item:hover {
+    color: #409eff;
+  }
+
+  @media (max-width: 1200px) {
+    .community-content {
+      flex-direction: column;
+    }
+    .side-area {
+      width: 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .side-area > * {
+      flex: 1;
+      min-width: 300px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .community {
+      padding: 16px;
+    }
+    .header-content {
+      padding: 20px;
+    }
+    .header-text h1 {
+      font-size: 24px;
+    }
+    .header-features {
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .filter-tabs {
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .interaction-bar {
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .ranking-tabs {
+      gap: 12px;
+    }
+  }
+}
+</style>
   }
 }
 </style>

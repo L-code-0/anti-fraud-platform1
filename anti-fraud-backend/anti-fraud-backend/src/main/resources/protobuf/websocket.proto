@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package com.anti.fraud.proto;
+
+// 消息类型枚举
+enum MessageType {
+    MESSAGE_TYPE_UNSPECIFIED = 0;
+    MESSAGE_TYPE_PING = 1;           // 心跳请求
+    MESSAGE_TYPE_PONG = 2;           // 心跳响应
+    MESSAGE_TYPE_ALERT = 3;          // 预警消息
+    MESSAGE_TYPE_CONNECTION = 4;      // 连接消息
+    MESSAGE_TYPE_SUBSCRIBE = 5;       // 订阅消息
+    MESSAGE_TYPE_COLLABORATION = 6;   // 协作消息
+    MESSAGE_TYPE_ERROR = 7;           // 错误消息
+}
+
+// 预警类型枚举
+enum AlertType {
+    ALERT_TYPE_UNSPECIFIED = 0;
+    ALERT_TYPE_BEHAVIOR = 1;          // 行为风险预警
+    ALERT_TYPE_DEVICE = 2;            // 设备风险预警
+    ALERT_TYPE_SOCIAL = 3;            // 社交风险预警
+    ALERT_TYPE_OVERALL = 4;           // 综合风险预警
+}
+
+// 风险等级枚举
+enum RiskLevel {
+    RISK_LEVEL_UNSPECIFIED = 0;
+    RISK_LEVEL_LOW = 1;               // 低风险
+    RISK_LEVEL_MEDIUM = 2;            // 中风险
+    RISK_LEVEL_HIGH = 3;              // 高风险
+    RISK_LEVEL_VERY_HIGH = 4;         // 极高风险
+}
+
+// 基础消息结构
+message WebSocketMessage {
+    string message_id = 1;             // 消息ID
+    MessageType type = 2;              // 消息类型
+    int64 timestamp = 3;               // 时间戳（毫秒）
+    string user_id = 4;                // 用户ID
+    oneof payload {
+        PingMessage ping = 5;          // 心跳请求
+        PongMessage pong = 6;          // 心跳响应
+        AlertMessage alert = 7;        // 预警消息
+        ConnectionMessage connection = 8; // 连接消息
+        SubscribeMessage subscribe = 9; // 订阅消息
+        CollaborationMessage collaboration = 10; // 协作消息
+        ErrorMessage error = 11;       // 错误消息
+    }
+}
+
+// 心跳请求消息
+message PingMessage {
+    string ping_id = 1;                // 心跳ID
+    int64 sequence = 2;                // 序列号
+}
+
+// 心跳响应消息
+message PongMessage {
+    string ping_id = 1;                // 对应心跳ID
+    int64 sequence = 2;                // 序列号
+    int64 server_timestamp = 3;        // 服务器时间戳
+}
+
+// 预警消息
+message AlertMessage {
+    string alert_id = 1;               // 预警ID
+    AlertType alert_type = 2;          // 预警类型
+    RiskLevel risk_level = 3;          // 风险等级
+    string alert_title = 4;            // 预警标题
+    string alert_content = 5;          // 预警内容
+    string alert_details = 6;          // 预警详情（JSON格式）
+    string phone_number = 7;           // 接收人手机号
+    string email = 8;                  // 接收人邮箱
+    int64 alert_time = 9;              // 预警时间
+}
+
+// 连接消息
+message ConnectionMessage {
+    string status = 1;                 // 连接状态：success, failed
+    string message = 2;                // 连接消息
+    string user_id = 3;                // 用户ID
+    string username = 4;               // 用户名
+}
+
+// 订阅消息
+message SubscribeMessage {
+    string subscribe_id = 1;           // 订阅ID
+    string topic = 2;                  // 订阅主题
+    bool subscribe = 3;                // 订阅/取消订阅
+    string status = 4;                 // 订阅状态：success, failed
+    string message = 5;                // 订阅消息
+}
+
+// 协作消息
+message CollaborationMessage {
+    string collaboration_id = 1;       // 协作ID
+    string operation_type = 2;         // 操作类型：create, update, delete
+    string resource_type = 3;          // 资源类型：user, risk, alert
+    string resource_id = 4;            // 资源ID
+    string operation_data = 5;         // 操作数据（JSON格式）
+    int64 operation_time = 6;          // 操作时间
+    string user_id = 7;                // 操作用户ID
+    string username = 8;               // 操作用户名
+}
+
+// 错误消息
+message ErrorMessage {
+    string error_id = 1;               // 错误ID
+    int32 error_code = 2;              // 错误码
+    string error_message = 3;          // 错误消息
+    string error_details = 4;          // 错误详情
+    int64 error_time = 5;              // 错误时间
+}

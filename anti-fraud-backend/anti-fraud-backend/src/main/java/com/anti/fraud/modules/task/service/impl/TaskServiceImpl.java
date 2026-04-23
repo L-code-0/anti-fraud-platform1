@@ -1,336 +1,383 @@
 package com.anti.fraud.modules.task.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.anti.fraud.common.exception.BusinessException;
-import com.anti.fraud.modules.task.dto.TaskCreateDTO;
-import com.anti.fraud.modules.task.entity.ClassTask;
+import com.anti.fraud.common.utils.SecurityUtils;
+import com.anti.fraud.modules.notification.service.NotificationService;
+import com.anti.fraud.modules.points.service.PointsService;
+import com.anti.fraud.modules.task.entity.TaskInfo;
 import com.anti.fraud.modules.task.entity.TaskCompletion;
-import com.anti.fraud.modules.task.mapper.ClassTaskMapper;
+import com.anti.fraud.modules.task.mapper.TaskInfoMapper;
 import com.anti.fraud.modules.task.mapper.TaskCompletionMapper;
 import com.anti.fraud.modules.task.service.TaskService;
 import com.anti.fraud.modules.task.vo.TaskVO;
-import com.anti.fraud.modules.user.entity.User;
-import com.anti.fraud.modules.user.mapper.UserMapper;
-import com.anti.fraud.common.utils.SecurityUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * 任务服务实现类
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TaskServiceImpl implements TaskService {
 
-    private final ClassTaskMapper taskMapper;
-    private final TaskCompletionMapper completionMapper;
-    private final UserMapper userMapper;
+    private final TaskInfoMapper taskInfoMapper;
+    private final TaskCompletionMapper taskCompletionMapper;
+    private final PointsService pointsService;
+    private final NotificationService notificationService;
+
+    @Override
+    public List<TaskVO> getUserTasks(Integer taskType) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            throw new BusinessException("请先登录");
+        }
+
+        LocalDateTime currentTime = LocalDateTime.now();
+        List<TaskInfo> tasks;
+
+        // 根据任务类型查询任务列表
+        if (taskType == 1) { // 每日任务
+            tasks = taskInfoMapper.selectDailyTasks(currentTime);
+        } else if (taskType == 2) { // 成就任务
+            tasks = taskInfoMapper.selectAchievementTasks(currentTime);
+        } else if (taskType == 3) { // 赛季任务
+            // 暂时使用默认赛季ID 1
+            tasks = taskInfoMapper.selectSeasonTasks(1L, currentTime);
+        } else {
+            tasks = taskInfoMapper.selectValidTasks(currentTime);
+        }
+
+        List<TaskVO> taskVOs = new ArrayList<>();
+        for (TaskInfo task : tasks) {
+            TaskVO vo = convertToTaskVO(task);
+            // 查询任务完成记录
+            String taskCycle = getTaskCycle(task);
+            TaskCompletion completion = taskCompletionMapper.selectByUserIdAndTaskId(userId, task.getId(), taskCycle);
+            if (completion != null) {
+                vo.setCurrentProgress(completion.getCurrentProgress());
+                vo.setStatus(completion.getStatus());
+                vo.setTaskCycle(completion.getTaskCycle());
+                vo.setCompleteTime(completion.getCompleteTime());
+                vo.setClaimTime(completion.getClaimTime());
+                vo.setCanClaim(completion.getStatus() == 2); // 已完成但未领取
+            } else {
+                // 创建任务完成记录
+                TaskCompletion newCompletion = new TaskCompletion();
+                newCompletion.setUserId(userId);
+                newCompletion.setTaskId(task.getId());
+                newCompletion.setCurrentProgress(0);
+                newCompletion.setStatus(1); // 进行中
+                newCompletion.setTaskCycle(taskCycle);
+                newCompletion.setCreateTime(LocalDateTime.now());
+                newCompletion.setUpdateTime(LocalDateTime.now());
+                taskCompletionMapper.insert(newCompletion);
+                
+                vo.setCurrentProgress(0);
+                vo.setStatus(1);
+                vo.setTaskCycle(taskCycle);
+                vo.setCanClaim(false);
+            }
+            taskVOs.add(vo);
+        }
+
+        return taskVOs;
+    }
+
+    @Override
+    public List<TaskInfo> getAllTasks(Integer taskType) {
+        LocalDateTime currentTime = LocalDateTime.now();
+        if (taskType != null) {
+            return taskInfoMapper.selectByTaskType(taskType, 1);
+        } else {
+            return taskInfoMapper.selectValidTasks(currentTime);
+        }
+    }
 
     @Override
     @Transactional
-    public Long createTask(TaskCreateDTO dto) {
+    public boolean updateTaskProgress(Long taskId, int progress) {
         Long userId = SecurityUtils.getCurrentUserId();
-        User user = userMapper.selectById(userId);
-
-        ClassTask task = new ClassTask();
-        task.setTaskName(dto.getTaskName());
-        task.setTaskType(dto.getTaskType());
-        task.setCreatorId(userId);
-        task.setCreatorName(user.getRealName());
-        task.setClassId(dto.getClassId());
-        task.setClassName(dto.getClassName());
-        task.setStartTime(dto.getStartTime());
-        task.setEndTime(dto.getEndTime());
-        task.setDescription(dto.getDescription());
-        task.setRelatedId(dto.getRelatedId());
-        task.setRelatedName(dto.getRelatedName());
-        task.setPoints(dto.getPoints() != null ? dto.getPoints() : 10);
-        task.setStatus(0);
-        task.setTotalStudents(0);
-        task.setCompletedStudents(0);
-        task.setCreateTime(LocalDateTime.now());
-
-        // 判断任务状态
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(dto.getEndTime())) {
-            task.setStatus(2);
-        } else if (now.isAfter(dto.getStartTime())) {
-            task.setStatus(1);
+        if (userId == null) {
+            throw new BusinessException("请先登录");
         }
 
-        taskMapper.insert(task);
-        return task.getId();
+        TaskInfo task = taskInfoMapper.selectById(taskId);
+        if (task == null) {
+            throw new BusinessException("任务不存在");
+        }
+
+        String taskCycle = getTaskCycle(task);
+        TaskCompletion completion = taskCompletionMapper.selectByUserIdAndTaskId(userId, taskId, taskCycle);
+        if (completion == null) {
+            // 创建任务完成记录
+            completion = new TaskCompletion();
+            completion.setUserId(userId);
+            completion.setTaskId(taskId);
+            completion.setCurrentProgress(progress);
+            completion.setStatus(1); // 进行中
+            completion.setTaskCycle(taskCycle);
+            completion.setCreateTime(LocalDateTime.now());
+            completion.setUpdateTime(LocalDateTime.now());
+            taskCompletionMapper.insert(completion);
+        } else {
+            // 更新任务进度
+            int newProgress = completion.getCurrentProgress() + progress;
+            completion.setCurrentProgress(newProgress);
+            completion.setUpdateTime(LocalDateTime.now());
+            
+            // 检查是否完成任务
+            if (newProgress >= task.getTargetCount() && completion.getStatus() == 1) {
+                completion.setStatus(2); // 已完成
+                completion.setCompleteTime(LocalDateTime.now());
+                
+                // 发送任务完成通知
+                try {
+                    notificationService.sendSystemNotification(
+                            "任务完成",
+                            "恭喜您完成了「" + task.getTaskName() + "」任务！",
+                            userId
+                    );
+                } catch (Exception e) {
+                    log.error("发送任务完成通知失败: {}", e.getMessage(), e);
+                }
+            }
+            
+            taskCompletionMapper.updateById(completion);
+        }
+
+        return true;
     }
 
     @Override
-    public Page<TaskVO> getMyTasks(Integer page, Integer size) {
+    @Transactional
+    public boolean claimTaskReward(Long taskId, String taskCycle) {
         Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            throw new BusinessException("请先登录");
+        }
 
-        Page<ClassTask> pageParam = new Page<>(page, size);
-        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ClassTask::getCreatorId, userId)
-                .orderByDesc(ClassTask::getCreateTime);
+        TaskInfo task = taskInfoMapper.selectById(taskId);
+        if (task == null) {
+            throw new BusinessException("任务不存在");
+        }
 
-        Page<ClassTask> result = taskMapper.selectPage(pageParam, wrapper);
+        TaskCompletion completion = taskCompletionMapper.selectByUserIdAndTaskId(userId, taskId, taskCycle);
+        if (completion == null || completion.getStatus() != 2) {
+            throw new BusinessException("任务未完成，无法领取奖励");
+        }
 
-        Page<TaskVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(result.getRecords().stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList()));
+        // 发放奖励
+        if (task.getPointsReward() > 0) {
+            pointsService.addPoints(userId, task.getPointsReward(), "task", taskId, "完成任务：" + task.getTaskName());
+        }
 
-        return voPage;
-    }
+        // 发放勋章
+        if (task.getBadgeId() != null) {
+            // 勋章授予逻辑在pointsService.addPoints中已处理
+        }
 
-    @Override
-    public Page<TaskVO> getStudentTasks(Integer page, Integer size) {
-        Long userId = SecurityUtils.getCurrentUserId();
+        // 更新任务状态
+        completion.setStatus(3); // 已领取奖励
+        completion.setClaimTime(LocalDateTime.now());
+        completion.setUpdateTime(LocalDateTime.now());
+        taskCompletionMapper.updateById(completion);
 
-        Page<ClassTask> pageParam = new Page<>(page, size);
-        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ClassTask::getStatus, 1)
-                .orderByDesc(ClassTask::getCreateTime);
-
-        Page<ClassTask> result = taskMapper.selectPage(pageParam, wrapper);
-
-        // 查询学生完成情况
-        List<Long> taskIds = result.getRecords().stream()
-                .map(ClassTask::getId)
-                .collect(Collectors.toList());
-
-        List<TaskCompletion> completions = List.of();
-        if (!taskIds.isEmpty()) {
-            completions = completionMapper.selectList(
-                    new LambdaQueryWrapper<TaskCompletion>()
-                            .eq(TaskCompletion::getStudentId, userId)
-                            .in(TaskCompletion::getTaskId, taskIds)
+        // 发送奖励领取通知
+        try {
+            notificationService.sendSystemNotification(
+                    "奖励领取",
+                    "您已成功领取「" + task.getTaskName() + "」任务的奖励！",
+                    userId
             );
+        } catch (Exception e) {
+            log.error("发送奖励领取通知失败: {}", e.getMessage(), e);
         }
 
-        final List<TaskCompletion> finalCompletions = completions;
-
-        Page<TaskVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(result.getRecords().stream()
-                .map(task -> {
-                    TaskVO vo = convertToVO(task);
-                    finalCompletions.stream()
-                            .filter(c -> c.getTaskId().equals(task.getId()))
-                            .findFirst()
-                            .ifPresent(c -> {
-                                vo.setIsCompleted(c.getStatus() == 1);
-                                vo.setMyScore(c.getScore());
-                            });
-                    return vo;
-                })
-                .collect(Collectors.toList()));
-
-        return voPage;
+        return true;
     }
 
     @Override
-    public TaskVO getTaskDetail(Long id) {
-        ClassTask task = taskMapper.selectById(id);
-        if (task == null) {
-            throw new BusinessException("任务不存在");
-        }
-        return convertToVO(task);
+    public void resetDailyTasks() {
+        // 重置每日任务逻辑
+        // 实际实现需要根据任务的resetHour字段来确定重置时间
+        log.info("重置每日任务");
     }
 
     @Override
-    @Transactional
-    public void completeTask(Long taskId, Integer score) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        User user = userMapper.selectById(userId);
+    public void checkTaskCompletion(Long userId, String action, int count) {
+        // 根据用户操作检查任务完成情况
+        LocalDateTime currentTime = LocalDateTime.now();
+        List<TaskInfo> tasks = taskInfoMapper.selectValidTasks(currentTime);
 
-        ClassTask task = taskMapper.selectById(taskId);
-        if (task == null) {
-            throw new BusinessException("任务不存在");
-        }
-
-        if (task.getStatus() != 1) {
-            throw new BusinessException("任务未开始或已结束");
-        }
-
-        // 检查是否已完成
-        TaskCompletion existing = completionMapper.selectOne(
-                new LambdaQueryWrapper<TaskCompletion>()
-                        .eq(TaskCompletion::getTaskId, taskId)
-                        .eq(TaskCompletion::getStudentId, userId)
-        );
-
-        if (existing != null && existing.getStatus() == 1) {
-            throw new BusinessException("任务已完成");
-        }
-
-        TaskCompletion completion = existing != null ? existing : new TaskCompletion();
-        completion.setTaskId(taskId);
-        completion.setStudentId(userId);
-        completion.setStudentName(user.getRealName());
-        completion.setStatus(1);
-        completion.setScore(score);
-        completion.setCompleteTime(LocalDateTime.now());
-        completion.setCreateTime(LocalDateTime.now());
-
-        if (existing != null) {
-            completionMapper.updateById(completion);
-        } else {
-            completionMapper.insert(completion);
-
-            // 更新任务完成人数
-            task.setCompletedStudents(task.getCompletedStudents() + 1);
-            taskMapper.updateById(task);
-        }
-    }
-
-    @Override
-    public Page<?> getTaskCompletions(Long taskId, Integer page, Integer size) {
-        Page<TaskCompletion> pageParam = new Page<>(page, size);
-        LambdaQueryWrapper<TaskCompletion> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TaskCompletion::getTaskId, taskId)
-                .orderByDesc(TaskCompletion::getCompleteTime);
-
-        return completionMapper.selectPage(pageParam, wrapper);
-    }
-
-    @Override
-    @Transactional
-    public void deleteTask(Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        ClassTask task = taskMapper.selectById(id);
-
-        if (task == null) {
-            throw new BusinessException("任务不存在");
-        }
-
-        if (!task.getCreatorId().equals(userId)) {
-            throw new BusinessException("无权删除此任务");
-        }
-
-        taskMapper.deleteById(id);
-    }
-
-    private TaskVO convertToVO(ClassTask task) {
-        TaskVO vo = new TaskVO();
-        vo.setId(task.getId());
-        vo.setTaskName(task.getTaskName());
-        vo.setTaskType(task.getTaskType());
-        vo.setTaskTypeName(getTaskTypeName(task.getTaskType()));
-        vo.setCreatorId(task.getCreatorId());
-        vo.setCreatorName(task.getCreatorName());
-        vo.setClassId(task.getClassId());
-        vo.setClassName(task.getClassName());
-        vo.setStartTime(task.getStartTime());
-        vo.setEndTime(task.getEndTime());
-        vo.setTotalStudents(task.getTotalStudents());
-        vo.setCompletedStudents(task.getCompletedStudents());
-
-        if (task.getTotalStudents() > 0) {
-            vo.setCompletionRate((double) task.getCompletedStudents() / task.getTotalStudents() * 100);
-        } else {
-            vo.setCompletionRate(0.0);
-        }
-
-        vo.setStatus(task.getStatus());
-        vo.setStatusName(getStatusName(task.getStatus()));
-        vo.setDescription(task.getDescription());
-        vo.setRelatedId(task.getRelatedId());
-        vo.setRelatedName(task.getRelatedName());
-        vo.setPoints(task.getPoints());
-        vo.setCreateTime(task.getCreateTime());
-        vo.setIsCompleted(false);
-
-        return vo;
-    }
-
-    private String getTaskTypeName(String taskType) {
-        switch (taskType) {
-            case "VIDEO": return "视频学习";
-            case "TEST": return "在线测试";
-            case "KNOWLEDGE": return "知识学习";
-            default: return taskType;
-        }
-    }
-
-    private String getStatusName(Integer status) {
-        switch (status) {
-            case 0: return "未开始";
-            case 1: return "进行中";
-            case 2: return "已结束";
-            default: return "未知";
-        }
-    }
-
-    @Override
-    @Transactional
-    public void setTaskReminder(Long taskId, Integer remindType, Integer remindDays) {
-        ClassTask task = taskMapper.selectById(taskId);
-        if (task == null) {
-            throw new BusinessException("任务不存在");
-        }
-
-        task.setRemindType(remindType);
-        task.setRemindDays(remindDays);
-        task.setRemindStatus(0);
-
-        // 计算提醒时间
-        if (remindType == 1 || remindType == 3) {
-            // 开始前提醒
-            task.setRemindTime(task.getStartTime().minusDays(remindDays));
-        } else if (remindType == 2) {
-            // 结束前提醒
-            task.setRemindTime(task.getEndTime().minusDays(remindDays));
-        }
-
-        taskMapper.updateById(task);
-    }
-
-    @Override
-    @Transactional
-    public void triggerTaskReminders() {
-        List<ClassTask> tasks = getTasksToRemind();
-        LocalDateTime now = LocalDateTime.now();
-
-        for (ClassTask task : tasks) {
-            // 检查提醒时间是否已到
-            if (task.getRemindTime() != null && now.isAfter(task.getRemindTime())) {
-                // 这里可以添加发送提醒的逻辑，如发送邮件、短信或系统通知
-                System.out.println("发送任务提醒: " + task.getTaskName());
-
-                // 更新提醒状态
-                task.setRemindStatus(1);
-                taskMapper.updateById(task);
+        for (TaskInfo task : tasks) {
+            // 根据任务目标和用户操作类型匹配任务
+            if (matchTaskAction(task, action)) {
+                String taskCycle = getTaskCycle(task);
+                TaskCompletion completion = taskCompletionMapper.selectByUserIdAndTaskId(userId, task.getId(), taskCycle);
+                if (completion != null && completion.getStatus() < 2) {
+                    int newProgress = completion.getCurrentProgress() + count;
+                    if (newProgress >= task.getTargetCount()) {
+                        completion.setCurrentProgress(task.getTargetCount());
+                        completion.setStatus(2); // 已完成
+                        completion.setCompleteTime(LocalDateTime.now());
+                        
+                        // 发送任务完成通知
+                        try {
+                            notificationService.sendSystemNotification(
+                                    "任务完成",
+                                    "恭喜您完成了「" + task.getTaskName() + "」任务！",
+                                    userId
+                            );
+                        } catch (Exception e) {
+                            log.error("发送任务完成通知失败: {}", e.getMessage(), e);
+                        }
+                    } else {
+                        completion.setCurrentProgress(newProgress);
+                    }
+                    completion.setUpdateTime(LocalDateTime.now());
+                    taskCompletionMapper.updateById(completion);
+                }
             }
         }
     }
 
     @Override
-    @Transactional
-    public void autoAssignTask(Long taskId, Integer strategy) {
-        ClassTask task = taskMapper.selectById(taskId);
-        if (task == null) {
-            throw new BusinessException("任务不存在");
+    public int getUnclaimedTaskCount() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            throw new BusinessException("请先登录");
         }
 
-        // 这里简化实现，实际应该根据策略自动分配任务给学生
-        // 1-随机分配, 2-按成绩分配, 3-按学习时长分配
-        task.setAutoAssign(1);
-        task.setAssignStrategy(strategy);
-        taskMapper.updateById(task);
-
-        // 这里可以添加具体的分配逻辑
-        System.out.println("自动分配任务: " + task.getTaskName() + "，策略: " + strategy);
+        return taskCompletionMapper.countUnclaimedTasks(userId);
     }
 
     @Override
-    public List<ClassTask> getTasksToRemind() {
-        LocalDateTime now = LocalDateTime.now();
-        return taskMapper.selectList(
-                new LambdaQueryWrapper<ClassTask>()
-                        .ne(ClassTask::getRemindType, 0)
-                        .eq(ClassTask::getRemindStatus, 0)
-                        .le(ClassTask::getRemindTime, now)
-        );
+    public boolean createTask(TaskInfo taskInfo) {
+        try {
+            taskInfo.setStatus(1);
+            taskInfo.setCreateTime(LocalDateTime.now());
+            taskInfo.setUpdateTime(LocalDateTime.now());
+            taskInfoMapper.insert(taskInfo);
+            return true;
+        } catch (Exception e) {
+            log.error("创建任务失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean updateTask(TaskInfo taskInfo) {
+        try {
+            taskInfo.setUpdateTime(LocalDateTime.now());
+            taskInfoMapper.updateById(taskInfo);
+            return true;
+        } catch (Exception e) {
+            log.error("更新任务失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean deleteTask(Long taskId) {
+        try {
+            taskInfoMapper.deleteById(taskId);
+            return true;
+        } catch (Exception e) {
+            log.error("删除任务失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public TaskInfo getTaskById(Long taskId) {
+        return taskInfoMapper.selectById(taskId);
+    }
+
+    @Override
+    public int batchCreateTasks(List<TaskInfo> tasks) {
+        try {
+            int count = 0;
+            for (TaskInfo task : tasks) {
+                task.setStatus(1);
+                task.setCreateTime(LocalDateTime.now());
+                task.setUpdateTime(LocalDateTime.now());
+                taskInfoMapper.insert(task);
+                count++;
+            }
+            return count;
+        } catch (Exception e) {
+            log.error("批量创建任务失败: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    /**
+     * 转换任务信息为VO
+     * @param task 任务信息
+     * @return 任务VO
+     */
+    private TaskVO convertToTaskVO(TaskInfo task) {
+        TaskVO vo = new TaskVO();
+        vo.setId(task.getId());
+        vo.setTaskName(task.getTaskName());
+        vo.setTaskType(task.getTaskType());
+        vo.setDescription(task.getDescription());
+        vo.setTarget(task.getTarget());
+        vo.setTargetCount(task.getTargetCount());
+        vo.setPointsReward(task.getPointsReward());
+        vo.setBadgeId(task.getBadgeId());
+        vo.setStartTime(task.getStartTime());
+        vo.setEndTime(task.getEndTime());
+        return vo;
+    }
+
+    /**
+     * 获取任务周期
+     * @param task 任务信息
+     * @return 任务周期
+     */
+    private String getTaskCycle(TaskInfo task) {
+        if (task.getTaskType() == 1) { // 每日任务
+            return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        } else if (task.getTaskType() == 3) { // 赛季任务
+            return String.valueOf(task.getSeasonId());
+        } else { // 成就任务
+            return "achievement";
+        }
+    }
+
+    /**
+     * 匹配任务操作
+     * @param task 任务信息
+     * @param action 操作类型
+     * @return 是否匹配
+     */
+    private boolean matchTaskAction(TaskInfo task, String action) {
+        // 根据任务目标和操作类型匹配
+        String target = task.getTarget().toLowerCase();
+        switch (action) {
+            case "test_completed":
+                return target.contains("测验") || target.contains("考试");
+            case "simulation_completed":
+                return target.contains("演练") || target.contains("模拟");
+            case "checkin":
+                return target.contains("签到");
+            case "post_created":
+                return target.contains("发帖") || target.contains("社区");
+            case "learning_completed":
+                return target.contains("学习") || target.contains("课程");
+            default:
+                return false;
+        }
     }
 }

@@ -1,39 +1,81 @@
 package com.anti.fraud.modules.knowledge.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 知识图谱边实体
+ */
 @Data
 @TableName("knowledge_edge")
-public class KnowledgeEdge implements Serializable {
+public class KnowledgeEdge {
 
-    private static final long serialVersionUID = 1L;
-
-    @TableId(value = "id", type = IdType.AUTO)
+    /**
+     * 主键ID
+     */
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long sourceNodeId;
+    /**
+     * 边ID（UUID）
+     */
+    private String edgeId;
 
-    private Long targetNodeId;
+    /**
+     * 源节点ID
+     */
+    private String sourceNodeId;
 
-    private String relationshipType;
+    /**
+     * 目标节点ID
+     */
+    private String targetNodeId;
 
-    private String relationshipDescription;
+    /**
+     * 边类型：1-属于，2-包含，3-关联，4-推荐，5-其他
+     */
+    private Integer type;
 
-    private Integer strength;
+    /**
+     * 边名称
+     */
+    private String name;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @TableField(fill = FieldFill.INSERT)
+    /**
+     * 边描述
+     */
+    private String description;
+
+    /**
+     * 权重
+     */
+    private Double weight;
+
+    /**
+     * 状态：1-启用，2-禁用
+     */
+    private Integer status;
+
+    /**
+     * 创建时间
+     */
+    @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    /**
+     * 更新时间
+     */
+    @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.UPDATE)
     private LocalDateTime updateTime;
 
-    @TableLogic
+    /**
+     * 逻辑删除
+     */
+    @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private Integer deleted;
 }

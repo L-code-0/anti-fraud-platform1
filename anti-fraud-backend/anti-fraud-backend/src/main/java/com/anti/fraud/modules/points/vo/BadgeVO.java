@@ -32,4 +32,7 @@ public class BadgeVO {
 
     @Schema(description = "获得时间")
     private LocalDateTime acquireTime;
+
+    @Schema(description = "获得原因")
+    private String acquireReason;
 }

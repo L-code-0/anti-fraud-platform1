@@ -1,62 +1,97 @@
 package com.anti.fraud.modules.task.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.anti.fraud.modules.task.dto.TaskCreateDTO;
+import com.anti.fraud.modules.task.entity.TaskInfo;
+import com.anti.fraud.modules.task.entity.TaskCompletion;
 import com.anti.fraud.modules.task.vo.TaskVO;
 
+import java.util.List;
+
+/**
+ * 任务服务接口
+ */
 public interface TaskService {
-    /**
-     * 创建任务（教师）
-     */
-    Long createTask(TaskCreateDTO dto);
 
     /**
-     * 获取我发布的任务列表（教师）
+     * 获取用户的任务列表
+     * @param taskType 任务类型：1-每日任务，2-成就任务，3-赛季任务
+     * @return 任务列表
      */
-    Page<TaskVO> getMyTasks(Integer page, Integer size);
+    List<TaskVO> getUserTasks(Integer taskType);
 
     /**
-     * 获取学生的任务列表
+     * 获取所有任务列表
+     * @param taskType 任务类型
+     * @return 任务列表
      */
-    Page<TaskVO> getStudentTasks(Integer page, Integer size);
+    List<TaskInfo> getAllTasks(Integer taskType);
 
     /**
-     * 获取任务详情
+     * 更新任务进度
+     * @param taskId 任务ID
+     * @param progress 进度增量
+     * @return 是否成功
      */
-    TaskVO getTaskDetail(Long id);
+    boolean updateTaskProgress(Long taskId, int progress);
 
     /**
-     * 完成任务（学生）
+     * 领取任务奖励
+     * @param taskId 任务ID
+     * @param taskCycle 任务周期
+     * @return 是否成功
      */
-    void completeTask(Long taskId, Integer score);
+    boolean claimTaskReward(Long taskId, String taskCycle);
 
     /**
-     * 获取任务完成情况
+     * 重置每日任务
      */
-    Page<?> getTaskCompletions(Long taskId, Integer page, Integer size);
+    void resetDailyTasks();
+
+    /**
+     * 检查任务完成情况
+     * @param userId 用户ID
+     * @param action 操作类型（如：test_completed, simulation_completed等）
+     * @param count 操作数量
+     */
+    void checkTaskCompletion(Long userId, String action, int count);
+
+    /**
+     * 获取用户未领取奖励的任务数量
+     * @return 未领取奖励的任务数量
+     */
+    int getUnclaimedTaskCount();
+
+    /**
+     * 创建任务
+     * @param taskInfo 任务信息
+     * @return 是否成功
+     */
+    boolean createTask(TaskInfo taskInfo);
+
+    /**
+     * 更新任务
+     * @param taskInfo 任务信息
+     * @return 是否成功
+     */
+    boolean updateTask(TaskInfo taskInfo);
 
     /**
      * 删除任务
+     * @param taskId 任务ID
+     * @return 是否成功
      */
-    void deleteTask(Long id);
+    boolean deleteTask(Long taskId);
 
     /**
-     * 设置任务提醒
+     * 获取任务详情
+     * @param taskId 任务ID
+     * @return 任务详情
      */
-    void setTaskReminder(Long taskId, Integer remindType, Integer remindDays);
+    TaskInfo getTaskById(Long taskId);
 
     /**
-     * 触发任务提醒
+     * 批量创建任务
+     * @param tasks 任务列表
+     * @return 成功创建的数量
      */
-    void triggerTaskReminders();
-
-    /**
-     * 自动分配任务
-     */
-    void autoAssignTask(Long taskId, Integer strategy);
-
-    /**
-     * 获取需要提醒的任务列表
-     */
-    java.util.List<com.anti.fraud.modules.task.entity.ClassTask> getTasksToRemind();
+    int batchCreateTasks(List<TaskInfo> tasks);
 }

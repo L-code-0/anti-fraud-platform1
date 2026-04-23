@@ -245,6 +245,29 @@ public class FileServiceImpl implements FileService {
         fileInfo.setUpdateTime(LocalDate.now().atStartOfDay());
         fileInfoMapper.updateById(fileInfo);
     }
+
+    @Override
+    @Transactional
+    public List<FileInfo> batchUploadFiles(MultipartFile[] files, String category, String bizType, Long bizId) {
+        if (files == null || files.length == 0) {
+            throw new BusinessException("上传文件不能为空");
+        }
+
+        List<FileInfo> fileInfos = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                FileInfo fileInfo = uploadFile(file, category, bizType, bizId);
+                fileInfos.add(fileInfo);
+            }
+        }
+
+        if (fileInfos.isEmpty()) {
+            throw new BusinessException("没有有效的文件可上传");
+        }
+
+        log.info("批量上传文件成功，共上传 {} 个文件", fileInfos.size());
+        return fileInfos;
+    }
     
     /**
      * 获取文件扩展名
